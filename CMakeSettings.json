@@ -1,0 +1,90 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug (default)",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "Qt5Quick_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Quick",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5QmlModels_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5QmlModels",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Qml_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Qml",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Network_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Network",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Gui_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Gui",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Core_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Core",
+          "type": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "Qt5Quick_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Quick",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5QmlModels_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5QmlModels",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Qml_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Qml",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Network_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Network",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Gui_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Gui",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Core_DIR",
+          "value": "C:/Qt/5.15.2/msvc2019_64/lib/cmake/Qt5Core",
+          "type": "PATH"
+        }
+      ]
+    }
+  ]
+}

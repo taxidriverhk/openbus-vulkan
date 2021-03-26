@@ -1,0 +1,40 @@
+﻿# CMakeList.txt : Top-level CMake project file, do global configuration
+# and include sub-projects here.
+#
+cmake_minimum_required (VERSION 3.8)
+
+project ("OpenBus")
+
+set (CMAKE_CXX_STANDARD 17)
+
+# Version number generation
+set (VERSION_MAJOR 0)
+set (VERSION_MINOR 1)
+set (VERSION_PATCH 1)
+
+execute_process(COMMAND
+    "${GIT_EXECUTABLE}" describe --match=NeVeRmAtCh --always --abbrev=40 --dirty
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE GIT_SHA1
+    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Qt configuration
+set (CMAKE_AUTOMOC ON) 
+set (CMAKE_AUTOUIC ON)
+set (CMAKE_AUTORCC ON)
+set (CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# GLFW configuration
+set (GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set (GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set (GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set (GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+
+set (SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
+set (LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Library")
+
+# Include sub-projects.
+add_subdirectory ("${SOURCE_DIR}")
+add_subdirectory ("${LIBRARY_DIR}/glfw")
+add_subdirectory ("${LIBRARY_DIR}/glm")
