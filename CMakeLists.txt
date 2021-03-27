@@ -13,7 +13,7 @@ set (VERSION_MINOR 1)
 set (VERSION_PATCH 1)
 
 execute_process(COMMAND
-    "${GIT_EXECUTABLE}" describe --match=NeVeRmAtCh --always --abbrev=40 --dirty
+    git describe --always --abbrev=15
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     OUTPUT_VARIABLE GIT_SHA1
     ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -36,5 +36,6 @@ set (LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Library")
 
 # Include sub-projects.
 add_subdirectory ("${SOURCE_DIR}")
+add_subdirectory ("${LIBRARY_DIR}/fmt")
 add_subdirectory ("${LIBRARY_DIR}/glfw")
 add_subdirectory ("${LIBRARY_DIR}/glm")

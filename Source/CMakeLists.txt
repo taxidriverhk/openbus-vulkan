@@ -8,17 +8,18 @@ find_package (Qt5Core REQUIRED)
 find_package (Qt5Gui REQUIRED)
 find_package (Qt5Widgets REQUIRED)
 
-add_executable (OpenBus "Main.cpp" "UI/MainWindow.h" "UI/MainWindow.cpp" "Game/Game.h" "Game/Game.cpp" "Engine/Screen.h" "Engine/Screen.cpp")
+add_executable (OpenBus "Main.cpp" "UI/MainWindow.h" "UI/MainWindow.cpp" "Game/Game.h" "Game/Game.cpp" "Engine/Screen.h" "Engine/Screen.cpp" "Engine/Renderer.h" "Engine/Renderer.cpp" "Common/Util.h" "Common/Util.cpp" "Engine/VulkanWrapper.h" "Engine/VulkanWrapper.cpp" "Common/Constants.h")
 
 target_compile_definitions(OpenBus PUBLIC "APP_VERSION=\"v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${GIT_SHA1}\"")
 
-target_include_directories (OpenBus
+target_include_directories (OpenBus  
     PUBLIC "${LIBRARY_DIR}/glfw/include"
     PUBLIC "${LIBRARY_DIR}/glm"
 )
 
 target_link_libraries (OpenBus Vulkan::Vulkan)
 target_link_libraries (OpenBus glfw)
+target_link_libraries (OpenBus fmt::fmt)
 
 # Qt configurations
 qt5_use_modules (OpenBus Widgets)
