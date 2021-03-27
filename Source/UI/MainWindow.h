@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Game/Game.h"
+#include "Common/Util.h"
 
 #include <QApplication>
 #include <QtWidgets>
@@ -18,7 +19,6 @@ private:
     static constexpr int WINDOW_WIDTH = 1024;
     static constexpr int WINDOW_HEIGHT = 768;
 
-    void InitComponents();
     void ShutdownButtonClicked();
     void StartButtonClicked();
 

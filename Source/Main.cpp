@@ -1,4 +1,4 @@
-﻿#include "UI/MainWindow.h";
+﻿#include "UI/MainWindow.h"
 
 #include <iostream>
 

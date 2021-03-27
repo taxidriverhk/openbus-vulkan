@@ -1,6 +1,6 @@
 #include "Screen.h"
 
-Screen::Screen(int width, int height, std::string title)
+Screen::Screen(const int &width, const int &height, const std::string &title)
       : screen(nullptr),
         width(width),
         height(height),
@@ -18,7 +18,7 @@ void Screen::Close()
     glfwTerminate();
 }
 
-void Screen::OpenScreen()
+void Screen::Open()
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

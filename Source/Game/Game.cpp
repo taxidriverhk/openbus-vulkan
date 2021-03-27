@@ -1,37 +1,51 @@
 #include "Game.h"
 
 Game::Game()
-    : gameEnded(false),
-      screen(std::make_unique<Screen>(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenBus Vulkan|" APP_VERSION "|Game Screen"))
 {
+    std::string screenTitle = Util::FormatWindowTitle("Game Screen");
+
+    shouldEndGame = false;
+    screen = std::make_unique<Screen>(SCREEN_WIDTH, SCREEN_HEIGHT, screenTitle);
+    renderer = std::make_unique<Renderer>();
 }
 
 Game::~Game()
 {
 }
 
-void Game::SendEndSignal()
+void Game::Cleanup()
 {
-    gameEnded = true;
+    screen->Close();
+}
+
+void Game::InitializeComponents()
+{
+    screen->Open();
+    renderer->PrepareContext();
+}
+
+void Game::SetShouldEndGame(const bool &shouldEndGame)
+{
+    this->shouldEndGame = shouldEndGame;
 }
 
 bool Game::ShouldQuit()
 {
-    return gameEnded || screen->ShouldClose();
+    return shouldEndGame || screen->ShouldClose();
 }
 
 void Game::Start()
 {
-    gameEnded = false;
+    SetShouldEndGame(false);
     StartGameLoop();
 }
 
 void Game::StartGameLoop()
 {
-    screen->OpenScreen();
+    InitializeComponents();
     while (!ShouldQuit())
     {
         screen->Refresh();
     }
-    screen->Close();
+    Cleanup();
 }

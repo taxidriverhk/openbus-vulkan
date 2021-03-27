@@ -4,18 +4,9 @@ MainWindow::MainWindow()
       : QWidget(nullptr),
         game(std::make_unique<Game>())
 {
-    InitComponents();
-}
-
-MainWindow::~MainWindow()
-{
-}
-
-void MainWindow::InitComponents()
-{
     window = std::make_unique<QWidget>();
     window->resize(WINDOW_WIDTH, WINDOW_HEIGHT);
-    window->setWindowTitle("OpenBus Vulkan|" APP_VERSION "|Startup Window");
+    window->setWindowTitle(Util::FormatWindowTitle("Main Window").c_str());
 
     startButton = std::make_unique<QPushButton>("Start", window.get());
     startButton->resize(100, 100);
@@ -25,9 +16,13 @@ void MainWindow::InitComponents()
     shutdownButton->setDisabled(true);
     shutdownButton->resize(100, 100);
     shutdownButton->move(400, 350);
- 
+
     connect(startButton.get(), &QPushButton::clicked, this, &MainWindow::StartButtonClicked);
     connect(shutdownButton.get(), &QPushButton::clicked, this, &MainWindow::ShutdownButtonClicked);
+}
+
+MainWindow::~MainWindow()
+{
 }
 
 void MainWindow::Open()
@@ -38,7 +33,7 @@ void MainWindow::Open()
 
 void MainWindow::ShutdownButtonClicked()
 {
-    game->SendEndSignal();
+    game->SetShouldEndGame(true);
 }
 
 void MainWindow::StartButtonClicked()

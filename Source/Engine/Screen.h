@@ -8,11 +8,11 @@ class Screen
 {
 
 public:
-    Screen(int width, int height, std::string title);
+    Screen(const int &width, const int &height, const std::string &title);
     ~Screen();
 
     void Close();
-    void OpenScreen();
+    void Open();
     void Refresh();
     bool ShouldClose();
 
