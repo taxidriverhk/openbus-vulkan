@@ -11,8 +11,10 @@ public:
     Screen(const int &width, const int &height, const std::string &title);
     ~Screen();
 
+    GLFWwindow* GetWindow() const;
+
     void Close();
-    void Open();
+    void Create();
     void Refresh();
     bool ShouldClose();
 

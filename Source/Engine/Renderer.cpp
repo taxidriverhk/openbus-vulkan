@@ -1,18 +1,17 @@
 #include "Renderer.h"
 
 Renderer::Renderer()
+    : vulkanInstance()
 {
-
 }
 
 Renderer::~Renderer()
 {
-
 }
 
 void Renderer::Cleanup()
 {
-    Vulkan::DestroyInstance(vulkanInstance);
+    vulkanInstance->Destroy();
 }
 
 void Renderer::DrawScene()
@@ -20,8 +19,12 @@ void Renderer::DrawScene()
 
 }
 
-void Renderer::PrepareContext()
+void Renderer::PrepareContext(GLFWwindow *window)
 {
-    Vulkan::CreateInstance(&vulkanInstance);
-    Vulkan::CreatePipeline();
+#if _DEBUG
+    vulkanInstance = std::make_unique<VulkanInstance>(window, true);
+#else
+    vulkanInstance = std::make_unique<VulkanInstance>(window, false);
+#endif
+    vulkanInstance->Create();
 }

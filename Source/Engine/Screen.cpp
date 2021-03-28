@@ -12,13 +12,18 @@ Screen::~Screen()
 {
 }
 
+GLFWwindow *Screen::GetWindow() const
+{
+    return screen;
+}
+
 void Screen::Close()
 {
     glfwDestroyWindow(screen);
     glfwTerminate();
 }
 
-void Screen::Open()
+void Screen::Create()
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

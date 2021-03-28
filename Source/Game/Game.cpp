@@ -15,13 +15,14 @@ Game::~Game()
 
 void Game::Cleanup()
 {
+    renderer->Cleanup();
     screen->Close();
 }
 
 void Game::InitializeComponents()
 {
-    screen->Open();
-    renderer->PrepareContext();
+    screen->Create();
+    renderer->PrepareContext(screen->GetWindow());
 }
 
 void Game::SetShouldEndGame(const bool &shouldEndGame)

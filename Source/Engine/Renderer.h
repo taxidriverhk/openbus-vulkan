@@ -1,9 +1,10 @@
 #pragma once
 
-#include "VulkanWrapper.h"
+#include "VulkanInstance.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <memory>
 
 class Renderer
 {
@@ -13,8 +14,8 @@ public:
 
     void Cleanup();
     void DrawScene();
-    void PrepareContext();
+    void PrepareContext(GLFWwindow *window);
+
 private:
-    
-    VkInstance vulkanInstance;
+    std::unique_ptr<VulkanInstance> vulkanInstance;
 };
