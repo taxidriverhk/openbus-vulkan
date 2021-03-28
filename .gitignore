@@ -49,5 +49,6 @@ Thumbs.db
 *.wmv
 
 # Visual Studio artifacts
+.vscode/
 .vs/
 out/

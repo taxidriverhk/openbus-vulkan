@@ -8,7 +8,9 @@ find_package (Qt5Core REQUIRED)
 find_package (Qt5Gui REQUIRED)
 find_package (Qt5Widgets REQUIRED)
 
-add_executable (OpenBus "Main.cpp" "UI/MainWindow.h" "UI/MainWindow.cpp" "Game/Game.h" "Game/Game.cpp" "Engine/Screen.h" "Engine/Screen.cpp" "Engine/Renderer.h" "Engine/Renderer.cpp" "Common/Util.h" "Common/Util.cpp" "Engine/VulkanWrapper.h" "Engine/VulkanWrapper.cpp" "Common/Constants.h")
+file (GLOB_RECURSE HEADER_FILES *.h)
+file (GLOB_RECURSE SOURCE_FILES *.cpp)
+add_executable (OpenBus ${HEADER_FILES} ${SOURCE_FILES})
 
 target_compile_definitions(OpenBus PUBLIC "APP_VERSION=\"v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${GIT_SHA1}\"")
 
