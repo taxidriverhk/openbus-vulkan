@@ -1,4 +1,4 @@
-#include "VulkanInstance.h"
+#include "VulkanContext.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -6,7 +6,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData);
 
-VulkanInstance::VulkanInstance(GLFWwindow *window, const bool &enableDebugging)
+VulkanContext::VulkanContext(GLFWwindow *window, const bool &enableDebugging)
     : instance(),
     debugMessenger(),
     surface(),
@@ -24,11 +24,11 @@ VulkanInstance::VulkanInstance(GLFWwindow *window, const bool &enableDebugging)
 {
 }
 
-VulkanInstance::~VulkanInstance()
+VulkanContext::~VulkanContext()
 {
 }
 
-void VulkanInstance::Create()
+void VulkanContext::Create()
 {
     CreateInstance();
     CreateWindowSurface();
@@ -43,10 +43,9 @@ void VulkanInstance::Create()
     FindGraphicsAndPresentQueues();
     CreateSwapChain();
     CreateImageViews();
-    CreatePipeline();
 }
 
-void VulkanInstance::Destroy()
+void VulkanContext::Destroy()
 {
     for (VkImageView swapChainImageView : swapChainImageViews)
     {
@@ -67,7 +66,12 @@ void VulkanInstance::Destroy()
     vkDestroyInstance(instance, nullptr);
 }
 
-void VulkanInstance::CreateImageViews()
+VkDevice VulkanContext::GetLogicalDevice() const
+{
+    return logicalDevice;
+}
+
+void VulkanContext::CreateImageViews()
 {
     for (const VkImage &swapChainImage : swapChainImages)
     {
@@ -94,7 +98,7 @@ void VulkanInstance::CreateImageViews()
     }
 }
 
-void VulkanInstance::CreateInstance()
+void VulkanContext::CreateInstance()
 {
     VkApplicationInfo vulkanApplicationInfo{};
     vulkanApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -127,7 +131,7 @@ void VulkanInstance::CreateInstance()
     }
 }
 
-void VulkanInstance::CreateLogicalDevice()
+void VulkanContext::CreateLogicalDevice()
 {
     uint32_t graphicsQueueFamilyIndex, presentQueueFamilyIndex;
     TryFindQueueFamilyIndices(graphicsQueueFamilyIndex, presentQueueFamilyIndex);
@@ -167,11 +171,7 @@ void VulkanInstance::CreateLogicalDevice()
     }
 }
 
-void VulkanInstance::CreatePipeline()
-{
-}
-
-void VulkanInstance::CreateSwapChain()
+void VulkanContext::CreateSwapChain()
 {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> availableFormats;
@@ -266,12 +266,12 @@ void VulkanInstance::CreateSwapChain()
     vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, swapChainImages.data());
 }
 
-void VulkanInstance::CreateWindowSurface()
+void VulkanContext::CreateWindowSurface()
 {
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 }
 
-void VulkanInstance::EnableDebugging()
+void VulkanContext::EnableDebugging()
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -288,7 +288,7 @@ void VulkanInstance::EnableDebugging()
     createDebugFunc(instance, &createInfo, nullptr, &debugMessenger);
 }
 
-void VulkanInstance::FindGraphicsAndPresentQueues()
+void VulkanContext::FindGraphicsAndPresentQueues()
 {
     uint32_t graphicsQueueFamilyIndex, presentQueueFamilyIndex;
     TryFindQueueFamilyIndices(graphicsQueueFamilyIndex, presentQueueFamilyIndex);
@@ -297,7 +297,7 @@ void VulkanInstance::FindGraphicsAndPresentQueues()
     vkGetDeviceQueue(logicalDevice, presentQueueFamilyIndex, 0, &presentQueue);
 }
 
-void VulkanInstance::FindPhysicalDevice()
+void VulkanContext::FindPhysicalDevice()
 {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -337,7 +337,7 @@ void VulkanInstance::FindPhysicalDevice()
     throw std::runtime_error("Failed to find suitable phyiscal device/GPU");
 }
 
-bool VulkanInstance::TryFindSwapChainDetail(
+bool VulkanContext::TryFindSwapChainDetail(
     VkSurfaceCapabilitiesKHR &capabilities,
     std::vector<VkSurfaceFormatKHR> &formats,
     std::vector<VkPresentModeKHR> &presentModes)
@@ -383,7 +383,7 @@ bool VulkanInstance::TryFindSwapChainDetail(
     return formatCount > 0 && presentModeCount > 0;
 }
 
-bool VulkanInstance::TryFindQueueFamilyIndices(uint32_t &graphicsQueueFamilyIndex, uint32_t &presentQueueFamilyIndex)
+bool VulkanContext::TryFindQueueFamilyIndices(uint32_t &graphicsQueueFamilyIndex, uint32_t &presentQueueFamilyIndex)
 {
     graphicsQueueFamilyIndex = UINT32_MAX;
     presentQueueFamilyIndex = UINT32_MAX;

@@ -22,7 +22,7 @@ void Game::Cleanup()
 void Game::InitializeComponents()
 {
     screen->Create();
-    renderer->PrepareContext(screen->GetWindow());
+    renderer->CreateContext(screen);
 }
 
 void Game::SetShouldEndGame(const bool &shouldEndGame)

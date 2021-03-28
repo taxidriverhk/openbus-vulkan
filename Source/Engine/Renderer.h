@@ -1,10 +1,11 @@
 #pragma once
 
-#include "VulkanInstance.h"
-
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <memory>
+
+#include "DrawEngine.h"
+#include "Screen.h";
 
 class Renderer
 {
@@ -14,8 +15,8 @@ public:
 
     void Cleanup();
     void DrawScene();
-    void PrepareContext(GLFWwindow *window);
+    void CreateContext(const std::unique_ptr<Screen> &screen);
 
 private:
-    std::unique_ptr<VulkanInstance> vulkanInstance;
+    std::unique_ptr<DrawEngine> drawEngine;
 };

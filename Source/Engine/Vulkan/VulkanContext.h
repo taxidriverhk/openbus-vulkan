@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Common/Constants.h"
-
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -9,26 +7,31 @@
 #include <stdexcept>
 #include <vector>
 
-class VulkanInstance
+#include "Common/Constants.h"
+#include "VulkanPipeline.h"
+#include "VulkanShader.h"
+
+class VulkanContext
 {
 public:
-    VulkanInstance(GLFWwindow *window, const bool &enableDebugging);
-    ~VulkanInstance();
+    VulkanContext(GLFWwindow *window, const bool &enableDebugging);
+    ~VulkanContext();
 
     void Create();
     void Destroy();
 
+    VkDevice GetLogicalDevice() const;
+
 private:
+    // Functions required for setting up the Vulkan pipeline
     void CreateImageViews();
     void CreateInstance();
     void CreateLogicalDevice();
-    void CreatePipeline();
     void CreateSwapChain();
     void CreateWindowSurface();
     void EnableDebugging();
     void FindGraphicsAndPresentQueues();
     void FindPhysicalDevice();
-
     bool TryFindSwapChainDetail(
         VkSurfaceCapabilitiesKHR &capabilities,
         std::vector<VkSurfaceFormatKHR> &formats,

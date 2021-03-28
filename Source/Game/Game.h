@@ -1,10 +1,10 @@
 #pragma once
 
+#include <memory>
+
 #include "Common/Util.h"
 #include "Engine/Screen.h"
 #include "Engine/Renderer.h"
-
-#include <memory>
 
 class Game
 {
