@@ -43,10 +43,13 @@ void VulkanContext::Create()
     FindGraphicsAndPresentQueues();
     CreateSwapChain();
     CreateImageViews();
+    CreateRenderPass();
 }
 
 void VulkanContext::Destroy()
 {
+    vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
+
     for (VkImageView swapChainImageView : swapChainImageViews)
     {
         vkDestroyImageView(logicalDevice, swapChainImageView, nullptr);
@@ -114,11 +117,19 @@ void VulkanContext::CreateInstance()
     if (enableDebugging)
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+        const char *enabledLayerNames[] = { VULKAN_VALIDATION_LAYER };
+        vulkanCreateInfo.enabledLayerCount = 1;
+        vulkanCreateInfo.ppEnabledLayerNames = enabledLayerNames;
+    }
+    else
+    {
+        vulkanCreateInfo.enabledLayerCount = 0;
     }
 
     vulkanCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     vulkanCreateInfo.ppEnabledExtensionNames = extensions.data();
-    vulkanCreateInfo.enabledLayerCount = 0;
+    
 
     if (vkCreateInstance(&vulkanCreateInfo, nullptr, &instance) != VK_SUCCESS)
     {
@@ -151,7 +162,7 @@ void VulkanContext::CreateLogicalDevice()
 
     if (enableDebugging)
     {
-        const char *enabledLayerNames[] = { "VK_LAYER_KHRONOS_validation" };
+        const char *enabledLayerNames[] = { VULKAN_VALIDATION_LAYER };
         logicalDeviceCreateInfo.enabledLayerCount = 1;
         logicalDeviceCreateInfo.ppEnabledLayerNames = enabledLayerNames;
     }
@@ -163,6 +174,39 @@ void VulkanContext::CreateLogicalDevice()
     if (vkCreateDevice(physicalDevice, &logicalDeviceCreateInfo, nullptr, &logicalDevice) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create logical device");
+    }
+}
+
+void VulkanContext::CreateRenderPass()
+{
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapChainImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create render pass");
     }
 }
 

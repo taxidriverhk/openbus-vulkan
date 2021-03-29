@@ -9,6 +9,8 @@
 
 #include "Common/Constants.h"
 
+#define VULKAN_VALIDATION_LAYER "VK_LAYER_KHRONOS_validation"
+
 class VulkanContext
 {
 public:
@@ -18,13 +20,16 @@ public:
     void Create();
     void Destroy();
 
-    VkDevice GetLogicalDevice() const { return logicalDevice; };
+    VkDevice GetLogicalDevice() const { return logicalDevice; }
+    VkRenderPass GetRenderPass() const { return renderPass; }
+    VkExtent2D GetSwapChainExtent() const { return swapChainExtent; }
 
 private:
     // Functions required for setting up the Vulkan pipeline
     void CreateImageViews();
     void CreateInstance();
     void CreateLogicalDevice();
+    void CreateRenderPass();
     void CreateSwapChain();
     void CreateWindowSurface();
     void EnableDebugging();
@@ -52,6 +57,8 @@ private:
     VkExtent2D swapChainExtent;
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
+
+    VkRenderPass renderPass;
 
     GLFWwindow *window;
 };

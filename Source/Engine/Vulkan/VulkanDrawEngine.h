@@ -21,7 +21,7 @@ public:
     void CreateContext() override;
     void DestroyContext() override;
 private:
-    void LoadShaders();
+    void CreatePipeline();
 
     bool enableDebugging;
 

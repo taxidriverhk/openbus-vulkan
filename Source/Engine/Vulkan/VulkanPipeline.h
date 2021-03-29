@@ -4,7 +4,10 @@
 #include <GLFW/glfw3.h>
 #include <string>
 
-class VulkanContext;
+#include "VulkanContext.h"
+#include "VulkanShader.h"
+
+#define SHADER_MAIN_FUNCTION_NAME "main"
 
 class VulkanPipeline
 {
@@ -12,7 +15,7 @@ public:
     VulkanPipeline(VulkanContext *context);
     ~VulkanPipeline();
 
-    void Create();
+    void Create(VulkanShader &vertexShader, VulkanShader &fragmentShader);
     void Destroy();
 private:
     VulkanContext *context;

@@ -1,10 +1,17 @@
 #include "VulkanShader.h"
 
-VulkanShader::VulkanShader(VulkanContext *context)
+std::map<VulkanShaderType, shaderc_shader_kind> VulkanShader::shaderTypeToKindMap =
+{
+    { VulkanShaderType::VERTEX, shaderc_shader_kind::shaderc_glsl_vertex_shader },
+    { VulkanShaderType::FRAGMENT, shaderc_shader_kind::shaderc_glsl_fragment_shader }
+};
+
+VulkanShader::VulkanShader(VulkanContext *context, VulkanShaderType type)
     : context(context),
       compiler(),
       compiledShaderBytes(std::vector<uint32_t>()),
-      shaderModule()
+      shaderModule(),
+      type(type)
 {
 }
 
@@ -27,7 +34,7 @@ bool VulkanShader::Compile(const std::string &shaderCodePath)
     shaderc::CompileOptions options;
     shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(
         sourceCode,
-        shaderc_shader_kind::shaderc_glsl_vertex_shader,
+        shaderTypeToKindMap[type],
         shaderCodePath.c_str(),
         options);
 
@@ -44,7 +51,7 @@ void VulkanShader::Load()
 {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = compiledShaderBytes.size();
+    createInfo.codeSize = compiledShaderBytes.size() * sizeof(uint32_t);
     createInfo.pCode = compiledShaderBytes.data();
 
     if (vkCreateShaderModule(context->GetLogicalDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
