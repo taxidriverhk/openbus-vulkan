@@ -8,8 +8,6 @@
 #include <vector>
 
 #include "Common/Constants.h"
-#include "VulkanPipeline.h"
-#include "VulkanShader.h"
 
 class VulkanContext
 {
@@ -20,7 +18,7 @@ public:
     void Create();
     void Destroy();
 
-    VkDevice GetLogicalDevice() const;
+    VkDevice GetLogicalDevice() const { return logicalDevice; };
 
 private:
     // Functions required for setting up the Vulkan pipeline

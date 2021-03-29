@@ -5,7 +5,12 @@
 
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
-#include "VulkanContext.h";
+
+#include "VulkanContext.h"
+#include "VulkanPipeline.h"
+#include "VulkanShader.h"
+
+class VulkanPipeline;
 
 class VulkanDrawEngine : public DrawEngine
 {
@@ -15,14 +20,15 @@ public:
 
     void CreateContext() override;
     void DestroyContext() override;
-
 private:
+    void LoadShaders();
+
     bool enableDebugging;
 
     Screen *screen;
     std::unique_ptr<VulkanContext> context;
 
-    std::vector<VulkanPipeline> pipelines;
-    std::vector<VulkanShader> vertexShaders;
-    std::vector<VulkanShader> fragmentShaders;
+    std::unique_ptr<VulkanPipeline> pipeline;
+    std::unique_ptr<VulkanShader> vertexShader;
+    std::unique_ptr<VulkanShader> fragmentShader;
 };

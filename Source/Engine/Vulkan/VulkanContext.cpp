@@ -66,11 +66,6 @@ void VulkanContext::Destroy()
     vkDestroyInstance(instance, nullptr);
 }
 
-VkDevice VulkanContext::GetLogicalDevice() const
-{
-    return logicalDevice;
-}
-
 void VulkanContext::CreateImageViews()
 {
     for (const VkImage &swapChainImage : swapChainImages)

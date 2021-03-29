@@ -22,6 +22,7 @@ target_include_directories (OpenBus
 target_link_libraries (OpenBus Vulkan::Vulkan)
 target_link_libraries (OpenBus glfw)
 target_link_libraries (OpenBus fmt::fmt)
+target_link_libraries (OpenBus shaderc)
 
 # Qt configurations
 qt5_use_modules (OpenBus Widgets)

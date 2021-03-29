@@ -20,7 +20,7 @@ execute_process(COMMAND
 )
 
 # Qt configuration
-set (CMAKE_AUTOMOC ON) 
+set (CMAKE_AUTOMOC ON)
 set (CMAKE_AUTOUIC ON)
 set (CMAKE_AUTORCC ON)
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -31,6 +31,10 @@ set (GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set (GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set (GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
+# Shaderc configuration
+set (SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
+set (SHADERC_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
+
 set (SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 set (LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Library")
 
@@ -39,3 +43,4 @@ add_subdirectory ("${SOURCE_DIR}")
 add_subdirectory ("${LIBRARY_DIR}/fmt")
 add_subdirectory ("${LIBRARY_DIR}/glfw")
 add_subdirectory ("${LIBRARY_DIR}/glm")
+add_subdirectory ("${LIBRARY_DIR}/shaderc")
