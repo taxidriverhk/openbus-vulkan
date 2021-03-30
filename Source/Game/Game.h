@@ -13,6 +13,8 @@ public:
     Game();
     ~Game();
 
+    bool GetGameStarted() const { return gameStarted; }
+
     void SetShouldEndGame(const bool &shouldEndGame);
     void Start();
 
@@ -25,6 +27,7 @@ private:
     bool ShouldQuit();
     void StartGameLoop();
 
+    bool gameStarted;
     bool shouldEndGame;
     std::unique_ptr<Screen> screen;
     std::unique_ptr<Renderer> renderer;

@@ -4,6 +4,7 @@ Game::Game()
 {
     std::string screenTitle = Util::FormatWindowTitle("Game Screen");
 
+    gameStarted = false;
     shouldEndGame = false;
     screen = std::make_unique<Screen>(SCREEN_WIDTH, SCREEN_HEIGHT, screenTitle);
     renderer = std::make_unique<Renderer>();
@@ -37,7 +38,8 @@ bool Game::ShouldQuit()
 
 void Game::Start()
 {
-    SetShouldEndGame(false);
+    gameStarted = true;
+    shouldEndGame = false;
     StartGameLoop();
 }
 
@@ -47,6 +49,8 @@ void Game::StartGameLoop()
     while (!ShouldQuit())
     {
         screen->Refresh();
+        renderer->DrawScene();
     }
     Cleanup();
+    gameStarted = false;
 }

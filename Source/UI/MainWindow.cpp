@@ -1,22 +1,23 @@
 #include "MainWindow.h"
 
 MainWindow::MainWindow()
-      : QWidget(nullptr),
-        game(std::make_unique<Game>())
+      : game(std::make_unique<Game>())
 {
-    window = std::make_unique<QWidget>();
-    window->resize(WINDOW_WIDTH, WINDOW_HEIGHT);
-    window->setWindowTitle(Util::FormatWindowTitle("Main Window").c_str());
+    resize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    setWindowTitle(Util::FormatWindowTitle("Main Window").c_str());
 
-    startButton = std::make_unique<QPushButton>("Start", window.get());
+    mainLayout = std::make_unique<QWidget>();
+
+    startButton = std::make_unique<QPushButton>("Start", mainLayout.get());
     startButton->resize(100, 100);
     startButton->move(400, 200);
 
-    shutdownButton = std::make_unique<QPushButton>("Shutdown", window.get());
+    shutdownButton = std::make_unique<QPushButton>("Shutdown", mainLayout.get());
     shutdownButton->setDisabled(true);
     shutdownButton->resize(100, 100);
     shutdownButton->move(400, 350);
 
+    setCentralWidget(mainLayout.get());
     connect(startButton.get(), &QPushButton::clicked, this, &MainWindow::StartButtonClicked);
     connect(shutdownButton.get(), &QPushButton::clicked, this, &MainWindow::ShutdownButtonClicked);
 }
@@ -25,10 +26,15 @@ MainWindow::~MainWindow()
 {
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    game->SetShouldEndGame(true);
+    event->accept();
+}
+
 void MainWindow::Open()
 {
-    window->show();
-    startButton->show();
+    show();
 }
 
 void MainWindow::ShutdownButtonClicked()
