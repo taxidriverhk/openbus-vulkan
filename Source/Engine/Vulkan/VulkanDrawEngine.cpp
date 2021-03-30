@@ -11,19 +11,38 @@ VulkanDrawEngine::~VulkanDrawEngine()
 {
 }
 
-void VulkanDrawEngine::CreateContext()
+void VulkanDrawEngine::Destroy()
 {
-    context = std::make_unique<VulkanContext>(screen->GetWindow(), enableDebugging);
-    context->Create();
-    CreatePipeline();
-}
+    context->WaitIdle();
 
-void VulkanDrawEngine::DestroyContext()
-{
+    bufferManager->Destroy();
     pipeline->Destroy();
     vertexShader->Unload();
     fragmentShader->Unload();
     context->Destroy();
+}
+
+void VulkanDrawEngine::DrawFrame()
+{
+    bufferManager->BeginFrame();
+    bufferManager->Submit();
+    bufferManager->EndFrame();
+}
+
+void VulkanDrawEngine::Initialize()
+{
+    context = std::make_unique<VulkanContext>(screen->GetWindow(), enableDebugging);
+    context->Create();
+    CreatePipeline();
+
+    CreateBuffer();
+    bufferManager->BindPipeline(pipeline.get());
+}
+
+void VulkanDrawEngine::CreateBuffer()
+{
+    bufferManager = std::make_unique<VulkanBufferManager>(context.get());
+    bufferManager->Create();
 }
 
 void VulkanDrawEngine::CreatePipeline()

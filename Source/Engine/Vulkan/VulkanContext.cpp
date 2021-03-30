@@ -69,6 +69,11 @@ void VulkanContext::Destroy()
     vkDestroyInstance(instance, nullptr);
 }
 
+void VulkanContext::WaitIdle()
+{
+    vkDeviceWaitIdle(logicalDevice);
+}
+
 void VulkanContext::CreateImageViews()
 {
     for (const VkImage &swapChainImage : swapChainImages)
@@ -332,6 +337,8 @@ void VulkanContext::FindGraphicsAndPresentQueues()
     uint32_t graphicsQueueFamilyIndex, presentQueueFamilyIndex;
     TryFindQueueFamilyIndices(graphicsQueueFamilyIndex, presentQueueFamilyIndex);
 
+    graphicsQueueIndex = graphicsQueueFamilyIndex;
+    presentQueueIndex = presentQueueFamilyIndex;
     vkGetDeviceQueue(logicalDevice, graphicsQueueFamilyIndex, 0, &graphicsQueue);
     vkGetDeviceQueue(logicalDevice, presentQueueFamilyIndex, 0, &presentQueue);
 }

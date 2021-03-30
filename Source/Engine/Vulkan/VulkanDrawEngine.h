@@ -6,6 +6,7 @@
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
 
+#include "VulkanBufferManager.h"
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"
 #include "VulkanShader.h"
@@ -18,9 +19,11 @@ public:
     VulkanDrawEngine(Screen *screen, bool enableDebugging);
     ~VulkanDrawEngine();
 
-    void CreateContext() override;
-    void DestroyContext() override;
+    void Destroy() override;
+    void DrawFrame() override;
+    void Initialize() override;
 private:
+    void CreateBuffer();
     void CreatePipeline();
 
     bool enableDebugging;
@@ -28,7 +31,9 @@ private:
     Screen *screen;
     std::unique_ptr<VulkanContext> context;
 
+    std::unique_ptr<VulkanBufferManager> bufferManager;
     std::unique_ptr<VulkanPipeline> pipeline;
+
     std::unique_ptr<VulkanShader> vertexShader;
     std::unique_ptr<VulkanShader> fragmentShader;
 };

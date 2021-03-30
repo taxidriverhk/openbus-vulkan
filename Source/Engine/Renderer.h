@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "DrawEngine.h"
-#include "Screen.h";
+#include "Screen.h"
 
 class Renderer
 {

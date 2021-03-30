@@ -19,10 +19,19 @@ public:
 
     void Create();
     void Destroy();
+    void WaitIdle();
+
+    VkQueue GetGraphicsQueue() const { return graphicsQueue; }
+    uint32_t GetGraphicsQueueIndex() const { return graphicsQueueIndex; }
+    VkQueue GetPresentQueue() const { return presentQueue; }
+    uint32_t GetPresentQueueIndex() const { return presentQueueIndex; }
 
     VkDevice GetLogicalDevice() const { return logicalDevice; }
     VkRenderPass GetRenderPass() const { return renderPass; }
+    VkSwapchainKHR GetSwapChain() const { return swapChain; }
     VkExtent2D GetSwapChainExtent() const { return swapChainExtent; }
+    std::vector<VkImage> GetSwapChainImages() const { return swapChainImages; }
+    std::vector<VkImageView> GetSwapChainImageViews() const { return swapChainImageViews; }
 
 private:
     // Functions required for setting up the Vulkan pipeline
@@ -49,7 +58,9 @@ private:
     bool enableDebugging;
     VkDebugUtilsMessengerEXT debugMessenger;
 
+    uint32_t graphicsQueueIndex;
     VkQueue graphicsQueue;
+    uint32_t presentQueueIndex;
     VkQueue presentQueue;
 
     VkSwapchainKHR swapChain;

@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include "Vulkan/VulkanDrawEngine.h";
+#include "Vulkan/VulkanDrawEngine.h"
 
 Renderer::Renderer()
     : drawEngine()
@@ -12,12 +12,12 @@ Renderer::~Renderer()
 
 void Renderer::Cleanup()
 {
-    drawEngine->DestroyContext();
+    drawEngine->Destroy();
 }
 
 void Renderer::DrawScene()
 {
-
+    drawEngine->DrawFrame();
 }
 
 void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
@@ -27,5 +27,5 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 #else
     drawEngine = std::make_unique<VulkanDrawEngine>(screen.get(), false);
 #endif
-    drawEngine->CreateContext();
+    drawEngine->Initialize();
 }

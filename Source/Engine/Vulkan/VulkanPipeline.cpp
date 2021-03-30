@@ -1,5 +1,7 @@
 #include "VulkanPipeline.h"
 
+char * const VulkanPipeline::SHADER_MAIN_FUNCTION_NAME = "main";
+
 VulkanPipeline::VulkanPipeline(VulkanContext *context)
     : context(context),
       pipeline(),
