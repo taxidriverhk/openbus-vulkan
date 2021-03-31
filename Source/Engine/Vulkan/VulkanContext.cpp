@@ -7,7 +7,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData);
 
-VulkanContext::VulkanContext(SDL_Window *window, const bool &enableDebugging)
+VulkanContext::VulkanContext(Screen *screen, const bool &enableDebugging)
     : instance(),
     debugMessenger(),
     surface(),
@@ -20,7 +20,7 @@ VulkanContext::VulkanContext(SDL_Window *window, const bool &enableDebugging)
     swapChainExtent(),
     swapChainImages(std::vector<VkImage>()),
     swapChainImageViews(std::vector<VkImageView>()),
-    window(window),
+    screen(screen),
     enableDebugging(enableDebugging)
 {
 }
@@ -117,12 +117,12 @@ void VulkanContext::CreateInstance()
     vulkanCreateInfo.pApplicationInfo = &vulkanApplicationInfo;
 
     uint32_t sdl2ExtensionCount = 0;
-    if (!SDL_Vulkan_GetInstanceExtensions(window, &sdl2ExtensionCount, nullptr))
+    if (!SDL_Vulkan_GetInstanceExtensions(screen->GetWindow(), &sdl2ExtensionCount, nullptr))
     {
         throw std::runtime_error("Unable to query the number of Vulkan instance extensions");
     }
     std::vector<const char *> sdl2Extensions(sdl2ExtensionCount);
-    SDL_Vulkan_GetInstanceExtensions(window, &sdl2ExtensionCount, sdl2Extensions.data());
+    SDL_Vulkan_GetInstanceExtensions(screen->GetWindow(), &sdl2ExtensionCount, sdl2Extensions.data());
     std::vector<const char *> extensions(sdl2Extensions);
 
     if (enableDebugging)
@@ -257,7 +257,7 @@ void VulkanContext::CreateSwapChain()
     else
     {
         int screenWidthInPixels, screenHeightInPixels;
-        SDL_Vulkan_GetDrawableSize(window, &screenWidthInPixels, &screenHeightInPixels);
+        SDL_Vulkan_GetDrawableSize(screen->GetWindow(), &screenWidthInPixels, &screenHeightInPixels);
         
         swapChainExtent = VkExtent2D{
             static_cast<uint32_t>(screenWidthInPixels),
@@ -318,7 +318,7 @@ void VulkanContext::CreateSwapChain()
 
 void VulkanContext::CreateWindowSurface()
 {
-    if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
+    if (!SDL_Vulkan_CreateSurface(screen->GetWindow(), instance, &surface))
     {
         throw std::runtime_error("Failed to create SDL2 surface");
     }

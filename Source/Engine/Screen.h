@@ -13,7 +13,11 @@ public:
     Screen(const int &width, const int &height, const std::string &title);
     ~Screen();
 
-    SDL_Window *GetWindow() const;
+    SDL_Window * GetWindow() const { return screen; }
+    int GetWidth() const { return width; }
+    int GetHeight() const { return height; }
+    bool IsResized() const { return resized; }
+    void ResetResizeState() { resized = false; }
 
     void Close();
     void Create();
@@ -24,6 +28,8 @@ private:
     int width;
     int height;
     std::string title;
+
+    bool resized;
 
     SDL_Event lastEvent;
     SDL_Window *screen;

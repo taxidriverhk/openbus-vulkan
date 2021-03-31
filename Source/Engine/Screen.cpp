@@ -2,6 +2,7 @@
 
 Screen::Screen(const int &width, const int &height, const std::string &title)
       : screen(nullptr),
+        resized(false),
         lastEvent(),
         width(width),
         height(height),
@@ -11,11 +12,6 @@ Screen::Screen(const int &width, const int &height, const std::string &title)
 
 Screen::~Screen()
 {
-}
-
-SDL_Window *Screen::GetWindow() const
-{
-    return screen;
 }
 
 void Screen::Close()
@@ -33,12 +29,36 @@ void Screen::Create()
         SDL_WINDOWPOS_CENTERED,
         width,
         height,
-        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN);
+        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS);
 }
 
 void Screen::Refresh()
 {
     SDL_PollEvent(&lastEvent);
+    switch (lastEvent.type)
+    {
+    case SDL_WINDOWEVENT:
+        SDL_WindowEvent windowEvent = lastEvent.window;
+        if (windowEvent.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+        {
+            int newWidth, newHeight;
+            SDL_GetWindowSize(screen, &newWidth, &newHeight);
+
+            width = newWidth;
+            height = newHeight;
+            resized = true;
+        }
+        else if (windowEvent.event == SDL_WINDOWEVENT_MINIMIZED)
+        {
+            width = 0;
+            height = 0;
+            resized = true;
+        }
+        break;
+    case SDL_KEYDOWN:
+        // TODO: use a new controller class to queue the inputs
+        break;
+    }
 }
 
 bool Screen::ShouldClose()

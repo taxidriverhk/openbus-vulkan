@@ -20,13 +20,19 @@ void VulkanBufferManager::BeginFrame()
     VkSwapchainKHR swapChain = context->GetSwapChain();
 
     vkWaitForFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame], VK_TRUE, UINT64_MAX);
-    vkAcquireNextImageKHR(
+    
+    VkResult acquireImageResult = vkAcquireNextImageKHR(
         logicalDevice,
         swapChain,
         UINT64_MAX,
         imageAvailableSemaphores[currentInFlightFrame],
         VK_NULL_HANDLE,
         &currentImageIndex);
+    if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        RecreateSwapChainAndBuffers();
+        return;
+    }
 
     // The acquire image is still in use
     if (imagesInFlight[currentImageIndex] != VK_NULL_HANDLE)
@@ -96,7 +102,7 @@ void VulkanBufferManager::Create()
     }
 
     BeginRecordCommandBuffers();
-    InitSyncObjects();
+    CreateSynchronizationObjects();
 }
 
 void VulkanBufferManager::Destroy()
@@ -134,7 +140,14 @@ void VulkanBufferManager::EndFrame()
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &currentImageIndex;
 
-    vkQueuePresentKHR(presentQueue, &presentInfo);
+    VkResult presentImageResult = vkQueuePresentKHR(presentQueue, &presentInfo);
+    if (presentImageResult == VK_ERROR_OUT_OF_DATE_KHR
+        || presentImageResult == VK_SUBOPTIMAL_KHR
+        || context->GetScreen()->IsResized())
+    {
+        context->GetScreen()->ResetResizeState();
+        RecreateSwapChainAndBuffers();
+    }
 
     currentInFlightFrame = (currentInFlightFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -194,7 +207,7 @@ void VulkanBufferManager::BeginRecordCommandBuffers()
     }
 }
 
-void VulkanBufferManager::InitSyncObjects()
+void VulkanBufferManager::CreateSynchronizationObjects()
 {
     std::vector<VkImage> swapChainImages = context->GetSwapChainImages();
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -219,4 +232,9 @@ void VulkanBufferManager::InitSyncObjects()
             throw std::runtime_error("Failed to create synchronization objects for a frame");
         }
     }
+}
+
+void VulkanBufferManager::RecreateSwapChainAndBuffers()
+{
+    // TODO: implement me, currently minimizing the window will cause issue
 }

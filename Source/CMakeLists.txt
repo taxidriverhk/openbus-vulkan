@@ -36,5 +36,5 @@ add_custom_command (TARGET OpenBus POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Gui> $<TARGET_FILE_DIR:OpenBus>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::Widgets> $<TARGET_FILE_DIR:OpenBus>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::QWindowsIntegrationPlugin> $<TARGET_FILE_DIR:OpenBus>/plugins/platforms/qwindowsd.dll
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SDL2_LIBRARIES}/SDL2.dll $<TARGET_FILE_DIR:OpenBus>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBRARY_DIR}/SDL2/${VC_LIB_PATH_SUFFIX}/SDL2.dll $<TARGET_FILE_DIR:OpenBus>
 )

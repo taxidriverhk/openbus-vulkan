@@ -2,8 +2,6 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "SDL.h"
-#include "SDL_vulkan.h"
 
 #include <algorithm>
 #include <iostream>
@@ -11,19 +9,21 @@
 #include <vector>
 
 #include "Common/Constants.h"
+#include "Engine/Screen.h"
 
 #define VULKAN_VALIDATION_LAYER "VK_LAYER_KHRONOS_validation"
 
 class VulkanContext
 {
 public:
-    VulkanContext(SDL_Window *window, const bool &enableDebugging);
+    VulkanContext(Screen *screen, const bool &enableDebugging);
     ~VulkanContext();
 
     void Create();
     void Destroy();
     void WaitIdle();
 
+    Screen * GetScreen() const { return screen; }
     VkQueue GetGraphicsQueue() const { return graphicsQueue; }
     uint32_t GetGraphicsQueueIndex() const { return graphicsQueueIndex; }
     VkQueue GetPresentQueue() const { return presentQueue; }
@@ -74,5 +74,5 @@ private:
 
     VkRenderPass renderPass;
 
-    SDL_Window *window;
+    Screen *screen;
 };

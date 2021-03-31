@@ -29,7 +29,8 @@ private:
     static uint32_t MAX_FRAMES_IN_FLIGHT;
 
     void BeginRecordCommandBuffers();
-    void InitSyncObjects();
+    void CreateSynchronizationObjects();
+    void RecreateSwapChainAndBuffers();
 
     VulkanContext *context;
     std::vector<VkFramebuffer> frameBuffers;

@@ -31,7 +31,7 @@ void VulkanDrawEngine::DrawFrame()
 
 void VulkanDrawEngine::Initialize()
 {
-    context = std::make_unique<VulkanContext>(screen->GetWindow(), enableDebugging);
+    context = std::make_unique<VulkanContext>(screen, enableDebugging);
     context->Create();
     CreatePipeline();
 
