@@ -1,6 +1,7 @@
-﻿#include "UI/MainWindow.h"
+﻿#include <iostream>
 
-#include <iostream>
+#include "Common/Logger.h"
+#include "UI/MainWindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -8,12 +9,14 @@ int main(int argc, char *argv[])
     MainWindow mainWindow;
     mainWindow.Open();
 
-    try {
+    Logger::Log(LogLevel::Info, "Game started");
+    try
+    {
         return application.exec();
     }
     catch (const std::exception& ex)
     {
-        std::cerr << ex.what() << std::endl;
+        Logger::Log(LogLevel::Error, ex.what());
         return EXIT_FAILURE;
     }
 }

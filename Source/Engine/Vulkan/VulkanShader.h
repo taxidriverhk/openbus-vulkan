@@ -13,8 +13,8 @@
 
 enum class VulkanShaderType
 {
-    VERTEX,
-    FRAGMENT
+    Vertex,
+    Fragment
 };
 
 class VulkanShader

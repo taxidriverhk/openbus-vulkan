@@ -2,8 +2,8 @@
 
 std::map<VulkanShaderType, shaderc_shader_kind> VulkanShader::shaderTypeToKindMap =
 {
-    { VulkanShaderType::VERTEX, shaderc_shader_kind::shaderc_glsl_vertex_shader },
-    { VulkanShaderType::FRAGMENT, shaderc_shader_kind::shaderc_glsl_fragment_shader }
+    { VulkanShaderType::Vertex, shaderc_shader_kind::shaderc_glsl_vertex_shader },
+    { VulkanShaderType::Fragment, shaderc_shader_kind::shaderc_glsl_fragment_shader }
 };
 
 VulkanShader::VulkanShader(VulkanContext *context, VulkanShaderType type)

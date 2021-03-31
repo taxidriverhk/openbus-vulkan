@@ -48,11 +48,11 @@ void VulkanDrawEngine::CreateBuffer()
 void VulkanDrawEngine::CreatePipeline()
 {
     // TODO: test code to verify that the drawing works
-    vertexShader = std::make_unique<VulkanShader>(context.get(), VulkanShaderType::VERTEX);
+    vertexShader = std::make_unique<VulkanShader>(context.get(), VulkanShaderType::Vertex);
     vertexShader->Compile("test_vertex_shader.glsl");
     vertexShader->Load();
 
-    fragmentShader = std::make_unique<VulkanShader>(context.get(), VulkanShaderType::FRAGMENT);
+    fragmentShader = std::make_unique<VulkanShader>(context.get(), VulkanShaderType::Fragment);
     fragmentShader->Compile("test_fragment_shader.glsl");
     fragmentShader->Load();
 

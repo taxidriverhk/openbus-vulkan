@@ -19,7 +19,7 @@ public:
     void Destroy();
 
 private:
-    static char *const SHADER_MAIN_FUNCTION_NAME;
+    static char * const SHADER_MAIN_FUNCTION_NAME;
 
     VulkanContext *context;
     VkPipeline pipeline;

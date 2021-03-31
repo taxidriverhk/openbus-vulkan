@@ -13,11 +13,15 @@ public:
     VulkanBufferManager(VulkanContext *context);
     ~VulkanBufferManager();
 
-    // TODO: define interface
-    void BeginFrame();
+    // Initialization
     void BindPipeline(VulkanPipeline *pipeline);
     void Create();
     void Destroy();
+
+    // Vertex/Texture Buffering
+
+    // Buffer Drawing
+    void BeginFrame();
     void EndFrame();
     void Submit();
 
