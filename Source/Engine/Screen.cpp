@@ -16,6 +16,7 @@ Screen::~Screen()
 
 void Screen::Close()
 {
+    lastEvent.type = SDL_FIRSTEVENT;
     SDL_DestroyWindow(screen);
     SDL_Quit();
 }
@@ -29,7 +30,7 @@ void Screen::Create()
         SDL_WINDOWPOS_CENTERED,
         width,
         height,
-        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS);
+        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 }
 
 void Screen::Refresh()
@@ -39,19 +40,15 @@ void Screen::Refresh()
     {
     case SDL_WINDOWEVENT:
         SDL_WindowEvent windowEvent = lastEvent.window;
-        if (windowEvent.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+        if (windowEvent.event == SDL_WINDOWEVENT_SIZE_CHANGED
+            || windowEvent.event == SDL_WINDOWEVENT_MINIMIZED
+            || windowEvent.event == SDL_WINDOWEVENT_RESIZED)
         {
             int newWidth, newHeight;
             SDL_GetWindowSize(screen, &newWidth, &newHeight);
 
             width = newWidth;
             height = newHeight;
-            resized = true;
-        }
-        else if (windowEvent.event == SDL_WINDOWEVENT_MINIMIZED)
-        {
-            width = 0;
-            height = 0;
             resized = true;
         }
         break;

@@ -2,8 +2,10 @@
 
 char * const VulkanPipeline::SHADER_MAIN_FUNCTION_NAME = "main";
 
-VulkanPipeline::VulkanPipeline(VulkanContext *context)
+VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanShader *vertexShader, VulkanShader *fragmentShader)
     : context(context),
+      fragmentShader(fragmentShader),
+      vertexShader(vertexShader),
       pipeline(),
       pipelineLayout()
 {
@@ -13,18 +15,18 @@ VulkanPipeline::~VulkanPipeline()
 {
 }
 
-void VulkanPipeline::Create(VulkanShader &vertexShader, VulkanShader &fragmentShader)
+void VulkanPipeline::Create()
 {
     VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
     vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertexShaderStageInfo.module = vertexShader.GetShaderModule();
+    vertexShaderStageInfo.module = vertexShader->GetShaderModule();
     vertexShaderStageInfo.pName = SHADER_MAIN_FUNCTION_NAME;
 
     VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
     fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragmentShaderStageInfo.module = fragmentShader.GetShaderModule();
+    fragmentShaderStageInfo.module = fragmentShader->GetShaderModule();
     fragmentShaderStageInfo.pName = SHADER_MAIN_FUNCTION_NAME;
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -121,4 +123,10 @@ void VulkanPipeline::Destroy()
 {
     vkDestroyPipeline(context->GetLogicalDevice(), pipeline, nullptr);
     vkDestroyPipelineLayout(context->GetLogicalDevice(), pipelineLayout, nullptr);
+}
+
+void VulkanPipeline::Recreate()
+{
+    Destroy();
+    Create();
 }

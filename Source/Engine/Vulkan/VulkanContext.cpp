@@ -51,12 +51,9 @@ void VulkanContext::Destroy()
 {
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
 
-    for (VkImageView swapChainImageView : swapChainImageViews)
-    {
-        vkDestroyImageView(logicalDevice, swapChainImageView, nullptr);
-    }
-
-    vkDestroySwapchainKHR(logicalDevice, swapChain, nullptr);
+    DestroyImageViews();
+    DestroySwapChain();
+    
     vkDestroyDevice(logicalDevice, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
 
@@ -68,6 +65,14 @@ void VulkanContext::Destroy()
     }
 
     vkDestroyInstance(instance, nullptr);
+}
+
+void VulkanContext::RecreateSwapChain()
+{
+    DestroyImageViews();
+    DestroySwapChain();
+    CreateSwapChain();
+    CreateImageViews();
 }
 
 void VulkanContext::WaitIdle()
@@ -322,6 +327,20 @@ void VulkanContext::CreateWindowSurface()
     {
         throw std::runtime_error("Failed to create SDL2 surface");
     }
+}
+
+void VulkanContext::DestroyImageViews()
+{
+    for (VkImageView swapChainImageView : swapChainImageViews)
+    {
+        vkDestroyImageView(logicalDevice, swapChainImageView, nullptr);
+    }
+    swapChainImageViews.clear();
+}
+
+void VulkanContext::DestroySwapChain()
+{
+    vkDestroySwapchainKHR(logicalDevice, swapChain, nullptr);
 }
 
 void VulkanContext::EnableDebugging()

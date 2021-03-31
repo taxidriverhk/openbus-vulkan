@@ -24,24 +24,24 @@ void VulkanDrawEngine::Destroy()
 
 void VulkanDrawEngine::DrawFrame()
 {
-    bufferManager->BeginFrame();
-    bufferManager->Submit();
-    bufferManager->EndFrame();
+    uint32_t imageIndex;
+    bufferManager->BeginFrame(imageIndex);
+    bufferManager->Submit(imageIndex);
+    bufferManager->EndFrame(imageIndex);
 }
 
 void VulkanDrawEngine::Initialize()
 {
     context = std::make_unique<VulkanContext>(screen, enableDebugging);
     context->Create();
-    CreatePipeline();
 
+    CreatePipeline();
     CreateBuffer();
-    bufferManager->BindPipeline(pipeline.get());
 }
 
 void VulkanDrawEngine::CreateBuffer()
 {
-    bufferManager = std::make_unique<VulkanBufferManager>(context.get());
+    bufferManager = std::make_unique<VulkanBufferManager>(context.get(), pipeline.get());
     bufferManager->Create();
 }
 
@@ -56,6 +56,9 @@ void VulkanDrawEngine::CreatePipeline()
     fragmentShader->Compile("test_fragment_shader.glsl");
     fragmentShader->Load();
 
-    pipeline = std::make_unique<VulkanPipeline>(context.get());
-    pipeline->Create(*vertexShader.get(), *fragmentShader.get());
+    pipeline = std::make_unique<VulkanPipeline>(
+        context.get(),
+        vertexShader.get(),
+        fragmentShader.get());
+    pipeline->Create();
 }

@@ -10,18 +10,23 @@
 class VulkanPipeline
 {
 public:
-    VulkanPipeline(VulkanContext *context);
+    VulkanPipeline(VulkanContext *context, VulkanShader *vertexShader, VulkanShader *fragmentShader);
     ~VulkanPipeline();
 
     VkPipeline GetPipeline() const { return pipeline; }
 
-    void Create(VulkanShader &vertexShader, VulkanShader &fragmentShader);
+    void Create();
     void Destroy();
+    void Recreate();
 
 private:
     static char * const SHADER_MAIN_FUNCTION_NAME;
 
+    VulkanShader *vertexShader;
+    VulkanShader *fragmentShader;
+
     VulkanContext *context;
+
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
 };

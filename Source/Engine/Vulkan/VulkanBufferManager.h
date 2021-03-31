@@ -10,29 +10,33 @@
 class VulkanBufferManager
 {
 public:
-    VulkanBufferManager(VulkanContext *context);
+    VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline);
     ~VulkanBufferManager();
 
     // Initialization
-    void BindPipeline(VulkanPipeline *pipeline);
     void Create();
     void Destroy();
 
     // Vertex/Texture Buffering
 
     // Buffer Drawing
-    void BeginFrame();
-    void EndFrame();
-    void Submit();
+    void BeginFrame(uint32_t &imageIndex);
+    void EndFrame(uint32_t &imageIndex);
+    void Submit(uint32_t &imageIndex);
 
 private:
     static uint32_t MAX_FRAMES_IN_FLIGHT;
 
-    void BeginRecordCommandBuffers();
+    void CreateCommandBuffers();
+    void CreateFrameBuffers();
     void CreateSynchronizationObjects();
+    void DestroyCommandBuffers();
+    void DestroyFrameBuffers();
+    void RecordCommandBuffer(uint32_t index);
     void RecreateSwapChainAndBuffers();
 
     VulkanContext *context;
+    VulkanPipeline *pipeline;
     std::vector<VkFramebuffer> frameBuffers;
 
     VkCommandPool commandPool;
@@ -43,5 +47,4 @@ private:
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
     uint32_t currentInFlightFrame;
-    uint32_t currentImageIndex;
 };

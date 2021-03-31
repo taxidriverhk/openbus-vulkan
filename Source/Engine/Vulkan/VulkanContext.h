@@ -21,6 +21,7 @@ public:
 
     void Create();
     void Destroy();
+    void RecreateSwapChain();
     void WaitIdle();
 
     Screen * GetScreen() const { return screen; }
@@ -44,6 +45,10 @@ private:
     void CreateRenderPass();
     void CreateSwapChain();
     void CreateWindowSurface();
+
+    void DestroyImageViews();
+    void DestroySwapChain();
+
     void EnableDebugging();
     void FindGraphicsAndPresentQueues();
     void FindPhysicalDevice();
