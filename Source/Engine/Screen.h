@@ -1,6 +1,8 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
+#include "SDL.h"
+#include "SDL_vulkan.h"
 #include <GLFW/glfw3.h>
 #include <string>
 
@@ -11,7 +13,7 @@ public:
     Screen(const int &width, const int &height, const std::string &title);
     ~Screen();
 
-    GLFWwindow *GetWindow() const;
+    SDL_Window *GetWindow() const;
 
     void Close();
     void Create();
@@ -22,5 +24,7 @@ private:
     int width;
     int height;
     std::string title;
-    GLFWwindow *screen;
+
+    SDL_Event lastEvent;
+    SDL_Window *screen;
 };

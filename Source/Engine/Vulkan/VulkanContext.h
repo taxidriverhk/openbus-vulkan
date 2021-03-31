@@ -2,6 +2,9 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include "SDL.h"
+#include "SDL_vulkan.h"
+
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -14,7 +17,7 @@
 class VulkanContext
 {
 public:
-    VulkanContext(GLFWwindow *window, const bool &enableDebugging);
+    VulkanContext(SDL_Window *window, const bool &enableDebugging);
     ~VulkanContext();
 
     void Create();
@@ -71,5 +74,5 @@ private:
 
     VkRenderPass renderPass;
 
-    GLFWwindow *window;
+    SDL_Window *window;
 };

@@ -2,6 +2,7 @@
 
 Screen::Screen(const int &width, const int &height, const std::string &title)
       : screen(nullptr),
+        lastEvent(),
         width(width),
         height(height),
         title(title)
@@ -12,32 +13,35 @@ Screen::~Screen()
 {
 }
 
-GLFWwindow *Screen::GetWindow() const
+SDL_Window *Screen::GetWindow() const
 {
     return screen;
 }
 
 void Screen::Close()
 {
-    glfwDestroyWindow(screen);
-    glfwTerminate();
+    SDL_DestroyWindow(screen);
+    SDL_Quit();
 }
 
 void Screen::Create()
 {
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    screen = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    screen = SDL_CreateWindow(
+        title.c_str(),
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        width,
+        height,
+        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN);
 }
 
 void Screen::Refresh()
 {
-    glfwPollEvents();
+    SDL_PollEvent(&lastEvent);
 }
 
 bool Screen::ShouldClose()
 {
-    return glfwWindowShouldClose(screen);
+    return lastEvent.type == SDL_QUIT;
 }

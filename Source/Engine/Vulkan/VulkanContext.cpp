@@ -1,3 +1,4 @@
+#include "Common/Logger.h"
 #include "VulkanContext.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -6,7 +7,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData);
 
-VulkanContext::VulkanContext(GLFWwindow *window, const bool &enableDebugging)
+VulkanContext::VulkanContext(SDL_Window *window, const bool &enableDebugging)
     : instance(),
     debugMessenger(),
     surface(),
@@ -115,9 +116,14 @@ void VulkanContext::CreateInstance()
     vulkanCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vulkanCreateInfo.pApplicationInfo = &vulkanApplicationInfo;
 
-    uint32_t glfwExtensionCount = 0;
-    const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    uint32_t sdl2ExtensionCount = 0;
+    if (!SDL_Vulkan_GetInstanceExtensions(window, &sdl2ExtensionCount, nullptr))
+    {
+        throw std::runtime_error("Unable to query the number of Vulkan instance extensions");
+    }
+    std::vector<const char *> sdl2Extensions(sdl2ExtensionCount);
+    SDL_Vulkan_GetInstanceExtensions(window, &sdl2ExtensionCount, sdl2Extensions.data());
+    std::vector<const char *> extensions(sdl2Extensions);
 
     if (enableDebugging)
     {
@@ -251,7 +257,7 @@ void VulkanContext::CreateSwapChain()
     else
     {
         int screenWidthInPixels, screenHeightInPixels;
-        glfwGetFramebufferSize(window, &screenWidthInPixels, &screenHeightInPixels);
+        SDL_Vulkan_GetDrawableSize(window, &screenWidthInPixels, &screenHeightInPixels);
         
         swapChainExtent = VkExtent2D{
             static_cast<uint32_t>(screenWidthInPixels),
@@ -312,7 +318,10 @@ void VulkanContext::CreateSwapChain()
 
 void VulkanContext::CreateWindowSurface()
 {
-    glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
+    {
+        throw std::runtime_error("Failed to create SDL2 surface");
+    }
 }
 
 void VulkanContext::EnableDebugging()
@@ -471,7 +480,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData)
 {
-    // TODO: use common logging library once it is implemented
-    std::cerr << "Vulkan validation: " << pCallbackData->pMessage << std::endl;
+    std::string message = "Vulkan validation: " + std::string(pCallbackData->pMessage);
+    Logger::Log(LogLevel::Debug, message);
     return VK_FALSE;
 }
