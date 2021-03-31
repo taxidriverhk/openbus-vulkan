@@ -15,6 +15,7 @@ VulkanContext::VulkanContext(Screen *screen, const bool &enableDebugging)
     physicalDevice(),
     graphicsQueue(),
     presentQueue(),
+    oldSwapChain(),
     swapChain(),
     swapChainImageFormat(VK_FORMAT_UNDEFINED),
     swapChainExtent(),
@@ -69,9 +70,10 @@ void VulkanContext::Destroy()
 
 void VulkanContext::RecreateSwapChain()
 {
+    oldSwapChain = swapChain;
     DestroyImageViews();
-    DestroySwapChain();
     CreateSwapChain();
+    DestroyOldSwapChain();
     CreateImageViews();
 }
 
@@ -308,7 +310,7 @@ void VulkanContext::CreateSwapChain()
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = chosenPresentMode;
     createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.oldSwapchain = oldSwapChain;
 
     if (vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
     {
@@ -336,6 +338,15 @@ void VulkanContext::DestroyImageViews()
         vkDestroyImageView(logicalDevice, swapChainImageView, nullptr);
     }
     swapChainImageViews.clear();
+}
+
+void VulkanContext::DestroyOldSwapChain()
+{
+    if (oldSwapChain != VK_NULL_HANDLE)
+    {
+        vkDestroySwapchainKHR(logicalDevice, oldSwapChain, nullptr);
+        oldSwapChain = VK_NULL_HANDLE;
+    }
 }
 
 void VulkanContext::DestroySwapChain()

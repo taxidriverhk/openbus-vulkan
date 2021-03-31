@@ -47,6 +47,7 @@ private:
     void CreateWindowSurface();
 
     void DestroyImageViews();
+    void DestroyOldSwapChain();
     void DestroySwapChain();
 
     void EnableDebugging();
@@ -72,6 +73,7 @@ private:
     VkQueue presentQueue;
 
     VkSwapchainKHR swapChain;
+    VkSwapchainKHR oldSwapChain;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
     std::vector<VkImage> swapChainImages;
