@@ -19,6 +19,5 @@ public:
     void Unload() override;
 
 private:
-    bool loaded;
     std::vector<Vertex> vertices;
 };

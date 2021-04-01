@@ -1,26 +1,26 @@
-#include "VulkanVertexBuffer.h"
+#include "VulkanIndexBuffer.h"
 
-VulkanVertexBuffer::VulkanVertexBuffer(
+VulkanIndexBuffer::VulkanIndexBuffer(
     VulkanContext *context,
     VkCommandPool commandPool,
-    std::vector<Vertex> vertices)
+    std::vector<uint32_t> indices)
     : VulkanBuffer(context, commandPool),
-      vertices(vertices)
+      indices(indices)
 {
 }
 
-VulkanVertexBuffer::~VulkanVertexBuffer()
+VulkanIndexBuffer::~VulkanIndexBuffer()
 {
 }
 
-void VulkanVertexBuffer::Load()
+void VulkanIndexBuffer::Load()
 {
     if (loaded)
     {
         return;
     }
 
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingDeviceMemory;
@@ -33,11 +33,11 @@ void VulkanVertexBuffer::Load()
     CopyToStagingBuffer(
         stagingDeviceMemory,
         bufferSize,
-        vertices.data());
+        indices.data());
 
     CreateBuffer(
         bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         buffer,
         deviceMemory);
@@ -47,7 +47,7 @@ void VulkanVertexBuffer::Load()
     loaded = true;
 }
 
-void VulkanVertexBuffer::Unload()
+void VulkanIndexBuffer::Unload()
 {
     if (!loaded)
     {

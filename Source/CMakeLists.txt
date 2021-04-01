@@ -11,7 +11,7 @@ find_package (SDL2 REQUIRED)
 
 file (GLOB_RECURSE HEADER_FILES *.h)
 file (GLOB_RECURSE SOURCE_FILES *.cpp)
-add_executable (OpenBus ${HEADER_FILES} ${SOURCE_FILES})
+add_executable (OpenBus WIN32 ${HEADER_FILES} ${SOURCE_FILES})
 
 target_compile_definitions(OpenBus PUBLIC "APP_VERSION=\"v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${GIT_SHA1}\"")
 

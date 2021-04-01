@@ -14,6 +14,7 @@ public:
     virtual void Unload() = 0;
 
 protected:
+    bool loaded;
     VulkanContext *context;
     VkCommandPool commandPool;
     VkBuffer buffer;

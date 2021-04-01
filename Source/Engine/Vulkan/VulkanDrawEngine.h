@@ -25,6 +25,7 @@ public:
     void DrawFrame() override;
     void Initialize() override;
     void LoadIntoBuffer(std::vector<Mesh> &meshes) override;
+
 private:
     void ClearBuffers();
     void CreateBuffer();

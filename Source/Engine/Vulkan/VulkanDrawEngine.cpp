@@ -29,9 +29,7 @@ void VulkanDrawEngine::Destroy()
 void VulkanDrawEngine::DrawFrame()
 {
     uint32_t imageIndex;
-    bufferManager->BeginFrame(imageIndex);
-    bufferManager->Submit(imageIndex);
-    bufferManager->EndFrame(imageIndex);
+    bufferManager->Draw(imageIndex);
 }
 
 void VulkanDrawEngine::Initialize()
@@ -78,10 +76,10 @@ void VulkanDrawEngine::CreatePipeline()
 
 void VulkanDrawEngine::LoadIntoBuffer(std::vector<Mesh> &meshes)
 {
-    // TODO: use something else as the buffer ID
     for (Mesh mesh : meshes)
     {
-        bufferManager->LoadVertices(mesh.id, mesh.vertices);
+        // TODO: use something else as the buffer ID
+        bufferManager->LoadVertices(mesh.id, mesh.vertices, mesh.indices);
         vertexBufferIds.insert(mesh.id);
     }
 }

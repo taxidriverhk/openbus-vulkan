@@ -47,7 +47,8 @@ void Game::StartGameLoop()
 {
     InitializeComponents();
 
-    // TODO: this code should be moved to somewhere else
+    // TODO: this code should be moved to a separate thread
+    // (ideally a separate class like MapBlockManager)
     renderer->LoadScene();
 
     while (!ShouldQuit())

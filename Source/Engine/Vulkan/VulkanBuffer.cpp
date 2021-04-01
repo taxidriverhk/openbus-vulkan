@@ -4,7 +4,8 @@ VulkanBuffer::VulkanBuffer(VulkanContext *context, VkCommandPool commandPool)
     : context(context),
       commandPool(commandPool),
       buffer(),
-      deviceMemory()
+      deviceMemory(),
+      loaded(false)
 {
 }
 

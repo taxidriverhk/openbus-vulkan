@@ -1,4 +1,5 @@
 #include "VulkanBufferManager.h"
+#include "VulkanIndexBuffer.h"
 #include "VulkanVertexBuffer.h"
 
 VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline)
@@ -6,40 +7,13 @@ VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline 
       pipeline(pipeline),
       commandPool(),
       currentInFlightFrame(0),
+      indexBuffers(),
       vertexBuffers()
 {
 }
 
 VulkanBufferManager::~VulkanBufferManager()
 {
-}
-
-void VulkanBufferManager::BeginFrame(uint32_t &imageIndex)
-{
-    VkDevice logicalDevice = context->GetLogicalDevice();
-    VkSwapchainKHR swapChain = context->GetSwapChain();
-
-    vkWaitForFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame], VK_TRUE, UINT64_MAX);
-    
-    VkResult acquireImageResult = vkAcquireNextImageKHR(
-        logicalDevice,
-        swapChain,
-        UINT64_MAX,
-        imageAvailableSemaphores[currentInFlightFrame],
-        VK_NULL_HANDLE,
-        &imageIndex);
-    if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        RecreateSwapChainAndBuffers();
-        return;
-    }
-
-    // The acquire image is still in use
-    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
-    {
-        vkWaitForFences(logicalDevice, 1, &imagesInFlight[currentInFlightFrame], VK_TRUE, UINT64_MAX);
-    }
-    imagesInFlight[imageIndex] = inFlightFences[currentInFlightFrame];
 }
 
 void VulkanBufferManager::Create()
@@ -75,6 +49,41 @@ void VulkanBufferManager::Destroy()
     DestroyFrameBuffers();
 }
 
+void VulkanBufferManager::Draw(uint32_t &imageIndex)
+{
+    BeginFrame(imageIndex);
+    Submit(imageIndex);
+    EndFrame(imageIndex);
+}
+
+void VulkanBufferManager::BeginFrame(uint32_t &imageIndex)
+{
+    VkDevice logicalDevice = context->GetLogicalDevice();
+    VkSwapchainKHR swapChain = context->GetSwapChain();
+
+    vkWaitForFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame], VK_TRUE, UINT64_MAX);
+
+    VkResult acquireImageResult = vkAcquireNextImageKHR(
+        logicalDevice,
+        swapChain,
+        UINT64_MAX,
+        imageAvailableSemaphores[currentInFlightFrame],
+        VK_NULL_HANDLE,
+        &imageIndex);
+    if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        RecreateSwapChainAndBuffers();
+        return;
+    }
+
+    // The acquire image is still in use
+    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
+    {
+        vkWaitForFences(logicalDevice, 1, &imagesInFlight[currentInFlightFrame], VK_TRUE, UINT64_MAX);
+    }
+    imagesInFlight[imageIndex] = inFlightFences[currentInFlightFrame];
+}
+
 void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
 {
     VkSwapchainKHR swapChain = context->GetSwapChain();
@@ -103,18 +112,19 @@ void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
     currentInFlightFrame = (currentInFlightFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanBufferManager::LoadVertices(uint32_t bufferId, std::vector<Vertex> vertices)
+void VulkanBufferManager::LoadVertices(uint32_t bufferId, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
 {
     std::unique_ptr<VulkanBuffer> vertexBuffer = std::make_unique<VulkanVertexBuffer>(
         context, commandPool, vertices);
     vertexBuffer->Load();
     vertexBuffers.insert(std::make_pair(bufferId, std::move(vertexBuffer)));
 
-    // TODO: move this code to somewhere else
-    for (uint32_t i = 0; i < commandBuffers.size(); i++)
-    {
-        RecordCommandBuffer(i);
-    }
+    std::unique_ptr<VulkanBuffer> indexBuffer = std::make_unique<VulkanIndexBuffer>(
+        context, commandPool, indices);
+    indexBuffer->Load();
+    indexBuffers.insert(std::make_pair(bufferId, std::move(indexBuffer)));
+
+    RecordCommandBuffers();
 }
 
 void VulkanBufferManager::Submit(uint32_t &imageIndex)
@@ -149,6 +159,10 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
     std::unique_ptr<VulkanBuffer> &vertexBuffer = vertexBuffers[bufferId];
     vertexBuffer->Unload();
     vertexBuffers.erase(bufferId);
+
+    std::unique_ptr<VulkanBuffer> &indexBuffer = indexBuffers[bufferId];
+    indexBuffer->Unload();
+    indexBuffers.erase(bufferId);
 }
 
 void VulkanBufferManager::CreateCommandBuffers()
@@ -239,61 +253,68 @@ void VulkanBufferManager::DestroyFrameBuffers()
     frameBuffers.clear();
 }
 
-void VulkanBufferManager::RecordCommandBuffer(uint32_t index)
+void VulkanBufferManager::RecordCommandBuffers()
 {
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-    if (vkBeginCommandBuffer(commandBuffers[index], &beginInfo) != VK_SUCCESS)
+    for (uint32_t i = 0; i < commandBuffers.size(); i++)
     {
-        throw std::runtime_error("Failed to begin command buffer");
-    }
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    VkRenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = context->GetRenderPass();
-    renderPassBeginInfo.framebuffer = frameBuffers[index];
-    renderPassBeginInfo.renderArea.offset = { 0, 0 };
-    renderPassBeginInfo.renderArea.extent = context->GetSwapChainExtent();
+        if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to begin command buffer");
+        }
 
-    // TODO: add depth stencil value as well
-    VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearColor;
+        VkRenderPassBeginInfo renderPassBeginInfo{};
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.renderPass = context->GetRenderPass();
+        renderPassBeginInfo.framebuffer = frameBuffers[i];
+        renderPassBeginInfo.renderArea.offset = { 0, 0 };
+        renderPassBeginInfo.renderArea.extent = context->GetSwapChainExtent();
 
-    vkCmdBeginRenderPass(commandBuffers[index], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        // TODO: add depth stencil value as well
+        VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+        renderPassBeginInfo.clearValueCount = 1;
+        renderPassBeginInfo.pClearValues = &clearColor;
 
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(context->GetSwapChainExtent().width);
-    viewport.height = static_cast<float>(context->GetSwapChainExtent().height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffers[index], 0, 1, &viewport);
+        vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    VkRect2D scissor{};
-    scissor.offset = { 0, 0 };
-    scissor.extent = context->GetSwapChainExtent();
-    vkCmdSetScissor(commandBuffers[index], 0, 1, &scissor);
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(context->GetSwapChainExtent().width);
+        viewport.height = static_cast<float>(context->GetSwapChainExtent().height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
 
-    vkCmdBindPipeline(commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = context->GetSwapChainExtent();
+        vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
 
-    for (const auto &vertexBufferEntry : vertexBuffers)
-    {
-        VulkanBuffer *vulkanBuffer = vertexBufferEntry.second.get();
+        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
 
-        VkBuffer vertexBuffers[] = { vulkanBuffer->GetBuffer() };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[index], 0, 1, vertexBuffers, offsets);
-        vkCmdDraw(commandBuffers[index], vulkanBuffer->Size(), 1, 0, 0);
-    }
-    
-    vkCmdEndRenderPass(commandBuffers[index]);
+        for (const auto &vertexBufferEntry : vertexBuffers)
+        {
+            uint32_t bufferId = vertexBufferEntry.first;
+            VulkanBuffer *vertexBuffer = vertexBufferEntry.second.get();
+            VulkanBuffer *indexBuffer = indexBuffers[bufferId].get();
 
-    if (vkEndCommandBuffer(commandBuffers[index]) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to record the command bufferr");
+            VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdDrawIndexed(commandBuffers[i], indexBuffer->Size(), 1, 0, 0, 0);
+        }
+
+        vkCmdEndRenderPass(commandBuffers[i]);
+
+        if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to record the command bufferr");
+        }
     }
 }
 
@@ -302,6 +323,9 @@ void VulkanBufferManager::RecreateSwapChainAndBuffers()
     Screen *screen = context->GetScreen();
     int newWidth = screen->GetWidth(),
         newHeight = screen->GetHeight();
+    // Do nothing when the window is minimized
+    // TODO: this loop may block the entire game,
+    // need to have a fix (ex. auto-pause the game)
     while (newWidth == 0 || newHeight == 0)
     {
         newWidth = screen->GetWidth();
@@ -314,13 +338,11 @@ void VulkanBufferManager::RecreateSwapChainAndBuffers()
     DestroyFrameBuffers();
 
     context->RecreateSwapChain();
-    //pipeline->Recreate();
 
     CreateFrameBuffers();
     CreateCommandBuffers();
 
-    for (uint32_t i = 0; i < commandBuffers.size(); i++)
-    {
-        RecordCommandBuffer(i);
-    }
+    // Need to re-record the command buffers
+    // since the viewport has become different
+    RecordCommandBuffers();
 }
