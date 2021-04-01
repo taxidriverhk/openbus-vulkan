@@ -1,9 +1,11 @@
+#include "Engine/Mesh.h"
 #include "VulkanDrawEngine.h"
 
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
     : context(),
       screen(screen),
-      enableDebugging(enableDebugging)
+      enableDebugging(enableDebugging),
+      vertexBufferIds()
 {
 }
 
@@ -13,6 +15,8 @@ VulkanDrawEngine::~VulkanDrawEngine()
 
 void VulkanDrawEngine::Destroy()
 {
+    ClearBuffers();
+
     context->WaitIdle();
 
     bufferManager->Destroy();
@@ -39,6 +43,15 @@ void VulkanDrawEngine::Initialize()
     CreateBuffer();
 }
 
+void VulkanDrawEngine::ClearBuffers()
+{
+    for (uint32_t vertexBufferId : vertexBufferIds)
+    {
+        bufferManager->UnloadBuffer(vertexBufferId);
+    }
+    vertexBufferIds.clear();
+}
+
 void VulkanDrawEngine::CreateBuffer()
 {
     bufferManager = std::make_unique<VulkanBufferManager>(context.get(), pipeline.get());
@@ -61,4 +74,14 @@ void VulkanDrawEngine::CreatePipeline()
         vertexShader.get(),
         fragmentShader.get());
     pipeline->Create();
+}
+
+void VulkanDrawEngine::LoadIntoBuffer(std::vector<Mesh> &meshes)
+{
+    // TODO: use something else as the buffer ID
+    for (Mesh mesh : meshes)
+    {
+        bufferManager->LoadVertices(mesh.id, mesh.vertices);
+        vertexBufferIds.insert(mesh.id);
+    }
 }

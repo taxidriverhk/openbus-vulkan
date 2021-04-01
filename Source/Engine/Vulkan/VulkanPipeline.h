@@ -20,7 +20,7 @@ public:
     void Recreate();
 
 private:
-    static char * const SHADER_MAIN_FUNCTION_NAME;
+    static constexpr char * SHADER_MAIN_FUNCTION_NAME = "main";
 
     VulkanShader *vertexShader;
     VulkanShader *fragmentShader;

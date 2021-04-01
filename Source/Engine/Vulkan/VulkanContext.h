@@ -30,6 +30,7 @@ public:
     VkQueue GetPresentQueue() const { return presentQueue; }
     uint32_t GetPresentQueueIndex() const { return presentQueueIndex; }
 
+    VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
     VkDevice GetLogicalDevice() const { return logicalDevice; }
     VkRenderPass GetRenderPass() const { return renderPass; }
     VkSwapchainKHR GetSwapChain() const { return swapChain; }

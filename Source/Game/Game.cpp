@@ -46,6 +46,10 @@ void Game::Start()
 void Game::StartGameLoop()
 {
     InitializeComponents();
+
+    // TODO: this code should be moved to somewhere else
+    renderer->LoadScene();
+
     while (!ShouldQuit())
     {
         screen->Refresh();

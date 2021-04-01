@@ -13,14 +13,17 @@ VulkanContext::VulkanContext(Screen *screen, const bool &enableDebugging)
     surface(),
     logicalDevice(),
     physicalDevice(),
+    graphicsQueueIndex(),
     graphicsQueue(),
+    presentQueueIndex(),
     presentQueue(),
+    renderPass(),
     oldSwapChain(),
     swapChain(),
     swapChainImageFormat(VK_FORMAT_UNDEFINED),
     swapChainExtent(),
-    swapChainImages(std::vector<VkImage>()),
-    swapChainImageViews(std::vector<VkImageView>()),
+    swapChainImages(),
+    swapChainImageViews(),
     screen(screen),
     enableDebugging(enableDebugging)
 {
@@ -84,6 +87,11 @@ void VulkanContext::WaitIdle()
 
 void VulkanContext::CreateImageViews()
 {
+    uint32_t swapChainImageCount;
+    vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, nullptr);
+    swapChainImages.resize(swapChainImageCount);
+    vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, swapChainImages.data());
+
     for (const VkImage &swapChainImage : swapChainImages)
     {
         VkImageView swapChainImageView;
@@ -316,11 +324,6 @@ void VulkanContext::CreateSwapChain()
     {
         throw std::runtime_error("Failed to create swap chain");
     }
-
-    uint32_t swapChainImageCount;
-    vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, nullptr);
-    swapChainImages.resize(swapChainImageCount);
-    vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, swapChainImages.data());
 }
 
 void VulkanContext::CreateWindowSurface()

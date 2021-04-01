@@ -6,6 +6,7 @@
 
 #include "DrawEngine.h"
 #include "Screen.h"
+#include "Mesh.h"
 
 class Renderer
 {
@@ -16,6 +17,7 @@ public:
     void Cleanup();
     void DrawScene();
     void CreateContext(const std::unique_ptr<Screen> &screen);
+    void LoadScene();
 
 private:
     std::unique_ptr<DrawEngine> drawEngine;

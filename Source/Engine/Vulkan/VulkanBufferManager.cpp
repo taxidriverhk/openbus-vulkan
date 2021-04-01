@@ -1,12 +1,12 @@
 #include "VulkanBufferManager.h"
-
-uint32_t VulkanBufferManager::MAX_FRAMES_IN_FLIGHT = 2;
+#include "VulkanVertexBuffer.h"
 
 VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline)
     : context(context),
       pipeline(pipeline),
       commandPool(),
-      currentInFlightFrame(0)
+      currentInFlightFrame(0),
+      vertexBuffers()
 {
 }
 
@@ -49,6 +49,7 @@ void VulkanBufferManager::Create()
     VkCommandPoolCreateInfo commandPoolInfo{};
     commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
+    commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     if (vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create command pool");
@@ -102,6 +103,20 @@ void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
     currentInFlightFrame = (currentInFlightFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void VulkanBufferManager::LoadVertices(uint32_t bufferId, std::vector<Vertex> vertices)
+{
+    std::unique_ptr<VulkanBuffer> vertexBuffer = std::make_unique<VulkanVertexBuffer>(
+        context, commandPool, vertices);
+    vertexBuffer->Load();
+    vertexBuffers.insert(std::make_pair(bufferId, std::move(vertexBuffer)));
+
+    // TODO: move this code to somewhere else
+    for (uint32_t i = 0; i < commandBuffers.size(); i++)
+    {
+        RecordCommandBuffer(i);
+    }
+}
+
 void VulkanBufferManager::Submit(uint32_t &imageIndex)
 {
     VkDevice logicalDevice = context->GetLogicalDevice();
@@ -129,6 +144,13 @@ void VulkanBufferManager::Submit(uint32_t &imageIndex)
     }
 }
 
+void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
+{
+    std::unique_ptr<VulkanBuffer> &vertexBuffer = vertexBuffers[bufferId];
+    vertexBuffer->Unload();
+    vertexBuffers.erase(bufferId);
+}
+
 void VulkanBufferManager::CreateCommandBuffers()
 {
     commandBuffers.resize(frameBuffers.size());
@@ -140,11 +162,6 @@ void VulkanBufferManager::CreateCommandBuffers()
     if (vkAllocateCommandBuffers(context->GetLogicalDevice(), &commandBufferInfo, commandBuffers.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create command buffers");
-    }
-
-    for (uint32_t i = 0; i < commandBuffers.size(); i++)
-    {
-        RecordCommandBuffer(i);
     }
 }
 
@@ -253,16 +270,25 @@ void VulkanBufferManager::RecordCommandBuffer(uint32_t index)
     viewport.height = static_cast<float>(context->GetSwapChainExtent().height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffers[index], 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = { 0, 0 };
     scissor.extent = context->GetSwapChainExtent();
-
-    vkCmdSetViewport(commandBuffers[index], 0, 1, &viewport);
     vkCmdSetScissor(commandBuffers[index], 0, 1, &scissor);
 
     vkCmdBindPipeline(commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
-    vkCmdDraw(commandBuffers[index], 3, 1, 0, 0);
+
+    for (const auto &vertexBufferEntry : vertexBuffers)
+    {
+        VulkanBuffer *vulkanBuffer = vertexBufferEntry.second.get();
+
+        VkBuffer vertexBuffers[] = { vulkanBuffer->GetBuffer() };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[index], 0, 1, vertexBuffers, offsets);
+        vkCmdDraw(commandBuffers[index], vulkanBuffer->Size(), 1, 0, 0);
+    }
+    
     vkCmdEndRenderPass(commandBuffers[index]);
 
     if (vkEndCommandBuffer(commandBuffers[index]) != VK_SUCCESS)
@@ -273,7 +299,6 @@ void VulkanBufferManager::RecordCommandBuffer(uint32_t index)
 
 void VulkanBufferManager::RecreateSwapChainAndBuffers()
 {
-    // TODO: implement me, currently minimizing the window will cause issue
     Screen *screen = context->GetScreen();
     int newWidth = screen->GetWidth(),
         newHeight = screen->GetHeight();
@@ -293,4 +318,9 @@ void VulkanBufferManager::RecreateSwapChainAndBuffers()
 
     CreateFrameBuffers();
     CreateCommandBuffers();
+
+    for (uint32_t i = 0; i < commandBuffers.size(); i++)
+    {
+        RecordCommandBuffer(i);
+    }
 }
