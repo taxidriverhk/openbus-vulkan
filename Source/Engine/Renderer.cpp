@@ -33,31 +33,32 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 void Renderer::LoadScene()
 {
     // TODO: remove the hard-coded vertices
-    Mesh triangle1
+    Mesh triangles[] =
     {
-        1,
         {
-            {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-            {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+            1,
+            {
+                {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+                {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+            },
+            {
+                0, 1, 2
+            }
         },
         {
-            0, 1, 2
-        }
-    },
-    triangle2
-    {
-        2,
-        {
-            {{0.0f, -0.25f}, {1.0f, 0.0f, 0.0f}},
-            {{0.75f, 0.75f}, {1.0f, 0.0f, 0.0f}},
-            {{-0.75f, 0.75f}, {1.0f, 0.0f, 0.0f}}
-        },
-        {
-            0, 1, 2
+            2,
+            {
+                {{0.0f, -0.25f}, {1.0f, 0.0f, 0.0f}},
+                {{0.75f, 0.75f}, {1.0f, 0.0f, 0.0f}},
+                {{-0.75f, 0.75f}, {1.0f, 0.0f, 0.0f}}
+            },
+            {
+                0, 1, 2
+            }
         }
     };
 
-    std::vector<Mesh> meshes({ triangle1, triangle2 });
+    std::vector<Mesh> meshes(triangles, triangles + 2);
     drawEngine->LoadIntoBuffer(meshes);
 }

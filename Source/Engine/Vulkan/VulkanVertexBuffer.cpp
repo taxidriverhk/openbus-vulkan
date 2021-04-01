@@ -3,7 +3,7 @@
 VulkanVertexBuffer::VulkanVertexBuffer(
     VulkanContext *context,
     VkCommandPool commandPool,
-    std::vector<Vertex> &vertices)
+    std::vector<Vertex> vertices)
     : VulkanBuffer(context, commandPool),
       vertices(vertices),
       loaded(false)

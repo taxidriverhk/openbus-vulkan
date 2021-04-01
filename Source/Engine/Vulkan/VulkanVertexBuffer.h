@@ -11,7 +11,7 @@ public:
     VulkanVertexBuffer(
         VulkanContext *context,
         VkCommandPool commandPool,
-        std::vector<Vertex> &vertices);
+        std::vector<Vertex> vertices);
     ~VulkanVertexBuffer();
 
     void Load() override;
@@ -20,5 +20,5 @@ public:
 
 private:
     bool loaded;
-    std::vector<Vertex> &vertices;
+    std::vector<Vertex> vertices;
 };

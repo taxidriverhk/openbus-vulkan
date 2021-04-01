@@ -314,7 +314,7 @@ void VulkanBufferManager::RecreateSwapChainAndBuffers()
     DestroyFrameBuffers();
 
     context->RecreateSwapChain();
-    pipeline->Recreate();
+    //pipeline->Recreate();
 
     CreateFrameBuffers();
     CreateCommandBuffers();
