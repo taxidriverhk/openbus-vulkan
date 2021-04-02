@@ -1,15 +1,15 @@
 #include "Camera.h"
 
 Camera::Camera(int screenWidth, int screenHeight)
-    : zNear(0.1),
+    : zNear(0.1f),
       zFar(100.0f),
       aspect((float) screenWidth / screenHeight),
-      zoomFactor(1.0),
-      fieldOfView(zoomFactor * glm::radians(45.0f)),
+      zoomFactor(1.0f),
       position(0.0, 0.0, 0.0),
       target(0.0, 0.0, 0.0f),
-      up(0.0, 0.0, 1.0)
+      up(0.0, 0.0, 1.0f)
 {
+    fieldOfView = zoomFactor * glm::radians(45.0f);
 }
 
 Camera::~Camera()

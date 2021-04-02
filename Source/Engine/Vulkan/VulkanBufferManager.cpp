@@ -202,7 +202,7 @@ void VulkanBufferManager::CreateCommandBuffers()
 
 void VulkanBufferManager::CreateDescriptorPool()
 {
-    uint32_t frameBufferSize = frameBuffers.size();
+    uint32_t frameBufferSize = static_cast<uint32_t>(frameBuffers.size());
 
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

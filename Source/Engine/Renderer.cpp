@@ -1,3 +1,4 @@
+#include "Common/Logger.h"
 #include "Renderer.h"
 #include "Vulkan/VulkanDrawEngine.h"
 
@@ -35,6 +36,7 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 void Renderer::LoadScene()
 {
     // TODO: this part is hard-coded for testing only
+    Logger::Log(LogLevel::Info, "Loading hard-coded objects into buffer");
     Mesh triangles[] =
     {
         {

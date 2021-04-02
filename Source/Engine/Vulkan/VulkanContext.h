@@ -11,8 +11,6 @@
 #include "Common/Constants.h"
 #include "Engine/Screen.h"
 
-#define VULKAN_VALIDATION_LAYER "VK_LAYER_KHRONOS_validation"
-
 class VulkanContext
 {
 public:
@@ -39,6 +37,8 @@ public:
     std::vector<VkImageView> GetSwapChainImageViews() const { return swapChainImageViews; }
 
 private:
+    static constexpr char * VULKAN_VALIDATION_LAYER = "VK_LAYER_KHRONOS_validation";
+
     // Functions required for setting up the Vulkan pipeline
     void CreateImageViews();
     void CreateInstance();

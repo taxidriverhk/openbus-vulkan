@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "Common/Logger.h"
 #include "Engine/Camera.h"
 #include "Engine/Mesh.h"
 #include "VulkanDrawEngine.h"

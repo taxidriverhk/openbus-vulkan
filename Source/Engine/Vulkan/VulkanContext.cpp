@@ -110,7 +110,8 @@ void VulkanContext::CreateImageViews()
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(logicalDevice, &createInfo, nullptr, &swapChainImageView) != VK_SUCCESS) {
+        if (vkCreateImageView(logicalDevice, &createInfo, nullptr, &swapChainImageView) != VK_SUCCESS)
+        {
             throw std::runtime_error("Failed to create image views");
         }
         swapChainImageViews.push_back(swapChainImageView);
@@ -123,7 +124,7 @@ void VulkanContext::CreateInstance()
     vulkanApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     vulkanApplicationInfo.pApplicationName = APP_NAME;
     vulkanApplicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    vulkanApplicationInfo.pEngineName = "No Engine";
+    vulkanApplicationInfo.pEngineName = "OpenBus";
     vulkanApplicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     vulkanApplicationInfo.apiVersion = VK_API_VERSION_1_0;
 
@@ -140,11 +141,11 @@ void VulkanContext::CreateInstance()
     SDL_Vulkan_GetInstanceExtensions(screen->GetWindow(), &sdl2ExtensionCount, sdl2Extensions.data());
     std::vector<const char *> extensions(sdl2Extensions);
 
+    const char *enabledLayerNames[] = { VULKAN_VALIDATION_LAYER };
     if (enableDebugging)
     {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-        const char *enabledLayerNames[] = { VULKAN_VALIDATION_LAYER };
         vulkanCreateInfo.enabledLayerCount = 1;
         vulkanCreateInfo.ppEnabledLayerNames = enabledLayerNames;
     }
@@ -156,7 +157,6 @@ void VulkanContext::CreateInstance()
     vulkanCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     vulkanCreateInfo.ppEnabledExtensionNames = extensions.data();
     
-
     if (vkCreateInstance(&vulkanCreateInfo, nullptr, &instance) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Vulkan instance");
@@ -186,9 +186,9 @@ void VulkanContext::CreateLogicalDevice()
     logicalDeviceCreateInfo.enabledExtensionCount = 1;
     logicalDeviceCreateInfo.ppEnabledExtensionNames = enabledExtensionNames;
 
+    const char *enabledLayerNames[] = { VULKAN_VALIDATION_LAYER };
     if (enableDebugging)
     {
-        const char *enabledLayerNames[] = { VULKAN_VALIDATION_LAYER };
         logicalDeviceCreateInfo.enabledLayerCount = 1;
         logicalDeviceCreateInfo.ppEnabledLayerNames = enabledLayerNames;
     }
@@ -231,7 +231,8 @@ void VulkanContext::CreateRenderPass()
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
 
-    if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to create render pass");
     }
 }
