@@ -14,6 +14,8 @@ public:
     ~VulkanPipeline();
 
     VkPipeline GetPipeline() const { return pipeline; }
+    VkPipelineLayout GetPipelineLayout() const { return pipelineLayout; }
+    VkDescriptorSetLayout GetUniformBufferDescriptorSetLayout() const { return uniformBufferDescriptorSetLayout; }
 
     void Create();
     void Destroy();
@@ -29,4 +31,6 @@ private:
 
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
+
+    VkDescriptorSetLayout uniformBufferDescriptorSetLayout;
 };

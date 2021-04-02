@@ -1,3 +1,8 @@
+#define GLM_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "Engine/Camera.h"
 #include "Engine/Mesh.h"
 #include "VulkanDrawEngine.h"
 
@@ -15,12 +20,12 @@ VulkanDrawEngine::~VulkanDrawEngine()
 
 void VulkanDrawEngine::Destroy()
 {
-    ClearBuffers();
-
     context->WaitIdle();
 
+    ClearBuffers();
     bufferManager->Destroy();
     pipeline->Destroy();
+
     vertexShader->Unload();
     fragmentShader->Unload();
     context->Destroy();
@@ -74,12 +79,39 @@ void VulkanDrawEngine::CreatePipeline()
     pipeline->Create();
 }
 
-void VulkanDrawEngine::LoadIntoBuffer(std::vector<Mesh> &meshes)
+void VulkanDrawEngine::LoadIntoBuffer(uint32_t bufferId, std::vector<Mesh> &meshes)
 {
+    std::vector<Vertex> combinedVertices;
+    std::vector<uint32_t> combinedIndices;
     for (Mesh mesh : meshes)
     {
-        // TODO: use something else as the buffer ID
-        bufferManager->LoadVertices(mesh.id, mesh.vertices, mesh.indices);
-        vertexBufferIds.insert(mesh.id);
+        uint32_t indexOffset = static_cast<uint32_t>(combinedVertices.size());
+        combinedVertices.insert(combinedVertices.end(), mesh.vertices.begin(), mesh.vertices.end());
+        for (uint32_t index : mesh.indices)
+        {
+            combinedIndices.push_back(index + indexOffset);
+        }
     }
+    bufferManager->LoadIntoBuffer(bufferId, combinedVertices, combinedIndices);
+    vertexBufferIds.insert(bufferId);
+}
+
+void VulkanDrawEngine::UpdateCamera(Camera *camera)
+{
+    glm::vec3 position = camera->GetPosition();
+    glm::vec3 target = camera->GetTarget();
+    glm::vec3 up = camera->GetUp();
+
+    // Conversions required for Vulkan depth range
+    VulkanUniformBufferInput input{};
+    input.model = glm::identity<glm::mat4>();
+    input.projection = glm::perspective(
+        -camera->GetFieldOfView(),
+        camera->GetAspect(),
+        camera->GetZNear(),
+        camera->GetZFar());
+    input.projection[1][1] *= -1;
+    input.view = glm::lookAt(position, target, up);
+
+    bufferManager->UpdateUniformBuffer(input);
 }

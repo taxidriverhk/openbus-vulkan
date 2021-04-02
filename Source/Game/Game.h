@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "Common/Util.h"
+#include "Engine/Camera.h"
 #include "Engine/Screen.h"
 #include "Engine/Renderer.h"
 
@@ -29,6 +30,7 @@ private:
 
     bool gameStarted;
     bool shouldEndGame;
+    std::unique_ptr<Camera> camera;
     std::unique_ptr<Screen> screen;
     std::unique_ptr<Renderer> renderer;
 };

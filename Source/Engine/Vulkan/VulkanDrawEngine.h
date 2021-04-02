@@ -24,7 +24,8 @@ public:
     void Destroy() override;
     void DrawFrame() override;
     void Initialize() override;
-    void LoadIntoBuffer(std::vector<Mesh> &meshes) override;
+    void LoadIntoBuffer(uint32_t bufferId, std::vector<Mesh> &meshes) override;
+    void UpdateCamera(Camera *camera) override;
 
 private:
     void ClearBuffers();

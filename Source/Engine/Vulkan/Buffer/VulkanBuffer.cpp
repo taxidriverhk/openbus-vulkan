@@ -118,3 +118,25 @@ void VulkanBuffer::DestroyStagingBuffer(VkBuffer &stagingBuffer, VkDeviceMemory 
     vkDestroyBuffer(logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(logicalDevice, stagingDeviceMemory, nullptr);
 }
+
+void VulkanBuffer::Unload()
+{
+    if (!loaded)
+    {
+        return;
+    }
+
+    DestroyBuffer();
+    loaded = false;
+}
+
+void VulkanBuffer::UpdateBufferData(void *srcData, uint32_t size)
+{
+    VkDevice logicalDevice = context->GetLogicalDevice();
+    VkDeviceSize bufferSize = static_cast<VkDeviceSize>(size);
+
+    void *dstData;
+    vkMapMemory(logicalDevice, deviceMemory, 0, bufferSize, 0, &dstData);
+    memcpy(dstData, srcData, size);
+    vkUnmapMemory(logicalDevice, deviceMemory);
+}

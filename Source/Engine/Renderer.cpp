@@ -1,8 +1,9 @@
 #include "Renderer.h"
 #include "Vulkan/VulkanDrawEngine.h"
 
-Renderer::Renderer()
-    : drawEngine()
+Renderer::Renderer(Camera *camera)
+    : camera(camera),
+      drawEngine()
 {
 }
 
@@ -17,6 +18,7 @@ void Renderer::Cleanup()
 
 void Renderer::DrawScene()
 {
+    drawEngine->UpdateCamera(camera);
     drawEngine->DrawFrame();
 }
 
@@ -32,7 +34,7 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 
 void Renderer::LoadScene()
 {
-    // TODO: remove the hard-coded vertices
+    // TODO: this part is hard-coded for testing only
     Mesh triangles[] =
     {
         {
@@ -50,10 +52,10 @@ void Renderer::LoadScene()
         {
             2,
             {
-                {{0.0f, -0.25f}, {1.0f, 0.0f, 0.0f}},
-                {{0.75f, 0.75f}, {1.0f, 0.0f, 0.0f}},
-                {{-0.75f, 0.75f}, {1.0f, 0.0f, 0.0f}},
-                {{-0.25f, -0.25f}, {1.0f, 0.0f, 0.0f}}
+                {{0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+                {{1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+                {{0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+                {{0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}
             },
             {
                 0, 1, 2, 2, 3, 0
@@ -62,5 +64,8 @@ void Renderer::LoadScene()
     };
 
     std::vector<Mesh> meshes(triangles, triangles + 2);
-    drawEngine->LoadIntoBuffer(meshes);
+
+    uint32_t bufferId = 1;
+    drawEngine->LoadIntoBuffer(1, meshes);
+    camera->MoveTo(2.0f, 2.0f, 2.0f);
 }

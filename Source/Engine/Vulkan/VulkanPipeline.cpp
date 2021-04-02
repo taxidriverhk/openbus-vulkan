@@ -6,7 +6,8 @@ VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanShader *vertexShade
       fragmentShader(fragmentShader),
       vertexShader(vertexShader),
       pipeline(),
-      pipelineLayout()
+      pipelineLayout(),
+      uniformBufferDescriptorSetLayout()
 {
 }
 
@@ -16,12 +17,29 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::Create()
 {
+    VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
+    uniformBufferLayoutBinding.binding = 0;
+    uniformBufferLayoutBinding.descriptorCount = 1;
+    uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
+    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutCreateInfo{};
+    uniformBufferLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    uniformBufferLayoutCreateInfo.bindingCount = 1;
+    uniformBufferLayoutCreateInfo.pBindings = &uniformBufferLayoutBinding;
+    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformBufferLayoutCreateInfo, nullptr, &uniformBufferDescriptorSetLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create descriptor set layout");
+    }
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-    if (vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &uniformBufferDescriptorSetLayout;
+    if (vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to create pipeline layout");
     }
 
@@ -74,7 +92,7 @@ void VulkanPipeline::Create()
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -128,6 +146,7 @@ void VulkanPipeline::Create()
 
 void VulkanPipeline::Destroy()
 {
+    vkDestroyDescriptorSetLayout(context->GetLogicalDevice(), uniformBufferDescriptorSetLayout, nullptr);
     vkDestroyPipeline(context->GetLogicalDevice(), pipeline, nullptr);
     vkDestroyPipelineLayout(context->GetLogicalDevice(), pipelineLayout, nullptr);
 }

@@ -1,14 +1,19 @@
 #include "VulkanBufferManager.h"
-#include "VulkanIndexBuffer.h"
-#include "VulkanVertexBuffer.h"
+#include "Buffer/VulkanIndexBuffer.h"
+#include "Buffer/VulkanVertexBuffer.h"
 
 VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline)
     : context(context),
       pipeline(pipeline),
       commandPool(),
+      descriptorPool(),
       currentInFlightFrame(0),
       indexBuffers(),
-      vertexBuffers()
+      vertexBuffers(),
+      uniformBufferUpdated(true),
+      uniformBuffers(),
+      uniformBufferDescriptorSets(),
+      uniformBufferInput()
 {
 }
 
@@ -31,10 +36,14 @@ void VulkanBufferManager::Create()
 
     CreateCommandBuffers();
     CreateSynchronizationObjects();
+    CreateDescriptorPool();
+    CreateUniformBuffers();
 }
 
 void VulkanBufferManager::Destroy()
 {
+    DestroyUniformBuffers();
+
     VkDevice logicalDevice = context->GetLogicalDevice();
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -76,6 +85,12 @@ void VulkanBufferManager::BeginFrame(uint32_t &imageIndex)
         return;
     }
 
+    if (uniformBufferUpdated)
+    {
+        uniformBuffers[imageIndex]->UpdateBufferData(&uniformBufferInput, sizeof(VulkanUniformBufferInput));
+        uniformBufferUpdated = false;
+    }
+
     // The acquire image is still in use
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
     {
@@ -112,7 +127,7 @@ void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
     currentInFlightFrame = (currentInFlightFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanBufferManager::LoadVertices(uint32_t bufferId, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
+void VulkanBufferManager::LoadIntoBuffer(uint32_t bufferId, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
 {
     std::unique_ptr<VulkanBuffer> vertexBuffer = std::make_unique<VulkanVertexBuffer>(
         context, commandPool, vertices);
@@ -165,6 +180,12 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
     indexBuffers.erase(bufferId);
 }
 
+void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
+{
+    uniformBufferInput = input;
+    uniformBufferUpdated = true;
+}
+
 void VulkanBufferManager::CreateCommandBuffers()
 {
     commandBuffers.resize(frameBuffers.size());
@@ -176,6 +197,26 @@ void VulkanBufferManager::CreateCommandBuffers()
     if (vkAllocateCommandBuffers(context->GetLogicalDevice(), &commandBufferInfo, commandBuffers.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create command buffers");
+    }
+}
+
+void VulkanBufferManager::CreateDescriptorPool()
+{
+    uint32_t frameBufferSize = frameBuffers.size();
+
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = static_cast<uint32_t>(frameBufferSize);
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = static_cast<uint32_t>(frameBufferSize);
+
+    if (vkCreateDescriptorPool(context->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create descriptor pool");
     }
 }
 
@@ -233,6 +274,45 @@ void VulkanBufferManager::CreateSynchronizationObjects()
     }
 }
 
+void VulkanBufferManager::CreateUniformBuffers()
+{
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts(frameBuffers.size(), pipeline->GetUniformBufferDescriptorSetLayout());
+    VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+    descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocInfo.descriptorPool = descriptorPool;
+    descriptorSetAllocInfo.descriptorSetCount = static_cast<uint32_t>(frameBuffers.size());
+    descriptorSetAllocInfo.pSetLayouts = descriptorSetLayouts.data();
+
+    uniformBufferDescriptorSets.resize(frameBuffers.size());
+    if (vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, uniformBufferDescriptorSets.data()) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate descriptor sets for uniform buffer");
+    }
+
+    for (uint32_t i = 0; i < frameBuffers.size(); i++)
+    {
+        std::unique_ptr<VulkanBuffer> uniformBuffer = std::make_unique<VulkanUniformBuffer>(context, commandPool);
+        uniformBuffer->Load();
+        uniformBuffers.push_back(std::move(uniformBuffer));
+
+        VkDescriptorBufferInfo uniformBufferInfo{};
+        uniformBufferInfo.buffer = uniformBuffers[i]->GetBuffer();
+        uniformBufferInfo.offset = 0;
+        uniformBufferInfo.range = sizeof(VulkanUniformBufferInput);
+
+        VkWriteDescriptorSet uniformDescriptorWrite{};
+        uniformDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        uniformDescriptorWrite.dstSet = uniformBufferDescriptorSets[i];
+        uniformDescriptorWrite.dstBinding = 0;
+        uniformDescriptorWrite.dstArrayElement = 0;
+        uniformDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformDescriptorWrite.descriptorCount = 1;
+        uniformDescriptorWrite.pBufferInfo = &uniformBufferInfo;
+
+        vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &uniformDescriptorWrite, 0, nullptr);
+    }
+}
+
 void VulkanBufferManager::DestroyCommandBuffers()
 {
     vkFreeCommandBuffers(
@@ -251,6 +331,16 @@ void VulkanBufferManager::DestroyFrameBuffers()
         vkDestroyFramebuffer(logicalDevice, frameBuffer, nullptr);
     }
     frameBuffers.clear();
+}
+
+void VulkanBufferManager::DestroyUniformBuffers()
+{
+    vkDestroyDescriptorPool(context->GetLogicalDevice(), descriptorPool, nullptr);
+    for (std::unique_ptr<VulkanBuffer> &uniformBuffer : uniformBuffers)
+    {
+        uniformBuffer->Unload();
+    }
+    uniformBuffers.clear();
 }
 
 void VulkanBufferManager::RecordCommandBuffers()
@@ -301,10 +391,15 @@ void VulkanBufferManager::RecordCommandBuffers()
             VulkanBuffer *vertexBuffer = vertexBufferEntry.second.get();
             VulkanBuffer *indexBuffer = indexBuffers[bufferId].get();
 
+            // Bind vertex buffer
             VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+            // Bind index buffer
             vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+            // Bind uniform buffer
+            vkCmdBindDescriptorSets(
+                commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipelineLayout(), 0, 1, &uniformBufferDescriptorSets[i], 0, nullptr);
 
             vkCmdDrawIndexed(commandBuffers[i], indexBuffer->Size(), 1, 0, 0, 0);
         }

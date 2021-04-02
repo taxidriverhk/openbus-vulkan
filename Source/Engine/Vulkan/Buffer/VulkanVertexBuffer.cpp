@@ -46,14 +46,3 @@ void VulkanVertexBuffer::Load()
     DestroyStagingBuffer(stagingBuffer, stagingDeviceMemory);
     loaded = true;
 }
-
-void VulkanVertexBuffer::Unload()
-{
-    if (!loaded)
-    {
-        return;
-    }
-
-    DestroyBuffer();
-    loaded = false;
-}

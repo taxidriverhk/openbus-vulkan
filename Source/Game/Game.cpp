@@ -6,8 +6,9 @@ Game::Game()
 
     gameStarted = false;
     shouldEndGame = false;
+    camera = std::make_unique<Camera>(SCREEN_WIDTH, SCREEN_HEIGHT);
     screen = std::make_unique<Screen>(SCREEN_WIDTH, SCREEN_HEIGHT, screenTitle);
-    renderer = std::make_unique<Renderer>();
+    renderer = std::make_unique<Renderer>(camera.get());
 }
 
 Game::~Game()

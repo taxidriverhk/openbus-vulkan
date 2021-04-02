@@ -1,17 +1,21 @@
 #pragma once
 
-#include "VulkanContext.h"
+#include "Engine/Vulkan/VulkanContext.h"
 
 class VulkanBuffer
 {
 public:
     VulkanBuffer(VulkanContext *context, VkCommandPool commandPool);
 
+    VulkanBuffer(const VulkanBuffer &) = delete;
+    VulkanBuffer &operator=(const VulkanBuffer &) = delete;
+
     VkBuffer GetBuffer() { return buffer; }
 
     virtual void Load() = 0;
     virtual uint32_t Size() const = 0;
-    virtual void Unload() = 0;
+    virtual void Unload();
+    void UpdateBufferData(void *srcData, uint32_t size);
 
 protected:
     bool loaded;

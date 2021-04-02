@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 
+#include "Camera.h"
 #include "DrawEngine.h"
 #include "Screen.h"
 #include "Mesh.h"
@@ -11,7 +12,7 @@
 class Renderer
 {
 public:
-    Renderer();
+    Renderer(Camera *camera);
     ~Renderer();
 
     void Cleanup();
@@ -20,5 +21,6 @@ public:
     void LoadScene();
 
 private:
+    Camera *camera;
     std::unique_ptr<DrawEngine> drawEngine;
 };
