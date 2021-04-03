@@ -1,43 +1,50 @@
 #pragma once
 
+#include <glm/glm.hpp>
+#include "vk_mem_alloc.hpp"
+
 #include "Engine/Vulkan/VulkanContext.h"
+
+struct VulkanUniformBufferInput
+{
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+};
 
 class VulkanBuffer
 {
 public:
-    VulkanBuffer(VulkanContext *context, VkCommandPool commandPool);
+    VulkanBuffer(
+        VulkanContext *context,
+        VkCommandPool &commandPool,
+        VmaAllocator &allocator);
+    ~VulkanBuffer();
 
-    VulkanBuffer(const VulkanBuffer &) = delete;
-    VulkanBuffer &operator=(const VulkanBuffer &) = delete;
+    uint32_t Size() const { return size; }
+    VkBuffer GetBuffer() const { return buffer; }
 
-    VkBuffer GetBuffer() { return buffer; }
+    void Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void *data, uint32_t size);
+    void Update(void *data, uint32_t size);
+    void Unload();
 
-    virtual void Load() = 0;
-    virtual uint32_t Size() const = 0;
-    virtual void Unload();
-    void UpdateBufferData(void *srcData, uint32_t size);
-
-protected:
-    bool loaded;
-    VulkanContext *context;
-    VkCommandPool commandPool;
-    VkBuffer buffer;
-    VkDeviceMemory deviceMemory;
-
-    void CopyBuffer(
-        VkBuffer srcBuffer,
-        VkBuffer dstBuffer,
-        VkDeviceSize size);
-    void CopyToStagingBuffer(
-        VkDeviceMemory &stagingDeviceMemory,
-        VkDeviceSize size,
-        void *srcData);
-    void CreateBuffer(
-        VkDeviceSize size,
+private:
+    void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    static void CreateBuffer(
+        VmaAllocator &allocator,
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties,
-        VkBuffer &stagingBuffer,
-        VkDeviceMemory &stagingDeviceMemory);
-    void DestroyBuffer();
-    void DestroyStagingBuffer(VkBuffer &stagingBuffer, VkDeviceMemory &stagingDeviceMemory);
+        VkDeviceSize size,
+        VkBuffer &buffer,
+        VmaAllocation &allocation);
+
+    uint32_t size;
+    bool loaded;
+
+    VmaAllocator &allocator;
+    VmaAllocation allocation;
+
+    VulkanContext *context;
+    VkCommandPool &commandPool;
+    VkBuffer buffer;
 };

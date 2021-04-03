@@ -1,13 +1,15 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <vector>
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+#include "vk_mem_alloc.hpp"
+
 #include "Engine/Mesh.h"
 #include "Buffer/VulkanBuffer.h"
-#include "Buffer/VulkanUniformBuffer.h"
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"
 
@@ -42,6 +44,7 @@ private:
     void CreateDescriptorPool();
     void CreateDescriptorSets();
     void CreateFrameBuffers();
+    void CreateMemoryAllocator();
     void CreateSynchronizationObjects();
     void CreateUniformBuffers();
     void DestroyCommandBuffers();
@@ -51,10 +54,11 @@ private:
     void RecordCommandBuffers();
     void RecreateSwapChainAndBuffers();
 
+    VmaAllocator vmaAllocator;
     VulkanContext *context;
     VulkanPipeline *pipeline;
-    std::vector<VkFramebuffer> frameBuffers;
 
+    std::vector<VkFramebuffer> frameBuffers;
     VkCommandPool commandPool;
     std::vector<VkCommandBuffer> commandBuffers;
 
