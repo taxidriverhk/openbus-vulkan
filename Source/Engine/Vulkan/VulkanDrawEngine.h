@@ -28,6 +28,13 @@ public:
     void UpdateCamera(Camera *camera) override;
 
 private:
+    // The game treats Z-axis as the up axis, while Vulkan/OpenGL treats Y-axis as the up axis
+    // Therefore, a conversion is required
+    inline static glm::vec3 ConvertToVulkanCoordinates(glm::vec3 input)
+    {
+        return { input.x, input.z, input.y };
+    }
+
     void ClearBuffers();
     void CreateBuffer();
     void CreatePipeline();
@@ -43,5 +50,5 @@ private:
     std::unique_ptr<VulkanShader> vertexShader;
     std::unique_ptr<VulkanShader> fragmentShader;
 
-    std::unordered_set<uint32_t> vertexBufferIds;
+    std::unordered_set<uint32_t> staticBufferIds;
 };

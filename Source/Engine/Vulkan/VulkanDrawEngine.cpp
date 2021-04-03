@@ -11,7 +11,7 @@ VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
     : context(),
       screen(screen),
       enableDebugging(enableDebugging),
-      vertexBufferIds()
+      staticBufferIds()
 {
 }
 
@@ -49,11 +49,11 @@ void VulkanDrawEngine::Initialize()
 
 void VulkanDrawEngine::ClearBuffers()
 {
-    for (uint32_t vertexBufferId : vertexBufferIds)
+    for (uint32_t vertexBufferId : staticBufferIds)
     {
         bufferManager->UnloadBuffer(vertexBufferId);
     }
-    vertexBufferIds.clear();
+    staticBufferIds.clear();
 }
 
 void VulkanDrawEngine::CreateBuffer()
@@ -82,6 +82,7 @@ void VulkanDrawEngine::CreatePipeline()
 
 void VulkanDrawEngine::LoadIntoBuffer(uint32_t bufferId, std::vector<Mesh> &meshes)
 {
+    // TODO: need to do coordinate conversion here
     std::vector<Vertex> combinedVertices;
     std::vector<uint32_t> combinedIndices;
     for (Mesh mesh : meshes)
@@ -94,20 +95,20 @@ void VulkanDrawEngine::LoadIntoBuffer(uint32_t bufferId, std::vector<Mesh> &mesh
         }
     }
     bufferManager->LoadIntoBuffer(bufferId, combinedVertices, combinedIndices);
-    vertexBufferIds.insert(bufferId);
+    staticBufferIds.insert(bufferId);
 }
 
 void VulkanDrawEngine::UpdateCamera(Camera *camera)
 {
-    glm::vec3 position = camera->GetPosition();
-    glm::vec3 target = camera->GetTarget();
-    glm::vec3 up = camera->GetUp();
+    glm::vec3 position = ConvertToVulkanCoordinates(camera->GetPosition());
+    glm::vec3 target = ConvertToVulkanCoordinates(camera->GetTarget());
+    glm::vec3 up = ConvertToVulkanCoordinates(camera->GetUp());
 
     // Conversions required for Vulkan depth range
     VulkanUniformBufferInput input{};
     input.model = glm::identity<glm::mat4>();
     input.projection = glm::perspective(
-        -camera->GetFieldOfView(),
+        camera->GetFieldOfView(),
         camera->GetAspect(),
         camera->GetZNear(),
         camera->GetZFar());

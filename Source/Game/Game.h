@@ -25,6 +25,7 @@ private:
 
     void Cleanup();
     void InitializeComponents();
+    void InitializeState();
     bool ShouldQuit();
     void StartGameLoop();
 

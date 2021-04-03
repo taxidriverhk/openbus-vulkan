@@ -1,11 +1,17 @@
 #pragma once
 
-#include "Constants.h"
-
 #include <fmt/core.h>
+#include <chrono>
 #include <string>
 
-namespace Util
+#include "Constants.h"
+
+class Util
 {
-    std::string FormatWindowTitle(const std::string& subTitle);
-}
+public:
+    static std::string FormatWindowTitle(const std::string &subTitle);
+    static float DeltaTime();
+
+private:
+    static std::chrono::steady_clock::time_point lastTime;
+};

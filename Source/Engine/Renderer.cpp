@@ -36,7 +36,7 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 void Renderer::LoadScene()
 {
     // TODO: this part is hard-coded for testing only
-    Logger::Log(LogLevel::Info, "Loading hard-coded objects into buffer");
+    Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", 2);
     Mesh triangles[] =
     {
         {
@@ -69,5 +69,4 @@ void Renderer::LoadScene()
 
     uint32_t bufferId = 1;
     drawEngine->LoadIntoBuffer(1, meshes);
-    camera->MoveTo(2.0f, 2.0f, 2.0f);
 }

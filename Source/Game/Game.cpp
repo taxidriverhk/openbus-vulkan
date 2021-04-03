@@ -27,6 +27,10 @@ void Game::InitializeComponents()
     renderer->CreateContext(screen);
 }
 
+void Game::InitializeState()
+{
+}
+
 void Game::SetShouldEndGame(const bool &shouldEndGame)
 {
     this->shouldEndGame = shouldEndGame;
@@ -47,13 +51,24 @@ void Game::Start()
 void Game::StartGameLoop()
 {
     InitializeComponents();
+    InitializeState();
 
     // TODO: this code should be moved to a separate thread
     // (ideally a separate class like MapBlockManager)
     renderer->LoadScene();
 
+    std::chrono::steady_clock::time_point startTime = std::chrono::high_resolution_clock::now();
+
     while (!ShouldQuit())
     {
+        float deltaTime = Util::DeltaTime();
+
+        // TODO: test code to show that the camera works
+        std::chrono::steady_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+        float cameraX = 2 * glm::cos(time);
+        camera->MoveTo(cameraX, 2.0f, 2.0f);
+
         screen->Refresh();
         renderer->DrawScene();
     }
