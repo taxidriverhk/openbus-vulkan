@@ -30,6 +30,7 @@ public:
     void Draw(uint32_t &imageIndex);
 
 private:
+    static constexpr uint32_t MAX_DESCRIPTOR_SETS = 4;
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
     void BeginFrame(uint32_t &imageIndex);
@@ -37,13 +38,16 @@ private:
     void Submit(uint32_t &imageIndex);
 
     void CreateCommandBuffers();
+    void CreateCommandPool();
     void CreateDescriptorPool();
+    void CreateDescriptorSets();
     void CreateFrameBuffers();
     void CreateSynchronizationObjects();
     void CreateUniformBuffers();
     void DestroyCommandBuffers();
     void DestroyFrameBuffers();
     void DestroyUniformBuffers();
+
     void RecordCommandBuffers();
     void RecreateSwapChainAndBuffers();
 
@@ -52,8 +56,10 @@ private:
     std::vector<VkFramebuffer> frameBuffers;
 
     VkCommandPool commandPool;
-    VkDescriptorPool descriptorPool;
     std::vector<VkCommandBuffer> commandBuffers;
+
+    VkDescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSets;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -67,5 +73,4 @@ private:
     bool uniformBufferUpdated;
     VulkanUniformBufferInput uniformBufferInput;
     std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers;
-    std::vector<VkDescriptorSet> uniformBufferDescriptorSets;
 };

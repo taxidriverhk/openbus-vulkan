@@ -7,12 +7,12 @@ VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline 
       pipeline(pipeline),
       commandPool(),
       descriptorPool(),
+      descriptorSets(),
       currentInFlightFrame(0),
       indexBuffers(),
       vertexBuffers(),
       uniformBufferUpdated(true),
       uniformBuffers(),
-      uniformBufferDescriptorSets(),
       uniformBufferInput()
 {
 }
@@ -25,18 +25,12 @@ void VulkanBufferManager::Create()
 {
     CreateFrameBuffers();
 
-    VkCommandPoolCreateInfo commandPoolInfo{};
-    commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
-    commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    if (vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create command pool");
-    }
-
+    CreateCommandPool();
     CreateCommandBuffers();
+
     CreateSynchronizationObjects();
     CreateDescriptorPool();
+    CreateDescriptorSets();
     CreateUniformBuffers();
 }
 
@@ -200,23 +194,57 @@ void VulkanBufferManager::CreateCommandBuffers()
     }
 }
 
+void VulkanBufferManager::CreateCommandPool()
+{
+    VkCommandPoolCreateInfo commandPoolInfo{};
+    commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
+    commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    if (vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create command pool");
+    }
+}
+
 void VulkanBufferManager::CreateDescriptorPool()
 {
     uint32_t frameBufferSize = static_cast<uint32_t>(frameBuffers.size());
 
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = static_cast<uint32_t>(frameBufferSize);
+    VkDescriptorPoolSize poolSizes[2];
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(frameBufferSize);
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(frameBufferSize);
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = static_cast<uint32_t>(frameBufferSize);
+    poolInfo.poolSizeCount = 2;
+    poolInfo.pPoolSizes = poolSizes;
+    poolInfo.maxSets = MAX_DESCRIPTOR_SETS;
 
     if (vkCreateDescriptorPool(context->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create descriptor pool");
+    }
+}
+
+void VulkanBufferManager::CreateDescriptorSets()
+{
+    descriptorSets.resize(frameBuffers.size());
+    VkDescriptorSetLayout descriptorSetLayout = pipeline->GetDescriptorSetLayout();
+
+    for (uint32_t i = 0; i < descriptorSets.size(); i++)
+    {
+        VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+        descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        descriptorSetAllocInfo.descriptorPool = descriptorPool;
+        descriptorSetAllocInfo.descriptorSetCount = 1;
+        descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
+
+        if (vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSets[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to allocate descriptor set");
+        }
     }
 }
 
@@ -238,6 +266,7 @@ void VulkanBufferManager::CreateFrameBuffers()
         framebufferInfo.width = swapChainExtent.width;
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
+
         if (vkCreateFramebuffer(context->GetLogicalDevice(), &framebufferInfo, nullptr, &frameBuffer) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create frame buffer");
@@ -276,19 +305,6 @@ void VulkanBufferManager::CreateSynchronizationObjects()
 
 void VulkanBufferManager::CreateUniformBuffers()
 {
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts(frameBuffers.size(), pipeline->GetUniformBufferDescriptorSetLayout());
-    VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-    descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocInfo.descriptorPool = descriptorPool;
-    descriptorSetAllocInfo.descriptorSetCount = static_cast<uint32_t>(frameBuffers.size());
-    descriptorSetAllocInfo.pSetLayouts = descriptorSetLayouts.data();
-
-    uniformBufferDescriptorSets.resize(frameBuffers.size());
-    if (vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, uniformBufferDescriptorSets.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate descriptor sets for uniform buffer");
-    }
-
     for (uint32_t i = 0; i < frameBuffers.size(); i++)
     {
         std::unique_ptr<VulkanBuffer> uniformBuffer = std::make_unique<VulkanUniformBuffer>(context, commandPool);
@@ -302,7 +318,7 @@ void VulkanBufferManager::CreateUniformBuffers()
 
         VkWriteDescriptorSet uniformDescriptorWrite{};
         uniformDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        uniformDescriptorWrite.dstSet = uniformBufferDescriptorSets[i];
+        uniformDescriptorWrite.dstSet = descriptorSets[i];
         uniformDescriptorWrite.dstBinding = 0;
         uniformDescriptorWrite.dstArrayElement = 0;
         uniformDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -399,7 +415,7 @@ void VulkanBufferManager::RecordCommandBuffers()
             vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
             // Bind uniform buffer
             vkCmdBindDescriptorSets(
-                commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipelineLayout(), 0, 1, &uniformBufferDescriptorSets[i], 0, nullptr);
+                commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipelineLayout(), 0, 1, &descriptorSets[i], 0, nullptr);
 
             vkCmdDrawIndexed(commandBuffers[i], indexBuffer->Size(), 1, 0, 0, 0);
         }

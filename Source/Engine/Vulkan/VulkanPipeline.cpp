@@ -3,11 +3,11 @@
 
 VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanShader *vertexShader, VulkanShader *fragmentShader)
     : context(context),
+      descriptorSetLayout(),
       fragmentShader(fragmentShader),
       vertexShader(vertexShader),
       pipeline(),
-      pipelineLayout(),
-      uniformBufferDescriptorSetLayout()
+      pipelineLayout()
 {
 }
 
@@ -17,18 +17,23 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::Create()
 {
-    VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
-    uniformBufferLayoutBinding.binding = 0;
-    uniformBufferLayoutBinding.descriptorCount = 1;
-    uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
-    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[2];
+    descriptorSetLayoutBindings[0].binding = 0;
+    descriptorSetLayoutBindings[0].descriptorCount = 1;
+    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
+    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    descriptorSetLayoutBindings[1].binding = 1;
+    descriptorSetLayoutBindings[1].descriptorCount = 1;
+    descriptorSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorSetLayoutBindings[1].pImmutableSamplers = nullptr;
+    descriptorSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    VkDescriptorSetLayoutCreateInfo uniformBufferLayoutCreateInfo{};
-    uniformBufferLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    uniformBufferLayoutCreateInfo.bindingCount = 1;
-    uniformBufferLayoutCreateInfo.pBindings = &uniformBufferLayoutBinding;
-    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformBufferLayoutCreateInfo, nullptr, &uniformBufferDescriptorSetLayout) != VK_SUCCESS)
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = 1;
+    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
+    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create descriptor set layout");
     }
@@ -37,7 +42,7 @@ void VulkanPipeline::Create()
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &uniformBufferDescriptorSetLayout;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     if (vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create pipeline layout");
@@ -147,7 +152,7 @@ void VulkanPipeline::Create()
 
 void VulkanPipeline::Destroy()
 {
-    vkDestroyDescriptorSetLayout(context->GetLogicalDevice(), uniformBufferDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(context->GetLogicalDevice(), descriptorSetLayout, nullptr);
     vkDestroyPipeline(context->GetLogicalDevice(), pipeline, nullptr);
     vkDestroyPipelineLayout(context->GetLogicalDevice(), pipelineLayout, nullptr);
 }
