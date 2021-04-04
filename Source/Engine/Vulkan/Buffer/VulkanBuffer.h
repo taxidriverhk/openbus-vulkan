@@ -28,8 +28,6 @@ public:
     void Update(void *data, uint32_t size);
     void Unload();
 
-private:
-    void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     static void CreateBuffer(
         VmaAllocator &allocator,
         VkBufferUsageFlags usage,
@@ -37,6 +35,9 @@ private:
         VkDeviceSize size,
         VkBuffer &buffer,
         VmaAllocation &allocation);
+
+private:
+    void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     uint32_t size;
     bool loaded;
