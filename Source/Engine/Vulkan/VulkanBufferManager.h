@@ -9,6 +9,7 @@
 
 #include "Engine/Mesh.h"
 #include "Buffer/VulkanBuffer.h"
+#include "Image/VulkanImage.h"
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"
 
@@ -57,21 +58,24 @@ private:
     VulkanContext *context;
     VulkanPipeline *pipeline;
 
-    std::vector<VkFramebuffer> frameBuffers;
     VkCommandPool commandPool;
-    std::vector<VkCommandBuffer> commandBuffers;
-
     VkDescriptorPool descriptorPool;
+
+    // Based on number of swap chain images (which is usually 3)
+    std::vector<VkFramebuffer> frameBuffers;
+    std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkDescriptorSet> descriptorSets;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
+
     uint32_t currentInFlightFrame;
 
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> vertexBuffers;
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> indexBuffers;
+    std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> bufferIdToImageBufferMap;
 
     bool uniformBufferUpdated;
     VulkanUniformBufferInput uniformBufferInput;

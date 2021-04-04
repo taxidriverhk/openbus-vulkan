@@ -19,6 +19,7 @@ target_include_directories (OpenBus
     PUBLIC "${LIBRARY_DIR}/glfw/include"
     PUBLIC "${LIBRARY_DIR}/glm"
     PUBLIC "${SDL2_INCLUDE_DIRS}"
+    PUBLIC "${LIBRARY_DIR}/stb"
     PUBLIC "${LIBRARY_DIR}/vkmem"
 )
 
