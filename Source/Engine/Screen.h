@@ -1,10 +1,9 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
+#include <string>
+
 #include "SDL.h"
 #include "SDL_vulkan.h"
-#include <GLFW/glfw3.h>
-#include <string>
 
 class Screen
 {

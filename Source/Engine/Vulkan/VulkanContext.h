@@ -1,12 +1,11 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+
+#include <vulkan/vulkan.h>
 
 #include "Common/Constants.h"
 #include "Engine/Screen.h"

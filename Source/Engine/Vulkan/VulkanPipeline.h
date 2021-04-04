@@ -1,8 +1,8 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <string>
+
+#include <vulkan/vulkan.h>
 
 #include "VulkanContext.h"
 #include "VulkanShader.h"
@@ -22,8 +22,6 @@ public:
     void Recreate();
 
 private:
-    static constexpr char *SHADER_MAIN_FUNCTION_NAME = "main";
-
     VulkanShader *vertexShader;
     VulkanShader *fragmentShader;
 

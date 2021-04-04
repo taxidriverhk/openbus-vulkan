@@ -1,12 +1,11 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-
 #include <fstream>
 #include <iterator>
 #include <map>
 #include <string>
-#include <GLFW/glfw3.h>
+
+#include <vulkan/vulkan.h>
 #include <shaderc/shaderc.hpp>
 
 #include "VulkanContext.h"

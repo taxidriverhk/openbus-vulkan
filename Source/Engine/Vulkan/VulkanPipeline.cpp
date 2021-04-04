@@ -1,4 +1,5 @@
 #include "Engine/Mesh.h"
+#include "Common/VulkanCommon.h"
 #include "VulkanPipeline.h"
 
 VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanShader *vertexShader, VulkanShader *fragmentShader)
@@ -17,22 +18,10 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::Create()
 {
-    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[2];
-    descriptorSetLayoutBindings[0].binding = 0;
-    descriptorSetLayoutBindings[0].descriptorCount = 1;
-    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
-    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    descriptorSetLayoutBindings[1].binding = 1;
-    descriptorSetLayoutBindings[1].descriptorCount = 1;
-    descriptorSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorSetLayoutBindings[1].pImmutableSamplers = nullptr;
-    descriptorSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
     descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutInfo.bindingCount = 1;
-    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
+    descriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    descriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_DESCRIPTOR_LAYOUT_BINDINGS;
     if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create descriptor set layout");
@@ -60,23 +49,17 @@ void VulkanPipeline::Create()
     fragmentShaderStageInfo.module = fragmentShader->GetShaderModule();
     fragmentShaderStageInfo.pName = SHADER_MAIN_FUNCTION_NAME;
 
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
     VkVertexInputBindingDescription bindingDescription{};
     bindingDescription.binding = 0;
     bindingDescription.stride = sizeof(Vertex);
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-
-    VkVertexInputAttributeDescription attributeDescriptions[] = 
-    {
-        { 0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, position) },
-        { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color) },
-    };
     vertexInputInfo.vertexAttributeDescriptionCount = 2;
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions;
+    vertexInputInfo.pVertexAttributeDescriptions = VERTEX_INPUT_ATTRIBUTE_DESCRIPTIONS;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

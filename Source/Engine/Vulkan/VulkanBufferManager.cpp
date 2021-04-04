@@ -1,5 +1,6 @@
 #define VMA_IMPLEMENTATION
 
+#include "Engine/Vulkan/Common/VulkanCommon.h"
 #include "VulkanBufferManager.h"
 
 VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline)
@@ -226,18 +227,10 @@ void VulkanBufferManager::CreateCommandPool()
 
 void VulkanBufferManager::CreateDescriptorPool()
 {
-    uint32_t frameBufferSize = static_cast<uint32_t>(frameBuffers.size());
-
-    VkDescriptorPoolSize poolSizes[2];
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(frameBufferSize);
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(frameBufferSize);
-
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 2;
-    poolInfo.pPoolSizes = poolSizes;
+    poolInfo.poolSizeCount = STATIC_PIPELINE_DESCRIPTOR_POOL_SIZE_COUNT;
+    poolInfo.pPoolSizes = STATIC_PIPELINE_DESCRIPTOR_POOL_SIZES;
     poolInfo.maxSets = MAX_DESCRIPTOR_SETS;
 
     if (vkCreateDescriptorPool(context->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
