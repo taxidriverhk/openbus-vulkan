@@ -27,7 +27,7 @@ void Logger::Log(const LogLevel level, const char *format, ...)
     size_t bufferSize = snprintf(NULL, 0, format, args);
     char *buffer = new char[bufferSize + 1];
 
-    vsprintf(buffer, format, args);
+    vsprintf_s(buffer, bufferSize + 1, format, args);
     std::string formatted(buffer);
 
     if (level == LogLevel::Fatal)
