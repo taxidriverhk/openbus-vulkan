@@ -1,12 +1,14 @@
 #define VMA_IMPLEMENTATION
 
 #include "Engine/Vulkan/Common/VulkanCommon.h"
+#include "Engine/Vulkan/Command/VulkanDefaultRenderCommand.h"
 #include "VulkanBufferManager.h"
 
 VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline)
     : context(context),
       pipeline(pipeline),
       vmaAllocator(),
+      commandBuffers(),
       commandPool(),
       descriptorPool(),
       descriptorSets(),
@@ -15,7 +17,9 @@ VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline 
       vertexBuffers(),
       uniformBufferUpdated(true),
       uniformBuffers(),
-      uniformBufferInput()
+      uniformBufferInput(),
+      generator(),
+      distribution(1, MAX_VERTEX_BUFFERS)
 {
 }
 
@@ -27,14 +31,15 @@ void VulkanBufferManager::Create()
 {
     CreateFrameBuffers();
 
+    CreateDescriptorPool();
+    CreateDescriptorSets();
+
     CreateCommandPool();
     CreateCommandBuffers();
 
     CreateMemoryAllocator();
 
     CreateSynchronizationObjects();
-    CreateDescriptorPool();
-    CreateDescriptorSets();
     CreateUniformBuffers();
 }
 
@@ -102,6 +107,9 @@ void VulkanBufferManager::BeginFrame(uint32_t &imageIndex)
         vkWaitForFences(logicalDevice, 1, &imagesInFlight[currentInFlightFrame], VK_TRUE, UINT64_MAX);
     }
     imagesInFlight[imageIndex] = inFlightFences[currentInFlightFrame];
+
+    // Recording should happen only if the images are changed
+    commandBuffers[imageIndex]->Record(frameBuffers[imageIndex]);
 }
 
 void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
@@ -132,8 +140,13 @@ void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
     currentInFlightFrame = (currentInFlightFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanBufferManager::LoadIntoBuffer(uint32_t bufferId, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
+uint32_t VulkanBufferManager::LoadIntoBuffer(
+    std::vector<Vertex> &vertices,
+    std::vector<uint32_t> &indices,
+    Material &material)
 {
+    uint32_t bufferId = GenerateBufferId();
+
     std::unique_ptr<VulkanBuffer> vertexBuffer = std::make_unique<VulkanBuffer>(
         context, commandPool, vmaAllocator);
     vertexBuffer->Load(
@@ -152,7 +165,7 @@ void VulkanBufferManager::LoadIntoBuffer(uint32_t bufferId, std::vector<Vertex> 
         static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
     indexBuffers.insert(std::make_pair(bufferId, std::move(indexBuffer)));
 
-    RecordCommandBuffers();
+    return bufferId;
 }
 
 void VulkanBufferManager::Submit(uint32_t &imageIndex)
@@ -163,6 +176,7 @@ void VulkanBufferManager::Submit(uint32_t &imageIndex)
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
+    VkCommandBuffer commandBuffer = commandBuffers[imageIndex]->GetBuffer();
     VkSemaphore semaphoresToWaitFor[] = { imageAvailableSemaphores[currentInFlightFrame] };
     VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentInFlightFrame] };
     VkPipelineStageFlags stagesToWaitFor[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -170,7 +184,7 @@ void VulkanBufferManager::Submit(uint32_t &imageIndex)
     submitInfo.pWaitSemaphores = semaphoresToWaitFor;
     submitInfo.pWaitDstStageMask = stagesToWaitFor;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &commandBuffer;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -191,6 +205,8 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
     std::unique_ptr<VulkanBuffer> &indexBuffer = indexBuffers[bufferId];
     indexBuffer->Unload();
     indexBuffers.erase(bufferId);
+
+    bufferIds.erase(bufferId);
 }
 
 void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
@@ -202,14 +218,12 @@ void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
 void VulkanBufferManager::CreateCommandBuffers()
 {
     commandBuffers.resize(frameBuffers.size());
-    VkCommandBufferAllocateInfo commandBufferInfo{};
-    commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferInfo.commandPool = commandPool;
-    commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
-    if (vkAllocateCommandBuffers(context->GetLogicalDevice(), &commandBufferInfo, commandBuffers.data()) != VK_SUCCESS)
+    for (uint32_t i = 0; i < commandBuffers.size(); i++)
     {
-        throw std::runtime_error("Failed to create command buffers");
+        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanDefaultRenderCommand>(
+            context, pipeline, commandPool, descriptorSets[i], vertexBuffers, indexBuffers, uniformBufferInput);
+        commandBuffer->Create();
+        commandBuffers[i] = std::move(commandBuffer);
     }
 }
 
@@ -360,11 +374,10 @@ void VulkanBufferManager::CreateUniformBuffers()
 
 void VulkanBufferManager::DestroyCommandBuffers()
 {
-    vkFreeCommandBuffers(
-        context->GetLogicalDevice(),
-        commandPool,
-        static_cast<uint32_t>(commandBuffers.size()),
-        commandBuffers.data());
+    for (std::unique_ptr<VulkanCommand> &commandBuffer : commandBuffers)
+    {
+        commandBuffer->Destroy();
+    }
     commandBuffers.clear();
 }
 
@@ -387,74 +400,23 @@ void VulkanBufferManager::DestroyUniformBuffers()
     uniformBuffers.clear();
 }
 
+uint32_t VulkanBufferManager::GenerateBufferId()
+{
+    uint32_t nextBufferId;
+    do
+    {
+        nextBufferId = distribution(generator);
+    } while (bufferIds.find(nextBufferId) != bufferIds.end());
+
+    bufferIds.insert(nextBufferId);
+    return nextBufferId;
+}
+
 void VulkanBufferManager::RecordCommandBuffers()
 {
-    for (uint32_t i = 0; i < commandBuffers.size(); i++)
+    for (uint32_t i = 0; i < frameBuffers.size(); i++)
     {
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to begin command buffer");
-        }
-
-        VkRenderPassBeginInfo renderPassBeginInfo{};
-        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassBeginInfo.renderPass = context->GetRenderPass();
-        renderPassBeginInfo.framebuffer = frameBuffers[i];
-        renderPassBeginInfo.renderArea.offset = { 0, 0 };
-        renderPassBeginInfo.renderArea.extent = context->GetSwapChainExtent();
-
-        // TODO: add depth stencil value as well
-        VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-        renderPassBeginInfo.clearValueCount = 1;
-        renderPassBeginInfo.pClearValues = &clearColor;
-
-        vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = static_cast<float>(context->GetSwapChainExtent().width);
-        viewport.height = static_cast<float>(context->GetSwapChainExtent().height);
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = context->GetSwapChainExtent();
-        vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
-
-        vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
-
-        for (const auto &vertexBufferEntry : vertexBuffers)
-        {
-            uint32_t bufferId = vertexBufferEntry.first;
-            VulkanBuffer *vertexBuffer = vertexBufferEntry.second.get();
-            VulkanBuffer *indexBuffer = indexBuffers[bufferId].get();
-
-            // Bind vertex buffer
-            VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-            // Bind index buffer
-            vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-            // Bind uniform buffer
-            vkCmdBindDescriptorSets(
-                commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipelineLayout(), 0, 1, &descriptorSets[i], 0, nullptr);
-
-            uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
-            vkCmdDrawIndexed(commandBuffers[i], indexCount, 1, 0, 0, 0);
-        }
-
-        vkCmdEndRenderPass(commandBuffers[i]);
-
-        if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to record the command bufferr");
-        }
+        commandBuffers[i]->Record(frameBuffers[i]);
     }
 }
 
@@ -481,8 +443,4 @@ void VulkanBufferManager::RecreateSwapChainAndBuffers()
 
     CreateFrameBuffers();
     CreateCommandBuffers();
-
-    // Need to re-record the command buffers
-    // since the viewport has become different
-    RecordCommandBuffers();
 }

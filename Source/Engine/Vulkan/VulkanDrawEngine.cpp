@@ -80,7 +80,7 @@ void VulkanDrawEngine::CreatePipeline()
     pipeline->Create();
 }
 
-void VulkanDrawEngine::LoadIntoBuffer(uint32_t bufferId, std::vector<Mesh> &meshes)
+void VulkanDrawEngine::LoadIntoBuffer(std::vector<Mesh> &meshes)
 {
     // TODO: need to do coordinate conversion here
     std::vector<Vertex> combinedVertices;
@@ -94,7 +94,10 @@ void VulkanDrawEngine::LoadIntoBuffer(uint32_t bufferId, std::vector<Mesh> &mesh
             combinedIndices.push_back(index + indexOffset);
         }
     }
-    bufferManager->LoadIntoBuffer(bufferId, combinedVertices, combinedIndices);
+
+    // TODO: insert a dummy material, which is not used by the buffer manager
+    Material dummyMaterial;
+    uint32_t bufferId = bufferManager->LoadIntoBuffer(combinedVertices, combinedIndices, dummyMaterial);
     staticBufferIds.insert(bufferId);
 }
 

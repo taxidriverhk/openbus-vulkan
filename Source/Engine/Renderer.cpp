@@ -1,3 +1,5 @@
+#include <thread>
+
 #include "Common/Logger.h"
 #include "Renderer.h"
 #include "Vulkan/VulkanDrawEngine.h"
@@ -36,37 +38,35 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 void Renderer::LoadScene()
 {
     // TODO: this part is hard-coded for testing only
-    Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", 2);
-    Mesh triangles[] =
+    auto asyncLoadingFunction = [this]()
     {
+        Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", 2);
+        uint32_t numberOfMeshes = 1;
+        for (uint32_t i = 0; i < numberOfMeshes; i++)
         {
-            1,
+            float offset = i * 0.01f;
+            Mesh rectangles[] =
             {
-                {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-            },
-            {
-                0, 1, 2, 2, 3, 0
-            }
-        },
-        {
-            2,
-            {
-                {{0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-                {{1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-                {{0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-                {{0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}}
-            },
-            {
-                0, 1, 2, 2, 3, 0
-            }
+                {
+                    1,
+                    {
+                        {{offset + -0.5f, offset + -0.5f}, {1.0f, 0.0f, 0.0f}},
+                        {{offset + 0.5f, offset + -0.5f}, {0.0f, 1.0f, 0.0f}},
+                        {{offset + 0.5f, offset + 0.5f}, {0.0f, 0.0f, 1.0f}},
+                        {{offset + -0.5f, offset + 0.5f}, {1.0f, 1.0f, 1.0f}}
+                    },
+                    {
+                        0, 1, 2, 2, 3, 0
+                    }
+                }
+            };
+            std::vector<Mesh> meshes(rectangles, rectangles + 1);
+            drawEngine->LoadIntoBuffer(meshes);
         }
     };
 
-    std::vector<Mesh> meshes(triangles, triangles + 2);
-
-    uint32_t bufferId = 1;
-    drawEngine->LoadIntoBuffer(1, meshes);
+    // TODO: need to create a secondary command pool and buffer for async loading
+    //std::thread asyncLoadingThread(asyncLoadingFunction);
+    //asyncLoadingThread.detach();
+    asyncLoadingFunction();
 }

@@ -17,6 +17,9 @@ public:
         VkDescriptorSet descriptorSet);
     ~VulkanCommand();
 
+    VkCommandBuffer GetBuffer() const { return buffer; }
+    VkDescriptorSet GetDescriptorSet() const { return descriptorSet; }
+
     void Create();
     void Destroy();
     virtual void Record(VkFramebuffer frameBuffer) = 0;

@@ -24,7 +24,7 @@ public:
     void Destroy() override;
     void DrawFrame() override;
     void Initialize() override;
-    void LoadIntoBuffer(uint32_t bufferId, std::vector<Mesh> &meshes) override;
+    void LoadIntoBuffer(std::vector<Mesh> &meshes) override;
     void UpdateCamera(Camera *camera) override;
 
 private:
@@ -50,5 +50,7 @@ private:
     std::unique_ptr<VulkanShader> vertexShader;
     std::unique_ptr<VulkanShader> fragmentShader;
 
+    // TODO: replace with entity ID to buffer ID map to allow
+    // drawing multiple instances of the same object with different transformations
     std::unordered_set<uint32_t> staticBufferIds;
 };
