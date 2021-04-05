@@ -35,13 +35,13 @@ void VulkanBufferManager::Create()
     CreateDescriptorPool();
     CreateDescriptorSets();
 
-    CreateCommandPool();
-    CreateCommandBuffers();
-
     CreateMemoryAllocator();
 
-    CreateSynchronizationObjects();
+    CreateCommandPool();
     CreateUniformBuffers();
+    CreateCommandBuffers();
+
+    CreateSynchronizationObjects();
 }
 
 void VulkanBufferManager::Destroy()
@@ -61,11 +61,11 @@ void VulkanBufferManager::Destroy()
         vkDestroyFence(logicalDevice, inFlightFences[i], nullptr);
     }
 
-    vmaDestroyAllocator(vmaAllocator);
-    vmaDestroyAllocator(imageVmaAllocator);
-
     DestroyCommandBuffers();
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+
+    vmaDestroyAllocator(vmaAllocator);
+    vmaDestroyAllocator(imageVmaAllocator);
 
     DestroyFrameBuffers();
 }
@@ -234,7 +234,7 @@ void VulkanBufferManager::CreateCommandBuffers()
     for (uint32_t i = 0; i < commandBuffers.size(); i++)
     {
         std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanDefaultRenderCommand>(
-            context, pipeline, commandPool, descriptorSets[i], vertexBuffers, indexBuffers, bufferIdToImageBufferMap, uniformBufferInput);
+            context, pipeline, commandPool, descriptorSets[i], vertexBuffers, indexBuffers, bufferIdToImageBufferMap, uniformBuffers[i].get());
         commandBuffer->Create();
         commandBuffers[i] = std::move(commandBuffer);
     }
@@ -365,10 +365,11 @@ void VulkanBufferManager::CreateUniformBuffers()
     for (uint32_t i = 0; i < frameBuffers.size(); i++)
     {
         std::unique_ptr<VulkanBuffer> uniformBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+        VulkanUniformBufferInput defaultUniformBufferInput{};
         uniformBuffer->Load(
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            nullptr,
+            &defaultUniformBufferInput,
             sizeof(VulkanUniformBufferInput));
         uniformBuffers.push_back(std::move(uniformBuffer));
 
@@ -386,7 +387,7 @@ void VulkanBufferManager::CreateUniformBuffers()
         uniformDescriptorWrite.descriptorCount = 1;
         uniformDescriptorWrite.pBufferInfo = &uniformBufferInfo;
 
-        vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &uniformDescriptorWrite, 0, nullptr);
+        //vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &uniformDescriptorWrite, 0, nullptr);
     }
 }
 

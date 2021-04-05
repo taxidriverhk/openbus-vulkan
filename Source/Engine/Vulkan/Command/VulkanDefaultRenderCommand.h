@@ -19,7 +19,7 @@ public:
         std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers,
         std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers,
         std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap,
-        VulkanUniformBufferInput &uniformBuffer);
+        VulkanBuffer *uniformBuffer);
     ~VulkanDefaultRenderCommand();
 
     void Record(VkFramebuffer frameBuffer) override;
@@ -31,5 +31,5 @@ private:
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers;
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers;
     std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap;
-    VulkanUniformBufferInput &uniformBuffer;
+    VulkanBuffer *uniformBuffer;
 };

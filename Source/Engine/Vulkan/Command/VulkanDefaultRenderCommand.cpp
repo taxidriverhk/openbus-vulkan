@@ -9,7 +9,7 @@ VulkanDefaultRenderCommand::VulkanDefaultRenderCommand(
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers,
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers,
     std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap,
-    VulkanUniformBufferInput &uniformBuffer)
+    VulkanBuffer *uniformBuffer)
     : VulkanCommand(context, pipeline, pool, descriptorSet),
       dataUpdated(true),
       vertexBuffers(vertexBuffers),
@@ -47,6 +47,8 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         // Bind index buffer
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        // Update uniform buffer descriptor set
+        UpdateDescriptor(0, uniformBuffer, sizeof(VulkanUniformBufferInput));
         // Update image sampler descriptor set
         VulkanImage *image = bufferIdToImageBufferMap[bufferId].get();
         UpdateDescriptor(1, image);

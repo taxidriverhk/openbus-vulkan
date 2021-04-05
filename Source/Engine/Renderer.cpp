@@ -59,10 +59,10 @@ void Renderer::LoadScene()
                 {
                     1,
                     {
-                        {{offset + -0.5f, offset + -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-                        {{offset + 0.5f, offset + -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-                        {{offset + 0.5f, offset + 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-                        {{offset + -0.5f, offset + 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}
+                        {{offset + -0.5f, offset + -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                        {{offset + 0.5f, offset + -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                        {{offset + 0.5f, offset + 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                        {{offset + -0.5f, offset + 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
                     },
                     {
                         0, 1, 2, 2, 3, 0
