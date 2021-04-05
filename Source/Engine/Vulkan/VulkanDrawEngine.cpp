@@ -93,12 +93,10 @@ void VulkanDrawEngine::LoadIntoBuffer(std::vector<Mesh> &meshes)
         {
             combinedIndices.push_back(index + indexOffset);
         }
-    }
 
-    // TODO: insert a dummy material, which is not used by the buffer manager
-    Material dummyMaterial;
-    uint32_t bufferId = bufferManager->LoadIntoBuffer(combinedVertices, combinedIndices, dummyMaterial);
-    staticBufferIds.insert(bufferId);
+        uint32_t bufferId = bufferManager->LoadIntoBuffer(combinedVertices, combinedIndices, *(mesh.material.get()));
+        staticBufferIds.insert(bufferId);
+    }
 }
 
 void VulkanDrawEngine::UpdateCamera(Camera *camera)

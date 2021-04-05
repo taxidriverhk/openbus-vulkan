@@ -19,11 +19,11 @@ public:
     VkImageView GetImageView() { return imageView; }
     VkSampler GetSampler() { return sampler; }
 
-    void Load(Image &srcImage);
+    void Load(Image *srcImage);
     void Unload();
 
 private:
-    void CreateImage(Image &srcImage);
+    void CreateImage(Image *srcImage);
     void CreateImageView();
     void CreateSampler();
 

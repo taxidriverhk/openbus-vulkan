@@ -43,7 +43,7 @@ static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_DESCRIPTOR_LAYOUT_
     }
 };
 
-static constexpr int VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT = 2;
+static constexpr int VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT = 3;
 static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRIPTIONS[] =
 {
     {
@@ -57,6 +57,12 @@ static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRI
         0,
         VK_FORMAT_R32G32B32_SFLOAT,
         offsetof(Vertex, color)
+    },
+    {
+        2,
+        0,
+        VK_FORMAT_R32G32_SFLOAT,
+        offsetof(Vertex, uv)
     }
 };
 

@@ -9,7 +9,8 @@ VulkanBuffer::VulkanBuffer(
       allocator(allocator),
       allocation(),
       buffer(),
-      loaded(false)
+      loaded(false),
+      size(0)
 {
 }
 

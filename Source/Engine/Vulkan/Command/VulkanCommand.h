@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <vulkan/vulkan.h>
 
 class VulkanBuffer;
@@ -29,8 +31,9 @@ protected:
     void EndCommandBuffer();
 
     void BindDescriptorSets();
-    void UpdateDescriptor(uint32_t binding, VulkanBuffer &dataBuffer, uint32_t size);
-    void UpdateDescriptor(uint32_t binding, VulkanImage &dataImage, uint32_t size);
+    void BindPipeline();
+    void UpdateDescriptor(uint32_t binding, VulkanBuffer *dataBuffer, uint32_t size);
+    void UpdateDescriptor(uint32_t binding, VulkanImage *dataImage);
 
 private:
     VulkanContext *context;

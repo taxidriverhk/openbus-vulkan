@@ -1,3 +1,4 @@
+#include "Engine/Vulkan/Image/VulkanImage.h"
 #include "VulkanDefaultRenderCommand.h"
 
 VulkanDefaultRenderCommand::VulkanDefaultRenderCommand(
@@ -7,11 +8,13 @@ VulkanDefaultRenderCommand::VulkanDefaultRenderCommand(
     VkDescriptorSet descriptorSet,
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers,
     std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers,
+    std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap,
     VulkanUniformBufferInput &uniformBuffer)
     : VulkanCommand(context, pipeline, pool, descriptorSet),
       dataUpdated(true),
       vertexBuffers(vertexBuffers),
       indexBuffers(indexBuffers),
+      bufferIdToImageBufferMap(bufferIdToImageBufferMap),
       uniformBuffer(uniformBuffer)
 {
 }
@@ -32,6 +35,8 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
 
     for (const auto &vertexBufferEntry : vertexBuffers)
     {
+        BindPipeline();
+
         uint32_t bufferId = vertexBufferEntry.first;
         VulkanBuffer *vertexBuffer = vertexBufferEntry.second.get();
         VulkanBuffer *indexBuffer = indexBuffers[bufferId].get();
@@ -42,7 +47,10 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         // Bind index buffer
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        // Bind uniform buffer
+        // Update image sampler descriptor set
+        VulkanImage *image = bufferIdToImageBufferMap[bufferId].get();
+        UpdateDescriptor(1, image);
+        // Bind descriptor sets
         BindDescriptorSets();
 
         uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);

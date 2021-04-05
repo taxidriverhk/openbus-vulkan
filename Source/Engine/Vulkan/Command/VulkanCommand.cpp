@@ -43,25 +43,12 @@ VkCommandBuffer VulkanCommand::BeginCommandBuffer(VkFramebuffer frameBuffer)
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
     if (vkBeginCommandBuffer(buffer, &beginInfo) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to begin command buffer");
     }
-
-    VkRenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = context->GetRenderPass();
-    renderPassBeginInfo.framebuffer = frameBuffer;
-    renderPassBeginInfo.renderArea.offset = { 0, 0 };
-    renderPassBeginInfo.renderArea.extent = context->GetSwapChainExtent();
-
-    // TODO: add depth stencil value as well
-    VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearColor;
-
-    vkCmdBeginRenderPass(buffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -77,7 +64,19 @@ VkCommandBuffer VulkanCommand::BeginCommandBuffer(VkFramebuffer frameBuffer)
     scissor.extent = context->GetSwapChainExtent();
     vkCmdSetScissor(buffer, 0, 1, &scissor);
 
-    vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = context->GetRenderPass();
+    renderPassBeginInfo.framebuffer = frameBuffer;
+    renderPassBeginInfo.renderArea.offset = { 0, 0 };
+    renderPassBeginInfo.renderArea.extent = context->GetSwapChainExtent();
+
+    // TODO: add depth stencil value as well
+    VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    renderPassBeginInfo.clearValueCount = 1;
+    renderPassBeginInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(buffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     return buffer;
 }
@@ -98,10 +97,15 @@ void VulkanCommand::BindDescriptorSets()
         buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
 }
 
-void VulkanCommand::UpdateDescriptor(uint32_t binding, VulkanBuffer &dataBuffer, uint32_t size)
+void VulkanCommand::BindPipeline()
+{
+    vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
+}
+
+void VulkanCommand::UpdateDescriptor(uint32_t binding, VulkanBuffer *dataBuffer, uint32_t size)
 {
     VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = dataBuffer.GetBuffer();
+    bufferInfo.buffer = dataBuffer->GetBuffer();
     bufferInfo.offset = 0;
     bufferInfo.range = static_cast<VkDeviceSize>(size);
 
@@ -117,11 +121,11 @@ void VulkanCommand::UpdateDescriptor(uint32_t binding, VulkanBuffer &dataBuffer,
     vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-void VulkanCommand::UpdateDescriptor(uint32_t binding, VulkanImage &dataImage, uint32_t size)
+void VulkanCommand::UpdateDescriptor(uint32_t binding, VulkanImage *dataImage)
 {
     VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageView = dataImage.GetImageView();
-    imageInfo.sampler = dataImage.GetSampler();
+    imageInfo.imageView = dataImage->GetImageView();
+    imageInfo.sampler = dataImage->GetSampler();
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     VkWriteDescriptorSet descriptorWrite{};

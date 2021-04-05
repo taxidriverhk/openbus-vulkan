@@ -65,6 +65,7 @@ private:
     void RecreateSwapChainAndBuffers();
 
     VmaAllocator vmaAllocator;
+    VmaAllocator imageVmaAllocator;
     VulkanContext *context;
     VulkanPipeline *pipeline;
 

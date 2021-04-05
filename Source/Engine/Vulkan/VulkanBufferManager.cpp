@@ -8,6 +8,7 @@ VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline 
     : context(context),
       pipeline(pipeline),
       vmaAllocator(),
+      imageVmaAllocator(),
       commandBuffers(),
       commandPool(),
       descriptorPool(),
@@ -61,6 +62,7 @@ void VulkanBufferManager::Destroy()
     }
 
     vmaDestroyAllocator(vmaAllocator);
+    vmaDestroyAllocator(imageVmaAllocator);
 
     DestroyCommandBuffers();
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
@@ -165,6 +167,13 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
         static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
     indexBuffers.insert(std::make_pair(bufferId, std::move(indexBuffer)));
 
+    // TODO: only load the diffuse image for now
+    std::unique_ptr<VulkanImage> diffuseImage = std::make_unique<VulkanImage>(
+        context, commandPool, imageVmaAllocator);
+    std::shared_ptr<Image> imageToLoad = material.diffuseImage;
+    diffuseImage->Load(imageToLoad.get());
+    bufferIdToImageBufferMap.insert(std::make_pair(bufferId, std::move(diffuseImage)));
+
     return bufferId;
 }
 
@@ -206,6 +215,10 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
     indexBuffer->Unload();
     indexBuffers.erase(bufferId);
 
+    std::unique_ptr<VulkanImage> &imageBuffer = bufferIdToImageBufferMap[bufferId];
+    imageBuffer->Unload();
+    bufferIdToImageBufferMap.erase(bufferId);
+
     bufferIds.erase(bufferId);
 }
 
@@ -221,7 +234,7 @@ void VulkanBufferManager::CreateCommandBuffers()
     for (uint32_t i = 0; i < commandBuffers.size(); i++)
     {
         std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanDefaultRenderCommand>(
-            context, pipeline, commandPool, descriptorSets[i], vertexBuffers, indexBuffers, uniformBufferInput);
+            context, pipeline, commandPool, descriptorSets[i], vertexBuffers, indexBuffers, bufferIdToImageBufferMap, uniformBufferInput);
         commandBuffer->Create();
         commandBuffers[i] = std::move(commandBuffer);
     }
@@ -312,6 +325,11 @@ void VulkanBufferManager::CreateMemoryAllocator()
     if (vmaCreateAllocator(&createInfo, &vmaAllocator) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create VMA allocator");
+    }
+
+    if (vmaCreateAllocator(&createInfo, &imageVmaAllocator) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create image VMA allocator");
     }
 }
 

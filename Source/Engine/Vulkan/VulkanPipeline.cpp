@@ -58,7 +58,7 @@ void VulkanPipeline::Create()
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.vertexAttributeDescriptionCount = 2;
+    vertexInputInfo.vertexAttributeDescriptionCount = VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT;
     vertexInputInfo.pVertexAttributeDescriptions = VERTEX_INPUT_ATTRIBUTE_DESCRIPTIONS;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};

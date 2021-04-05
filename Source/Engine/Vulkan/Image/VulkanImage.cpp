@@ -23,7 +23,7 @@ VulkanImage::~VulkanImage()
 {
 }
 
-void VulkanImage::Load(Image &srcImage)
+void VulkanImage::Load(Image *srcImage)
 {
     CreateImage(srcImage);
     CreateImageView();
@@ -48,11 +48,11 @@ void VulkanImage::Unload()
     this->loaded = false;
 }
 
-void VulkanImage::CreateImage(Image &srcImage)
+void VulkanImage::CreateImage(Image *srcImage)
 {
-    uint32_t width = static_cast<uint32_t>(srcImage.GetWidth());
-    uint32_t height = static_cast<uint32_t>(srcImage.GetHeight());
-    uint8_t *pixels = srcImage.GetPixels();
+    uint32_t width = static_cast<uint32_t>(srcImage->GetWidth());
+    uint32_t height = static_cast<uint32_t>(srcImage->GetHeight());
+    uint8_t *pixels = srcImage->GetPixels();
     VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * sizeof(uint32_t);
 
     VkImageCreateInfo imageInfo{};
@@ -76,8 +76,6 @@ void VulkanImage::CreateImage(Image &srcImage)
     {
         throw std::runtime_error("Failed to allocate image");
     }
-
-    vmaBindImageMemory(allocator, allocation, image);
 
     RunPipelineBarrierCommand(format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -117,7 +115,6 @@ void VulkanImage::CreateImageView()
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
 
-    VkImageView imageView;
     if (vkCreateImageView(logicalDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create texture image view");
@@ -127,10 +124,6 @@ void VulkanImage::CreateImageView()
 void VulkanImage::CreateSampler()
 {
     VkDevice logicalDevice = context->GetLogicalDevice();
-    VkPhysicalDevice physicalDevice = context->GetPhysicalDevice();
-
-    VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -139,8 +132,8 @@ void VulkanImage::CreateSampler()
     samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.maxAnisotropy = 1.0f;
     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     samplerInfo.compareEnable = VK_FALSE;
