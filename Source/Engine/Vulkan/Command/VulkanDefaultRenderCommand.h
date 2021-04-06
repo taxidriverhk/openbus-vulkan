@@ -15,7 +15,6 @@ public:
         VulkanContext *context,
         VulkanPipeline *pipeline,
         VkCommandPool pool,
-        VkDescriptorSet descriptorSet,
         std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers,
         std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers,
         std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap,

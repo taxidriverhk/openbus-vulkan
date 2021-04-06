@@ -38,7 +38,8 @@ public:
     void Draw(uint32_t &imageIndex);
 
 private:
-    static constexpr uint32_t MAX_DESCRIPTOR_SETS = 4;
+    // Should be good enough for images per scene
+    static constexpr uint32_t MAX_DESCRIPTOR_SETS = 3 * 8192U;
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
     // Only used for buffer ID generation, not a real limit
     static constexpr uint32_t MAX_VERTEX_BUFFERS = 20000;
@@ -50,7 +51,6 @@ private:
     void CreateCommandBuffers();
     void CreateCommandPool();
     void CreateDescriptorPool();
-    void CreateDescriptorSets();
     void CreateFrameBuffers();
     void CreateMemoryAllocator();
     void CreateSynchronizationObjects();
@@ -74,7 +74,6 @@ private:
 
     // Based on number of swap chain images (which is usually 3)
     std::vector<VkFramebuffer> frameBuffers;
-    std::vector<VkDescriptorSet> descriptorSets;
     std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
     std::vector<VkFence> imagesInFlight;
 

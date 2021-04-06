@@ -18,6 +18,43 @@ VulkanBuffer::~VulkanBuffer()
 {
 }
 
+void VulkanBuffer::BindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setNumber, VkPipelineLayout layout)
+{
+    vkCmdBindDescriptorSets(
+        commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, setNumber, 1, &descriptorSet, 0, nullptr);
+}
+
+void VulkanBuffer::CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+{
+    VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+    descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocInfo.descriptorPool = descriptorPool;
+    descriptorSetAllocInfo.descriptorSetCount = 1;
+    descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
+
+    if (vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSet) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate uniform buffer descriptor set");
+    }
+
+    // TODO: move to a separate method, this method is only called for uniform buffer for now
+    VkDescriptorBufferInfo uniformBufferInfo{};
+    uniformBufferInfo.buffer = buffer;
+    uniformBufferInfo.offset = 0;
+    uniformBufferInfo.range = sizeof(VulkanUniformBufferInput);
+
+    VkWriteDescriptorSet uniformDescriptorWrite{};
+    uniformDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    uniformDescriptorWrite.dstSet = descriptorSet;
+    uniformDescriptorWrite.dstBinding = 0;
+    uniformDescriptorWrite.dstArrayElement = 0;
+    uniformDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformDescriptorWrite.descriptorCount = 1;
+    uniformDescriptorWrite.pBufferInfo = &uniformBufferInfo;
+
+    vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &uniformDescriptorWrite, 0, nullptr);
+}
+
 void VulkanBuffer::Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void *data, uint32_t size)
 {
     if (loaded)

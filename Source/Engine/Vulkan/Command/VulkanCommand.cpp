@@ -7,12 +7,10 @@
 VulkanCommand::VulkanCommand(
     VulkanContext *context,
     VulkanPipeline *pipeline,
-    VkCommandPool pool,
-    VkDescriptorSet descriptorSet)
+    VkCommandPool pool)
     : context(context),
       pipeline(pipeline),
       pool(pool),
-      descriptorSet(descriptorSet),
       buffer()
 {
 }
@@ -91,51 +89,7 @@ void VulkanCommand::EndCommandBuffer()
     }
 }
 
-void VulkanCommand::BindDescriptorSets()
-{
-    vkCmdBindDescriptorSets(
-        buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
-}
-
 void VulkanCommand::BindPipeline()
 {
     vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
-}
-
-void VulkanCommand::UpdateDescriptor(uint32_t binding, VulkanBuffer *dataBuffer, uint32_t size)
-{
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = dataBuffer->GetBuffer();
-    bufferInfo.offset = 0;
-    bufferInfo.range = static_cast<VkDeviceSize>(size);
-
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = descriptorSet;
-    descriptorWrite.dstBinding = binding;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-
-    vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
-}
-
-void VulkanCommand::UpdateDescriptor(uint32_t binding, VulkanImage *dataImage)
-{
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageView = dataImage->GetImageView();
-    imageInfo.sampler = dataImage->GetSampler();
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = descriptorSet;
-    descriptorWrite.dstBinding = binding;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pImageInfo = &imageInfo;
-
-    vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }

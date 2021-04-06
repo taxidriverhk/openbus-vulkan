@@ -17,13 +17,13 @@ static constexpr VkDescriptorPoolSize STATIC_PIPELINE_DESCRIPTOR_POOL_SIZES[] =
     },
     {
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        3 * 3                                       // reserved for diffuse, normal
+        8192 * 3                                    // reserved for diffuse, normal
                                                     // and specular for each frame buffer
     }
 };
 
-static constexpr int STATIC_PIPELINE_DESCRIPTOR_LAYOUT_BINDING_COUNT = 2;
-static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_DESCRIPTOR_LAYOUT_BINDINGS[] =
+static constexpr int STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDING_COUNT = 1;
+static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDINGS[] =
 {
     // Uniform buffer
     {
@@ -32,10 +32,15 @@ static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_DESCRIPTOR_LAYOUT_
         1,                                          // descriptorCount
         VK_SHADER_STAGE_VERTEX_BIT,                 // stageFlags
         nullptr                                     // pImmutableSamplers
-    },
+    }
+};
+
+static constexpr int STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDING_COUNT = 1;
+static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDINGS[] =
+{
     // Texture sampler (diffuse only for now)
     {
-        1,
+        0,
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         1,
         VK_SHADER_STAGE_FRAGMENT_BIT,

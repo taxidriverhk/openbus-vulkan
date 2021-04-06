@@ -15,7 +15,8 @@ public:
 
     VkPipeline GetPipeline() const { return pipeline; }
     VkPipelineLayout GetPipelineLayout() const { return pipelineLayout; }
-    VkDescriptorSetLayout GetDescriptorSetLayout() const { return descriptorSetLayout; }
+    VkDescriptorSetLayout GetUniformDescriptorSetLayout() const { return uniformDescriptorSetLayout; }
+    VkDescriptorSetLayout GetPerObjectDescriptorSetLayout() const { return perObjectDescriptorSetLayout; }
 
     void Create();
     void Destroy();
@@ -30,5 +31,6 @@ private:
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
 
-    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSetLayout uniformDescriptorSetLayout;
+    VkDescriptorSetLayout perObjectDescriptorSetLayout;
 };

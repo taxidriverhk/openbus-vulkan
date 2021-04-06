@@ -4,7 +4,8 @@
 
 VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanShader *vertexShader, VulkanShader *fragmentShader)
     : context(context),
-      descriptorSetLayout(),
+      uniformDescriptorSetLayout(),
+      perObjectDescriptorSetLayout(),
       fragmentShader(fragmentShader),
       vertexShader(vertexShader),
       pipeline(),
@@ -18,20 +19,30 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::Create()
 {
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
-    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    descriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_DESCRIPTOR_LAYOUT_BINDINGS;
-    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+    VkDescriptorSetLayoutCreateInfo uniformDescriptorSetLayoutInfo{};
+    uniformDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    uniformDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    uniformDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDINGS;
+    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformDescriptorSetLayoutInfo, nullptr, &uniformDescriptorSetLayout) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create descriptor set layout");
+        throw std::runtime_error("Failed to create uniform descriptor set layout");
     }
 
+    VkDescriptorSetLayoutCreateInfo perObjectDescriptorSetLayoutInfo{};
+    perObjectDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    perObjectDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    perObjectDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDINGS;
+    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &perObjectDescriptorSetLayoutInfo, nullptr, &perObjectDescriptorSetLayout) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create per object descriptor set layout");
+    }
+
+    VkDescriptorSetLayout descriptorSetLayouts[] = { uniformDescriptorSetLayout, perObjectDescriptorSetLayout };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
     if (vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create pipeline layout");
@@ -135,7 +146,8 @@ void VulkanPipeline::Create()
 
 void VulkanPipeline::Destroy()
 {
-    vkDestroyDescriptorSetLayout(context->GetLogicalDevice(), descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(context->GetLogicalDevice(), uniformDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(context->GetLogicalDevice(), perObjectDescriptorSetLayout, nullptr);
     vkDestroyPipeline(context->GetLogicalDevice(), pipeline, nullptr);
     vkDestroyPipelineLayout(context->GetLogicalDevice(), pipelineLayout, nullptr);
 }

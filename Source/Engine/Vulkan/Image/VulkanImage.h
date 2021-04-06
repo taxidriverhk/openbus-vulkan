@@ -19,13 +19,15 @@ public:
     VkImageView GetImageView() { return imageView; }
     VkSampler GetSampler() { return sampler; }
 
-    void Load(Image *srcImage);
+    void BindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setNumber, VkPipelineLayout layout);
+    void Load(Image *srcImage, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
     void Unload();
 
 private:
     void CreateImage(Image *srcImage);
     void CreateImageView();
     void CreateSampler();
+    void CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
 
     VkCommandBuffer BeginSingleUseCommandBuffer();
     void CopyDataToImageBuffer(VkBuffer stagingBuffer, uint32_t width, uint32_t height);
@@ -43,4 +45,6 @@ private:
     VkImageView imageView;
     VkSampler sampler;
     VmaAllocation allocation;
+
+    VkDescriptorSet descriptorSet;
 };

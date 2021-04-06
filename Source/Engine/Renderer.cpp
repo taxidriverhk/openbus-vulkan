@@ -41,7 +41,7 @@ void Renderer::LoadScene()
     auto asyncLoadingFunction = [this]()
     {
         Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", 2);
-        uint32_t numberOfMeshes = 2;
+        uint32_t numberOfMeshes = 200;
 
         Material material1{};
         material1.id = 1;

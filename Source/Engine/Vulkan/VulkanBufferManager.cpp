@@ -12,7 +12,6 @@ VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline 
       commandBuffers(),
       commandPool(),
       descriptorPool(),
-      descriptorSets(),
       currentInFlightFrame(0),
       indexBuffers(),
       vertexBuffers(),
@@ -33,7 +32,6 @@ void VulkanBufferManager::Create()
     CreateFrameBuffers();
 
     CreateDescriptorPool();
-    CreateDescriptorSets();
 
     CreateMemoryAllocator();
 
@@ -49,8 +47,7 @@ void VulkanBufferManager::Destroy()
     DestroyUniformBuffers();
 
     // Destroying the descriptor pool will automatically free the descriptor sets
-    // created using the pool
-    descriptorSets.clear();
+    // created using the pool, so no need to explicitly free each descriptor set
     vkDestroyDescriptorPool(context->GetLogicalDevice(), descriptorPool, nullptr);
 
     VkDevice logicalDevice = context->GetLogicalDevice();
@@ -171,7 +168,7 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
     std::unique_ptr<VulkanImage> diffuseImage = std::make_unique<VulkanImage>(
         context, commandPool, imageVmaAllocator);
     std::shared_ptr<Image> imageToLoad = material.diffuseImage;
-    diffuseImage->Load(imageToLoad.get());
+    diffuseImage->Load(imageToLoad.get(), descriptorPool, pipeline->GetPerObjectDescriptorSetLayout());
     bufferIdToImageBufferMap.insert(std::make_pair(bufferId, std::move(diffuseImage)));
 
     return bufferId;
@@ -234,7 +231,13 @@ void VulkanBufferManager::CreateCommandBuffers()
     for (uint32_t i = 0; i < commandBuffers.size(); i++)
     {
         std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanDefaultRenderCommand>(
-            context, pipeline, commandPool, descriptorSets[i], vertexBuffers, indexBuffers, bufferIdToImageBufferMap, uniformBuffers[i].get());
+            context,
+            pipeline,
+            commandPool,
+            vertexBuffers,
+            indexBuffers,
+            bufferIdToImageBufferMap,
+            uniformBuffers[i].get());
         commandBuffer->Create();
         commandBuffers[i] = std::move(commandBuffer);
     }
@@ -263,26 +266,6 @@ void VulkanBufferManager::CreateDescriptorPool()
     if (vkCreateDescriptorPool(context->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create descriptor pool");
-    }
-}
-
-void VulkanBufferManager::CreateDescriptorSets()
-{
-    descriptorSets.resize(frameBuffers.size());
-    VkDescriptorSetLayout descriptorSetLayout = pipeline->GetDescriptorSetLayout();
-
-    for (uint32_t i = 0; i < descriptorSets.size(); i++)
-    {
-        VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
-        descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        descriptorSetAllocInfo.descriptorPool = descriptorPool;
-        descriptorSetAllocInfo.descriptorSetCount = 1;
-        descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
-
-        if (vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSets[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to allocate descriptor set");
-        }
     }
 }
 
@@ -367,27 +350,12 @@ void VulkanBufferManager::CreateUniformBuffers()
         std::unique_ptr<VulkanBuffer> uniformBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
         VulkanUniformBufferInput defaultUniformBufferInput{};
         uniformBuffer->Load(
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             &defaultUniformBufferInput,
             sizeof(VulkanUniformBufferInput));
+        uniformBuffer->CreateDescriptorSet(descriptorPool, pipeline->GetUniformDescriptorSetLayout());
         uniformBuffers.push_back(std::move(uniformBuffer));
-
-        VkDescriptorBufferInfo uniformBufferInfo{};
-        uniformBufferInfo.buffer = uniformBuffers[i]->GetBuffer();
-        uniformBufferInfo.offset = 0;
-        uniformBufferInfo.range = sizeof(VulkanUniformBufferInput);
-
-        VkWriteDescriptorSet uniformDescriptorWrite{};
-        uniformDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        uniformDescriptorWrite.dstSet = descriptorSets[i];
-        uniformDescriptorWrite.dstBinding = 0;
-        uniformDescriptorWrite.dstArrayElement = 0;
-        uniformDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformDescriptorWrite.descriptorCount = 1;
-        uniformDescriptorWrite.pBufferInfo = &uniformBufferInfo;
-
-        //vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &uniformDescriptorWrite, 0, nullptr);
     }
 }
 

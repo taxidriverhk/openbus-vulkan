@@ -23,11 +23,18 @@ VulkanImage::~VulkanImage()
 {
 }
 
-void VulkanImage::Load(Image *srcImage)
+void VulkanImage::BindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setNumber, VkPipelineLayout layout)
+{
+    vkCmdBindDescriptorSets(
+        commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, setNumber, 1, &descriptorSet, 0, nullptr);
+}
+
+void VulkanImage::Load(Image *srcImage, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
 {
     CreateImage(srcImage);
     CreateImageView();
     CreateSampler();
+    CreateDescriptorSet(descriptorPool, descriptorSetLayout);
 
     this->loaded = true;
 }
@@ -144,6 +151,37 @@ void VulkanImage::CreateSampler()
     {
         throw std::runtime_error("Failed to create texture sampler");
     }
+}
+
+void VulkanImage::CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+{
+    VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+    descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocInfo.descriptorPool = descriptorPool;
+    descriptorSetAllocInfo.descriptorSetCount = 1;
+    descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
+
+    VkResult result = vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSet);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate image descriptor set");
+    }
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageView = imageView;
+    imageInfo.sampler = sampler;
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pImageInfo = &imageInfo;
+
+    vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
 VkCommandBuffer VulkanImage::BeginSingleUseCommandBuffer()
