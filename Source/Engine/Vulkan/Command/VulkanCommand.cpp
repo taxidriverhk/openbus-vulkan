@@ -1,3 +1,4 @@
+#include "Engine/Vulkan/VulkanCommon.h"
 #include "Engine/Vulkan/VulkanContext.h"
 #include "Engine/Vulkan/VulkanPipeline.h"
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
@@ -26,10 +27,9 @@ void VulkanCommand::Create()
     commandBufferInfo.commandPool = pool;
     commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     commandBufferInfo.commandBufferCount = 1;
-    if (vkAllocateCommandBuffers(context->GetLogicalDevice(), &commandBufferInfo, &buffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create command buffer");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkAllocateCommandBuffers(context->GetLogicalDevice(), &commandBufferInfo, &buffer),
+        "Failed to create command buffer");
 }
 
 void VulkanCommand::Destroy()
@@ -43,10 +43,9 @@ VkCommandBuffer VulkanCommand::BeginCommandBuffer(VkFramebuffer frameBuffer)
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-    if (vkBeginCommandBuffer(buffer, &beginInfo) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to begin command buffer");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkBeginCommandBuffer(buffer, &beginInfo),
+        "Failed to begin command buffer");
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -82,11 +81,7 @@ VkCommandBuffer VulkanCommand::BeginCommandBuffer(VkFramebuffer frameBuffer)
 void VulkanCommand::EndCommandBuffer()
 {
     vkCmdEndRenderPass(buffer);
-
-    if (vkEndCommandBuffer(buffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to end the command buffer");
-    }
+    ASSERT_VK_RESULT_SUCCESS(vkEndCommandBuffer(buffer), "Failed to end the command buffer");
 }
 
 void VulkanCommand::BindPipeline()

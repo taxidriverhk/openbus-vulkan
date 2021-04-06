@@ -1,3 +1,4 @@
+#include "VulkanCommon.h"
 #include "VulkanShader.h"
 
 std::map<VulkanShaderType, shaderc_shader_kind> VulkanShader::shaderTypeToKindMap =
@@ -54,10 +55,9 @@ void VulkanShader::Load()
     createInfo.codeSize = compiledShaderBytes.size() * sizeof(uint32_t);
     createInfo.pCode = compiledShaderBytes.data();
 
-    if (vkCreateShaderModule(context->GetLogicalDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to load shader module");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateShaderModule(context->GetLogicalDevice(), &createInfo, nullptr, &shaderModule),
+        "Failed to load shader module");
 }
 
 void VulkanShader::Unload()

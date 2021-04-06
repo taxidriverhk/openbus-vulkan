@@ -1,6 +1,6 @@
 #define VMA_IMPLEMENTATION
 
-#include "Engine/Vulkan/Common/VulkanCommon.h"
+#include "Engine/Vulkan/VulkanCommon.h"
 #include "Engine/Vulkan/Command/VulkanDefaultRenderCommand.h"
 #include "VulkanBufferManager.h"
 
@@ -79,7 +79,9 @@ void VulkanBufferManager::BeginFrame(uint32_t &imageIndex)
     VkDevice logicalDevice = context->GetLogicalDevice();
     VkSwapchainKHR swapChain = context->GetSwapChain();
 
-    vkWaitForFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame], VK_TRUE, UINT64_MAX);
+    ASSERT_VK_RESULT_SUCCESS(
+        vkWaitForFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame], VK_TRUE, UINT64_MAX),
+        "Failed to wait for fences");
 
     VkResult acquireImageResult = vkAcquireNextImageKHR(
         logicalDevice,
@@ -103,7 +105,9 @@ void VulkanBufferManager::BeginFrame(uint32_t &imageIndex)
     // The acquire image is still in use
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
     {
-        vkWaitForFences(logicalDevice, 1, &imagesInFlight[currentInFlightFrame], VK_TRUE, UINT64_MAX);
+        ASSERT_VK_RESULT_SUCCESS(
+            vkWaitForFences(logicalDevice, 1, &imagesInFlight[currentInFlightFrame], VK_TRUE, UINT64_MAX),
+            "Failed to wait for fences");
     }
     imagesInFlight[imageIndex] = inFlightFences[currentInFlightFrame];
 
@@ -194,12 +198,13 @@ void VulkanBufferManager::Submit(uint32_t &imageIndex)
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    vkResetFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame]);
+    ASSERT_VK_RESULT_SUCCESS(
+        vkResetFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame]),
+        "Failed to reset fences");
 
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentInFlightFrame]) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit the command for drawing the buffer");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentInFlightFrame]),
+        "Failed to submit the command for drawing the buffer");
 }
 
 void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
@@ -249,10 +254,9 @@ void VulkanBufferManager::CreateCommandPool()
     commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
     commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    if (vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create command pool");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool),
+        "Failed to create command pool");
 }
 
 void VulkanBufferManager::CreateDescriptorPool()
@@ -262,11 +266,9 @@ void VulkanBufferManager::CreateDescriptorPool()
     poolInfo.poolSizeCount = STATIC_PIPELINE_DESCRIPTOR_POOL_SIZE_COUNT;
     poolInfo.pPoolSizes = STATIC_PIPELINE_DESCRIPTOR_POOL_SIZES;
     poolInfo.maxSets = MAX_DESCRIPTOR_SETS;
-
-    if (vkCreateDescriptorPool(context->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create descriptor pool");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDescriptorPool(context->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool),
+        "Failed to create descriptor pool");
 }
 
 void VulkanBufferManager::CreateFrameBuffers()
@@ -288,10 +290,9 @@ void VulkanBufferManager::CreateFrameBuffers()
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(context->GetLogicalDevice(), &framebufferInfo, nullptr, &frameBuffer) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create frame buffer");
-        }
+        ASSERT_VK_RESULT_SUCCESS(
+            vkCreateFramebuffer(context->GetLogicalDevice(), &framebufferInfo, nullptr, &frameBuffer),
+            "Failed to create frame buffer");
 
         frameBuffers.push_back(frameBuffer);
     }
@@ -305,15 +306,12 @@ void VulkanBufferManager::CreateMemoryAllocator()
     createInfo.vulkanApiVersion = VK_API_VERSION_1_0;
     createInfo.instance = context->GetInstance();
 
-    if (vmaCreateAllocator(&createInfo, &vmaAllocator) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create VMA allocator");
-    }
-
-    if (vmaCreateAllocator(&createInfo, &imageVmaAllocator) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create image VMA allocator");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vmaCreateAllocator(&createInfo, &vmaAllocator),
+        "Failed to create VMA allocator");
+    ASSERT_VK_RESULT_SUCCESS(
+        vmaCreateAllocator(&createInfo, &imageVmaAllocator),
+        "Failed to create image VMA allocator");
 }
 
 void VulkanBufferManager::CreateSynchronizationObjects()
@@ -334,12 +332,15 @@ void VulkanBufferManager::CreateSynchronizationObjects()
     VkDevice logicalDevice = context->GetLogicalDevice();
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS
-            || vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS
-            || vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create synchronization objects for a frame");
-        }
+        ASSERT_VK_RESULT_SUCCESS(
+            vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]),
+            "Failed to create synchronization objects for a frame");
+        ASSERT_VK_RESULT_SUCCESS(
+            vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]),
+            "Failed to create synchronization objects for a frame");
+        ASSERT_VK_RESULT_SUCCESS(
+            vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]),
+            "Failed to create synchronization objects for a frame");
     }
 }
 

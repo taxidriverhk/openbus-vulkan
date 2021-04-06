@@ -1,5 +1,5 @@
 #include "Engine/Mesh.h"
-#include "Common/VulkanCommon.h"
+#include "VulkanCommon.h"
 #include "VulkanPipeline.h"
 
 VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanShader *vertexShader, VulkanShader *fragmentShader)
@@ -23,19 +23,17 @@ void VulkanPipeline::Create()
     uniformDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     uniformDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDING_COUNT;
     uniformDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDINGS;
-    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformDescriptorSetLayoutInfo, nullptr, &uniformDescriptorSetLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create uniform descriptor set layout");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformDescriptorSetLayoutInfo, nullptr, &uniformDescriptorSetLayout),
+        "Failed to create uniform descriptor set layout");
 
     VkDescriptorSetLayoutCreateInfo perObjectDescriptorSetLayoutInfo{};
     perObjectDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     perObjectDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDING_COUNT;
     perObjectDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDINGS;
-    if (vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &perObjectDescriptorSetLayoutInfo, nullptr, &perObjectDescriptorSetLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create per object descriptor set layout");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &perObjectDescriptorSetLayoutInfo, nullptr, &perObjectDescriptorSetLayout),
+        "Failed to create per object descriptor set layout");
 
     VkDescriptorSetLayout descriptorSetLayouts[] = { uniformDescriptorSetLayout, perObjectDescriptorSetLayout };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -43,10 +41,9 @@ void VulkanPipeline::Create()
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.setLayoutCount = 2;
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
-    if (vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create pipeline layout");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
+        "Failed to create pipeline layout");
 
     VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
     vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -138,10 +135,9 @@ void VulkanPipeline::Create()
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(context->GetLogicalDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create pipeline");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateGraphicsPipelines(context->GetLogicalDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline),
+        "Failed to create pipeline");
 }
 
 void VulkanPipeline::Destroy()

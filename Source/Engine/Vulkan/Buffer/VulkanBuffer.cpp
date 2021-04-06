@@ -1,3 +1,4 @@
+#include "Engine/Vulkan/VulkanCommon.h"
 #include "VulkanBuffer.h"
 
 VulkanBuffer::VulkanBuffer(
@@ -36,10 +37,9 @@ void VulkanBuffer::CreateDescriptorSet(
     descriptorSetAllocInfo.descriptorSetCount = 1;
     descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
 
-    if (vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSet) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate uniform buffer descriptor set");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSet),
+        "Failed to allocate uniform buffer descriptor set");
 
     VkDescriptorBufferInfo descriptorBufferInfo{};
     descriptorBufferInfo.buffer = buffer;
@@ -173,8 +173,7 @@ void VulkanBuffer::CreateBuffer(
 
     VmaAllocationCreateInfo allocationInfo{};
     allocationInfo.requiredFlags = properties;
-    if (vmaCreateBuffer(allocator, &bufferCreateInfo, &allocationInfo, &buffer, &allocation, nullptr) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate buffer");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vmaCreateBuffer(allocator, &bufferCreateInfo, &allocationInfo, &buffer, &allocation, nullptr),
+        "Failed to allocate buffer");
 }

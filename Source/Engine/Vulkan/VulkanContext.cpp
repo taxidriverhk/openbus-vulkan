@@ -1,4 +1,5 @@
 #include "Common/Logger.h"
+#include "VulkanCommon.h"
 #include "VulkanContext.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -110,10 +111,9 @@ void VulkanContext::CreateImageViews()
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(logicalDevice, &createInfo, nullptr, &swapChainImageView) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create image views");
-        }
+        ASSERT_VK_RESULT_SUCCESS(
+            vkCreateImageView(logicalDevice, &createInfo, nullptr, &swapChainImageView),
+            "Failed to create image views");
         swapChainImageViews.push_back(swapChainImageView);
     }
 }
@@ -157,10 +157,9 @@ void VulkanContext::CreateInstance()
     vulkanCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     vulkanCreateInfo.ppEnabledExtensionNames = extensions.data();
     
-    if (vkCreateInstance(&vulkanCreateInfo, nullptr, &instance) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create Vulkan instance");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateInstance(&vulkanCreateInfo, nullptr, &instance),
+        "Failed to create Vulkan instance");
 }
 
 void VulkanContext::CreateLogicalDevice()
@@ -197,10 +196,9 @@ void VulkanContext::CreateLogicalDevice()
         logicalDeviceCreateInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(physicalDevice, &logicalDeviceCreateInfo, nullptr, &logicalDevice) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create logical device");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDevice(physicalDevice, &logicalDeviceCreateInfo, nullptr, &logicalDevice),
+        "Failed to create logical device");
 }
 
 void VulkanContext::CreateRenderPass()
@@ -231,10 +229,9 @@ void VulkanContext::CreateRenderPass()
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
 
-    if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create render pass");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass),
+        "Failed to create render pass");
 }
 
 void VulkanContext::CreateSwapChain()
@@ -321,10 +318,9 @@ void VulkanContext::CreateSwapChain()
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = oldSwapChain;
 
-    if (vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create swap chain");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, &swapChain),
+        "Failed to create swap chain");
 }
 
 void VulkanContext::CreateWindowSurface()
@@ -372,7 +368,9 @@ void VulkanContext::EnableDebugging()
 
     PFN_vkCreateDebugUtilsMessengerEXT createDebugFunc = (PFN_vkCreateDebugUtilsMessengerEXT)
         vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    createDebugFunc(instance, &createInfo, nullptr, &debugMessenger);
+    ASSERT_VK_RESULT_SUCCESS(
+        createDebugFunc(instance, &createInfo, nullptr, &debugMessenger),
+        "Failed to create debug function");
 }
 
 void VulkanContext::FindGraphicsAndPresentQueues()

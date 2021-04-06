@@ -6,6 +6,13 @@
 
 #include "Engine/Mesh.h"
 
+#define ASSERT_VK_RESULT_SUCCESS(result, error)                                                   \
+    if (result != VK_SUCCESS)                                                                     \
+    {                                                                                             \
+        std::string message = "Vulkan API call error (" + std::to_string(result) + "): " + error; \
+        throw std::runtime_error(message);                                                        \
+    }                                                                                             \
+
 static constexpr char *SHADER_MAIN_FUNCTION_NAME = "main";
 
 static constexpr int STATIC_PIPELINE_DESCRIPTOR_POOL_SIZE_COUNT = 2;
@@ -70,16 +77,3 @@ static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRI
         offsetof(Vertex, uv)
     }
 };
-
-static void AssertVulkanResult(VkResult result, std::string error)
-{
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error("Vulkan API call error: " + error);
-    }
-}
-
-static void AssertVulkanResult(VkResult result)
-{
-    AssertVulkanResult(result, "error code -" + std::to_string(result));
-}

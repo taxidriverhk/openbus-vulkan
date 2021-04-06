@@ -1,4 +1,5 @@
 #include "Engine/Image.h"
+#include "Engine/Vulkan/VulkanCommon.h"
 #include "Engine/Vulkan/VulkanContext.h"
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
 #include "VulkanImage.h"
@@ -79,10 +80,9 @@ void VulkanImage::CreateImage(Image *srcImage)
 
     VmaAllocationCreateInfo allocationInfo{};
     allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    if (vmaCreateImage(allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate image");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vmaCreateImage(allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr),
+        "Failed to allocate image");
 
     RunPipelineBarrierCommand(format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -122,10 +122,9 @@ void VulkanImage::CreateImageView()
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
 
-    if (vkCreateImageView(logicalDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create texture image view");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateImageView(logicalDevice, &viewInfo, nullptr, &imageView),
+        "Failed to create texture image view");
 }
 
 void VulkanImage::CreateSampler()
@@ -147,10 +146,9 @@ void VulkanImage::CreateSampler()
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-    if (vkCreateSampler(logicalDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create texture sampler");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateSampler(logicalDevice, &samplerInfo, nullptr, &sampler),
+        "Failed to create texture sampler");
 }
 
 void VulkanImage::CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
@@ -161,11 +159,9 @@ void VulkanImage::CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescrip
     descriptorSetAllocInfo.descriptorSetCount = 1;
     descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
 
-    VkResult result = vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSet);
-    if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate image descriptor set");
-    }
+    ASSERT_VK_RESULT_SUCCESS(
+        vkAllocateDescriptorSets(context->GetLogicalDevice(), &descriptorSetAllocInfo, &descriptorSet),
+        "Failed to allocate image descriptor set");
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageView = imageView;
