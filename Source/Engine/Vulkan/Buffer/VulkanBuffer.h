@@ -25,7 +25,11 @@ public:
     VkBuffer GetBuffer() const { return buffer; }
 
     void BindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setNumber, VkPipelineLayout layout);
-    void CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
+    void CreateDescriptorSet(
+        VkDescriptorPool descriptorPool,
+        VkDescriptorSetLayout descriptorSetLayout,
+        VkDescriptorType type,
+        uint32_t size);
     void Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void *data, uint32_t size);
     void Update(void *data, uint32_t size);
     void Unload();

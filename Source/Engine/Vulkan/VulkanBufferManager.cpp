@@ -354,7 +354,11 @@ void VulkanBufferManager::CreateUniformBuffers()
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             &defaultUniformBufferInput,
             sizeof(VulkanUniformBufferInput));
-        uniformBuffer->CreateDescriptorSet(descriptorPool, pipeline->GetUniformDescriptorSetLayout());
+        uniformBuffer->CreateDescriptorSet(
+            descriptorPool,
+            pipeline->GetUniformDescriptorSetLayout(),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            sizeof(VulkanUniformBufferInput));
         uniformBuffers.push_back(std::move(uniformBuffer));
     }
 }
