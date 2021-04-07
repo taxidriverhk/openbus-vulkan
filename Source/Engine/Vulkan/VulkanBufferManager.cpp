@@ -146,7 +146,7 @@ void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
 uint32_t VulkanBufferManager::LoadIntoBuffer(
     std::vector<Vertex> &vertices,
     std::vector<uint32_t> &indices,
-    Material &material)
+    Material *material)
 {
     uint32_t bufferId = GenerateBufferId();
 
@@ -171,7 +171,7 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
     // TODO: only load the diffuse image for now
     std::unique_ptr<VulkanImage> diffuseImage = std::make_unique<VulkanImage>(
         context, commandPool, imageVmaAllocator);
-    std::shared_ptr<Image> imageToLoad = material.diffuseImage;
+    std::shared_ptr<Image> imageToLoad = material->diffuseImage;
     diffuseImage->Load(imageToLoad.get(), descriptorPool, pipeline->GetPerObjectDescriptorSetLayout());
     bufferIdToImageBufferMap.insert(std::make_pair(bufferId, std::move(diffuseImage)));
 

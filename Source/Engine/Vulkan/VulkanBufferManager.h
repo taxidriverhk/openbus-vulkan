@@ -30,7 +30,7 @@ public:
     uint32_t LoadIntoBuffer(
         std::vector<Vertex> &vertices,
         std::vector<uint32_t> &indices,
-        Material &material);
+        Material *material);
     void UnloadBuffer(uint32_t bufferId);
     void UpdateUniformBuffer(VulkanUniformBufferInput input);
 

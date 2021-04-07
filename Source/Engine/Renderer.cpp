@@ -1,4 +1,6 @@
-#include <thread>
+#include <algorithm>
+#include <execution>
+#include <numeric>
 
 #include "Common/Logger.h"
 #include "Renderer.h"
@@ -37,12 +39,13 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 
 void Renderer::LoadScene()
 {
-    // TODO: this part is hard-coded for testing only
-    auto asyncLoadingFunction = [this]()
-    {
-        Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", 2);
-        uint32_t numberOfMeshes = 200;
+    uint32_t numberOfMeshes = 200;
+    Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", numberOfMeshes);
 
+    std::mutex addMeshMutex;
+    std::vector<Mesh> meshesLoaded;
+    auto asyncLoadMeshInfoBuffer = [&](const int &index)
+    {
         Material material1{};
         material1.id = 1;
         material1.diffuseImage = std::make_shared<Image>("texture.jpg");
@@ -51,32 +54,38 @@ void Renderer::LoadScene()
         material2.id = 2;
         material2.diffuseImage = std::make_shared<Image>("texture2.jpg");
 
-        for (uint32_t i = 0; i < numberOfMeshes; i++)
+        float offset = index * 0.5f;
+        Mesh rectangle
         {
-            float offset = i * 0.5f;
-            Mesh rectangles[] =
+            1,
             {
-                {
-                    1,
-                    {
-                        {{offset + -0.5f, offset + -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-                        {{offset + 0.5f, offset + -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-                        {{offset + 0.5f, offset + 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-                        {{offset + -0.5f, offset + 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
-                    },
-                    {
-                        0, 1, 2, 2, 3, 0
-                    },
-                    std::make_shared<Material>(i % 2 == 0 ? material1 : material2)
-                }
-            };
-            std::vector<Mesh> meshes(rectangles, rectangles + 1);
-            drawEngine->LoadIntoBuffer(meshes);
-        }
+                {{offset + -0.5f, offset + -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                {{offset + 0.5f, offset + -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                {{offset + 0.5f, offset + 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                {{offset + -0.5f, offset + 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
+            },
+            {
+                0, 1, 2, 2, 3, 0
+            },
+            std::make_shared<Material>(index % 2 == 0 ? material1 : material2)
+        };
+
+        addMeshMutex.lock();
+        meshesLoaded.push_back(rectangle);
+        addMeshMutex.unlock();
     };
 
-    // TODO: need to create a secondary command pool and buffer for async loading
-    //std::thread asyncLoadingThread(asyncLoadingFunction);
-    //asyncLoadingThread.detach();
-    asyncLoadingFunction();
+    std::vector<uint32_t> meshIndices(numberOfMeshes);
+    std::iota(meshIndices.begin(), meshIndices.end(), 0);
+
+    std::for_each(
+        std::execution::par,
+        meshIndices.begin(),
+        meshIndices.end(),
+        asyncLoadMeshInfoBuffer);
+
+    for (Mesh &meshLoaded : meshesLoaded)
+    {
+        drawEngine->LoadIntoBuffer(meshLoaded);
+    }
 }

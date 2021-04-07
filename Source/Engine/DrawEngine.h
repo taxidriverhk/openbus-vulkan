@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 class Camera;
 struct Mesh;
 
@@ -14,6 +12,6 @@ public:
     virtual void Destroy() = 0;
     virtual void DrawFrame() = 0;
     virtual void Initialize() = 0;
-    virtual void LoadIntoBuffer(std::vector<Mesh> &meshes) = 0;
+    virtual void LoadIntoBuffer(Mesh &mesh) = 0;
     virtual void UpdateCamera(Camera *camera) = 0;
 };

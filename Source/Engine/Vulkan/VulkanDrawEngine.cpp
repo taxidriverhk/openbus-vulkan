@@ -84,23 +84,11 @@ void VulkanDrawEngine::CreatePipeline()
     pipeline->Create();
 }
 
-void VulkanDrawEngine::LoadIntoBuffer(std::vector<Mesh> &meshes)
+void VulkanDrawEngine::LoadIntoBuffer(Mesh &mesh)
 {
     // TODO: need to do coordinate conversion here
-    std::vector<Vertex> combinedVertices;
-    std::vector<uint32_t> combinedIndices;
-    for (Mesh mesh : meshes)
-    {
-        uint32_t indexOffset = static_cast<uint32_t>(combinedVertices.size());
-        combinedVertices.insert(combinedVertices.end(), mesh.vertices.begin(), mesh.vertices.end());
-        for (uint32_t index : mesh.indices)
-        {
-            combinedIndices.push_back(index + indexOffset);
-        }
-
-        uint32_t bufferId = bufferManager->LoadIntoBuffer(combinedVertices, combinedIndices, *(mesh.material.get()));
-        staticBufferIds.insert(bufferId);
-    }
+    uint32_t bufferId = bufferManager->LoadIntoBuffer(mesh.vertices, mesh.indices, mesh.material.get());
+    staticBufferIds.insert(bufferId);
 }
 
 void VulkanDrawEngine::UpdateCamera(Camera *camera)
