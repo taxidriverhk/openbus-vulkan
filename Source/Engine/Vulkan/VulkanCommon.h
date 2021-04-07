@@ -61,7 +61,7 @@ static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRI
     {
         0,                                          // location
         0,                                          // binding
-        VK_FORMAT_R32G32_SFLOAT,                    // format
+        VK_FORMAT_R32G32B32_SFLOAT,                 // format
         offsetof(Vertex, position)                  // offset
     },
     {
