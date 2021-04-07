@@ -68,10 +68,11 @@ VkCommandBuffer VulkanCommand::BeginCommandBuffer(VkFramebuffer frameBuffer)
     renderPassBeginInfo.renderArea.offset = { 0, 0 };
     renderPassBeginInfo.renderArea.extent = context->GetSwapChainExtent();
 
-    // TODO: add depth stencil value as well
-    VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearColor;
+    VkClearValue clearValues[2];
+    clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    clearValues[1].depthStencil = { 1.0f, 0 };
+    renderPassBeginInfo.clearValueCount = 2;
+    renderPassBeginInfo.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(buffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 

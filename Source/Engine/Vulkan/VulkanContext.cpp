@@ -2,6 +2,7 @@
 #include "VulkanCommon.h"
 #include "VulkanContext.h"
 
+static VkFormat FindDepthImageFormat();
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -25,6 +26,9 @@ VulkanContext::VulkanContext(Screen *screen, const bool &enableDebugging)
     swapChainExtent(),
     swapChainImages(),
     swapChainImageViews(),
+    depthImage(),
+    depthImageMemory(),
+    depthImageView(),
     screen(screen),
     enableDebugging(enableDebugging)
 {
@@ -49,6 +53,7 @@ void VulkanContext::Create()
     FindGraphicsAndPresentQueues();
     CreateSwapChain();
     CreateImageViews();
+    CreateDepthImage();
     CreateRenderPass();
 }
 
@@ -56,6 +61,7 @@ void VulkanContext::Destroy()
 {
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
 
+    DestroyDepthImage();
     DestroyImageViews();
     DestroySwapChain();
     
@@ -75,15 +81,79 @@ void VulkanContext::Destroy()
 void VulkanContext::RecreateSwapChain()
 {
     oldSwapChain = swapChain;
+    DestroyDepthImage();
     DestroyImageViews();
     CreateSwapChain();
     DestroyOldSwapChain();
     CreateImageViews();
+    CreateDepthImage();
 }
 
 void VulkanContext::WaitIdle()
 {
     vkDeviceWaitIdle(logicalDevice);
+}
+
+void VulkanContext::CreateDepthImage()
+{
+    VkFormat chosenFormat = FindDepthImageFormat();
+    VkImageCreateInfo depthImageInfo{};
+    depthImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    depthImageInfo.imageType = VK_IMAGE_TYPE_2D;
+    depthImageInfo.extent.width = swapChainExtent.width;
+    depthImageInfo.extent.height = swapChainExtent.height;
+    depthImageInfo.extent.depth = 1;
+    depthImageInfo.mipLevels = 1;
+    depthImageInfo.arrayLayers = 1;
+    depthImageInfo.format = chosenFormat;
+    depthImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    depthImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthImageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    depthImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateImage(logicalDevice, &depthImageInfo, nullptr, &depthImage),
+        "Failed to create depth image");
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(logicalDevice, depthImage, &memRequirements);
+
+    uint32_t depthImageMemoryTypeIndex = 0;
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((memRequirements.memoryTypeBits & (1 << i))
+            && (memProperties.memoryTypes[i].propertyFlags
+                & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+            depthImageMemoryTypeIndex = i;
+            break;
+        }
+    }
+
+    VkMemoryAllocateInfo depthMemoryAllocInfo{};
+    depthMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    depthMemoryAllocInfo.allocationSize = memRequirements.size;
+    depthMemoryAllocInfo.memoryTypeIndex = depthImageMemoryTypeIndex;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkAllocateMemory(logicalDevice, &depthMemoryAllocInfo, nullptr, &depthImageMemory),
+        "Failed to allocate depth image memory");
+
+    vkBindImageMemory(logicalDevice, depthImage, depthImageMemory, 0);
+
+    VkImageViewCreateInfo depthImageViewInfo{};
+    depthImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    depthImageViewInfo.image = depthImage;
+    depthImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    depthImageViewInfo.format = chosenFormat;
+    depthImageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    depthImageViewInfo.subresourceRange.baseMipLevel = 0;
+    depthImageViewInfo.subresourceRange.levelCount = 1;
+    depthImageViewInfo.subresourceRange.baseArrayLayer = 0;
+    depthImageViewInfo.subresourceRange.layerCount = 1;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateImageView(logicalDevice, &depthImageViewInfo, nullptr, &depthImageView),
+        "Failed to create depth image view");
 }
 
 void VulkanContext::CreateImageViews()
@@ -213,21 +283,47 @@ void VulkanContext::CreateRenderPass()
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = FindDepthImageFormat();
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    VkAttachmentDescription attachments[] = { colorAttachment, depthAttachment };
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.attachmentCount = 2;
+    renderPassInfo.pAttachments = attachments;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
 
     ASSERT_VK_RESULT_SUCCESS(
         vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass),
@@ -331,6 +427,13 @@ void VulkanContext::CreateWindowSurface()
     }
 }
 
+void VulkanContext::DestroyDepthImage()
+{
+    vkDestroyImageView(logicalDevice, depthImageView, nullptr);
+    vkDestroyImage(logicalDevice, depthImage, nullptr);
+    vkFreeMemory(logicalDevice, depthImageMemory, nullptr);
+}
+
 void VulkanContext::DestroyImageViews()
 {
     for (VkImageView swapChainImageView : swapChainImageViews)
@@ -371,6 +474,22 @@ void VulkanContext::EnableDebugging()
     ASSERT_VK_RESULT_SUCCESS(
         createDebugFunc(instance, &createInfo, nullptr, &debugMessenger),
         "Failed to create debug function");
+}
+
+VkFormat VulkanContext::FindDepthImageFormat()
+{
+    for (VkFormat format : DEPTH_IMAGE_FORMATS)
+    {
+        VkFormatProperties formatProperties;
+        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
+        if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+            == VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        {
+            return format;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable depth image format");
 }
 
 void VulkanContext::FindGraphicsAndPresentQueues()

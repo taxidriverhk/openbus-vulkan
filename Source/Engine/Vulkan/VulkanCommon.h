@@ -77,3 +77,10 @@ static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRI
         offsetof(Vertex, uv)
     }
 };
+
+static constexpr VkFormat DEPTH_IMAGE_FORMATS[] =
+{
+    VK_FORMAT_D32_SFLOAT,
+    VK_FORMAT_D32_SFLOAT_S8_UINT,
+    VK_FORMAT_D24_UNORM_S8_UINT
+};

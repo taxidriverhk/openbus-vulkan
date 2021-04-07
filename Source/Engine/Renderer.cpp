@@ -39,7 +39,7 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 
 void Renderer::LoadScene()
 {
-    uint32_t numberOfMeshes = 200;
+    uint32_t numberOfMeshes = 20;
     Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", numberOfMeshes);
 
     std::mutex addMeshMutex;
@@ -59,10 +59,10 @@ void Renderer::LoadScene()
         {
             1,
             {
-                {{offset + -0.5f, offset + -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-                {{offset + 0.5f, offset + -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-                {{offset + 0.5f, offset + 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-                {{offset + -0.5f, offset + 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
+                {{offset + -0.5f, offset + -0.5f, 0.0f - offset}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                {{offset + 0.5f, offset + -0.5f, 0.0f - offset}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                {{offset + 0.5f, offset + 0.5f, 0.0f - offset}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                {{offset + -0.5f, offset + 0.5f, 0.0f - offset}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
             },
             {
                 0, 1, 2, 2, 3, 0

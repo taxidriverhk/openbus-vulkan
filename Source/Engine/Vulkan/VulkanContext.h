@@ -31,6 +31,7 @@ public:
     VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
     VkDevice GetLogicalDevice() const { return logicalDevice; }
     VkRenderPass GetRenderPass() const { return renderPass; }
+    VkImageView GetDepthImageView() const { return depthImageView; }
     VkSwapchainKHR GetSwapChain() const { return swapChain; }
     VkExtent2D GetSwapChainExtent() const { return swapChainExtent; }
     std::vector<VkImage> GetSwapChainImages() const { return swapChainImages; }
@@ -40,6 +41,7 @@ private:
     static constexpr char * VULKAN_VALIDATION_LAYER = "VK_LAYER_KHRONOS_validation";
 
     // Functions required for setting up the Vulkan pipeline
+    void CreateDepthImage();
     void CreateImageViews();
     void CreateInstance();
     void CreateLogicalDevice();
@@ -47,11 +49,13 @@ private:
     void CreateSwapChain();
     void CreateWindowSurface();
 
+    void DestroyDepthImage();
     void DestroyImageViews();
     void DestroyOldSwapChain();
     void DestroySwapChain();
 
     void EnableDebugging();
+    VkFormat FindDepthImageFormat();
     void FindGraphicsAndPresentQueues();
     void FindPhysicalDevice();
     bool TryFindSwapChainDetail(
@@ -79,6 +83,10 @@ private:
     VkExtent2D swapChainExtent;
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
+
+    VkImage depthImage;
+    VkDeviceMemory depthImageMemory;
+    VkImageView depthImageView;
 
     VkRenderPass renderPass;
 
