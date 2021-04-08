@@ -20,5 +20,6 @@ public:
 
 private:
     Camera *camera;
+    MeshLoader meshLoader;
     std::unique_ptr<DrawEngine> drawEngine;
 };

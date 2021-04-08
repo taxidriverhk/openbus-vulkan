@@ -68,7 +68,7 @@ static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRI
         1,
         0,
         VK_FORMAT_R32G32B32_SFLOAT,
-        offsetof(Vertex, color)
+        offsetof(Vertex, normal)
     },
     {
         2,

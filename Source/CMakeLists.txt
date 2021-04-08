@@ -16,11 +16,16 @@ add_executable (OpenBus WIN32 ${HEADER_FILES} ${SOURCE_FILES})
 target_compile_definitions(OpenBus PUBLIC "APP_VERSION=\"v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${GIT_SHA1}\"")
 
 target_include_directories (OpenBus  
+    PUBLIC "${LIBRARY_DIR}/assimp/include"
     PUBLIC "${LIBRARY_DIR}/glfw/include"
     PUBLIC "${LIBRARY_DIR}/glm"
     PUBLIC "${SDL2_INCLUDE_DIRS}"
     PUBLIC "${LIBRARY_DIR}/stb"
     PUBLIC "${LIBRARY_DIR}/vkmem"
+)
+
+target_link_directories (OpenBus
+    PUBLIC "${LIBRARY_DIR}/assimp/lib"
 )
 
 target_link_libraries (OpenBus Vulkan::Vulkan)
@@ -29,6 +34,7 @@ target_link_libraries (OpenBus fmt::fmt)
 target_link_libraries (OpenBus plog)
 target_link_libraries (OpenBus ${SDL2_LIBRARIES})
 target_link_libraries (OpenBus shaderc)
+target_link_libraries (OpenBus assimp)
 
 # Qt configurations
 qt5_use_modules (OpenBus Widgets)
@@ -40,4 +46,5 @@ add_custom_command (TARGET OpenBus POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:Qt5::QWindowsIntegrationPlugin> $<TARGET_FILE_DIR:OpenBus>/plugins/platforms/qwindowsd.dll
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBRARY_DIR}/SDL2/${VC_LIB_PATH_SUFFIX}/SDL2.dll $<TARGET_FILE_DIR:OpenBus>
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_DIR}/Shader/ $<TARGET_FILE_DIR:OpenBus>/shaders/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIBRARY_DIR}/assimp/bin/assimp-vc142-mt.dll $<TARGET_FILE_DIR:OpenBus>
 )

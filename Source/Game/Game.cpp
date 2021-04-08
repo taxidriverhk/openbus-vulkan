@@ -66,8 +66,9 @@ void Game::StartGameLoop()
         // TODO: test code to show that the camera works
         std::chrono::steady_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-        float cameraX = 2 * glm::cos(time);
-        camera->MoveTo(cameraX, 2.0f, 2.0f);
+        float cameraX = 5 * glm::cos(time);
+        float cameraY = 5 * glm::sin(time);
+        camera->MoveTo(cameraX, cameraY, 5.0f);
 
         screen->Refresh();
         renderer->DrawScene();

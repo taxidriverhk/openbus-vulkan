@@ -8,6 +8,7 @@
 
 Renderer::Renderer(Camera *camera)
     : camera(camera),
+      meshLoader(),
       drawEngine()
 {
 }
@@ -39,39 +40,40 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 
 void Renderer::LoadScene()
 {
-    uint32_t numberOfMeshes = 20;
-    Logger::Log(LogLevel::Info, "Loading %d hard-coded objects into buffer", numberOfMeshes);
+    uint32_t numberOfMeshes = 1;
+    Logger::Log(LogLevel::Info, "Loading %d objects into buffer", numberOfMeshes);
+
+    Material materials[] =
+    {
+        {
+            1,
+            std::make_shared<Image>("car-black.bmp"),
+            nullptr,
+            nullptr
+        },
+        {
+            2,
+            std::make_shared<Image>("car-yellow.bmp"),
+            nullptr,
+            nullptr
+        },
+        {
+            3,
+            std::make_shared<Image>("car-red.bmp"),
+            nullptr,
+            nullptr
+        }
+    };
 
     std::mutex addMeshMutex;
     std::vector<Mesh> meshesLoaded;
     auto asyncLoadMeshInfoBuffer = [&](const int &index)
     {
-        Material material1{};
-        material1.id = 1;
-        material1.diffuseImage = std::make_shared<Image>("texture.jpg");
-
-        Material material2{};
-        material2.id = 2;
-        material2.diffuseImage = std::make_shared<Image>("texture2.jpg");
-
-        float offset = index * 0.5f;
-        Mesh rectangle
-        {
-            1,
-            {
-                {{offset + -0.5f, offset + -0.5f, 0.0f - offset}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-                {{offset + 0.5f, offset + -0.5f, 0.0f - offset}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-                {{offset + 0.5f, offset + 0.5f, 0.0f - offset}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-                {{offset + -0.5f, offset + 0.5f, 0.0f - offset}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
-            },
-            {
-                0, 1, 2, 2, 3, 0
-            },
-            std::make_shared<Material>(index % 2 == 0 ? material1 : material2)
-        };
+        Mesh car = meshLoader.LoadFromFile("car.obj");
+        car.material = std::make_shared<Material>(materials[index % 3]);
 
         addMeshMutex.lock();
-        meshesLoaded.push_back(rectangle);
+        meshesLoaded.push_back(car);
         addMeshMutex.unlock();
     };
 

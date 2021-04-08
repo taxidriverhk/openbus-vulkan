@@ -3,11 +3,15 @@
 
 layout(set = 1, binding = 0) uniform sampler2D inSampler;
 
-layout(location = 0) in vec3 fColor;
+layout(location = 0) in vec3 fNormal;
 layout(location = 1) in vec2 fUV;
 
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    outColor = texture(inSampler, fUV);
+	vec4 objectColor = texture(inSampler, fUV);
+	if (objectColor.a < 1.0)
+		discard;
+
+	outColor = objectColor;
 }
