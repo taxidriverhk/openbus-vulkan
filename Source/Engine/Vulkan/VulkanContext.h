@@ -30,22 +30,23 @@ public:
     VkInstance GetInstance() const { return instance; }
     VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
     VkDevice GetLogicalDevice() const { return logicalDevice; }
-    VkRenderPass GetRenderPass() const { return renderPass; }
+    
     VkImageView GetDepthImageView() const { return depthImageView; }
+    VkFormat GetDepthImageFormat() const { return depthImageFormat; }
+
     VkSwapchainKHR GetSwapChain() const { return swapChain; }
     VkExtent2D GetSwapChainExtent() const { return swapChainExtent; }
+    VkFormat GetSwapChainImageFormat() const { return swapChainImageFormat; }
     std::vector<VkImage> GetSwapChainImages() const { return swapChainImages; }
     std::vector<VkImageView> GetSwapChainImageViews() const { return swapChainImageViews; }
 
 private:
     static constexpr char * VULKAN_VALIDATION_LAYER = "VK_LAYER_KHRONOS_validation";
 
-    // Functions required for setting up the Vulkan pipeline
     void CreateDepthImage();
     void CreateImageViews();
     void CreateInstance();
     void CreateLogicalDevice();
-    void CreateRenderPass();
     void CreateSwapChain();
     void CreateWindowSurface();
 
@@ -87,8 +88,7 @@ private:
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
-
-    VkRenderPass renderPass;
+    VkFormat depthImageFormat;
 
     Screen *screen;
 };

@@ -273,7 +273,7 @@ void VulkanBufferManager::CreateDescriptorPool()
 
 void VulkanBufferManager::CreateFrameBuffers()
 {
-    VkRenderPass renderPass = context->GetRenderPass();
+    VkRenderPass renderPass = pipeline->GetRenderPass();
     VkExtent2D swapChainExtent = context->GetSwapChainExtent();
     VkImageView depthImageView = context->GetDepthImageView();
     std::vector<VkImageView> swapChainImageViews = context->GetSwapChainImageViews();

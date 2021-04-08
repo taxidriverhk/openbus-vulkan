@@ -17,16 +17,21 @@ public:
     VkPipelineLayout GetPipelineLayout() const { return pipelineLayout; }
     VkDescriptorSetLayout GetUniformDescriptorSetLayout() const { return uniformDescriptorSetLayout; }
     VkDescriptorSetLayout GetPerObjectDescriptorSetLayout() const { return perObjectDescriptorSetLayout; }
+    VkRenderPass GetRenderPass() const { return renderPass; }
 
     void Create();
     void Destroy();
     void Recreate();
 
 private:
+    void CreateRenderPass();
+
+    VulkanContext *context;
+
     VulkanShader *vertexShader;
     VulkanShader *fragmentShader;
 
-    VulkanContext *context;
+    VkRenderPass renderPass;
 
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
