@@ -47,10 +47,11 @@ VkCommandBuffer VulkanCommand::BeginCommandBuffer(VkFramebuffer frameBuffer)
         vkBeginCommandBuffer(buffer, &beginInfo),
         "Failed to begin command buffer");
 
+    // Need to flip the horizontal view port to compensate with the mirrored viewport
     VkViewport viewport{};
-    viewport.x = 0.0f;
+    viewport.x = context->GetSwapChainExtent().width;
     viewport.y = 0.0f;
-    viewport.width = static_cast<float>(context->GetSwapChainExtent().width);
+    viewport.width = -static_cast<float>(context->GetSwapChainExtent().width);
     viewport.height = static_cast<float>(context->GetSwapChainExtent().height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;

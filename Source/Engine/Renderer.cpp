@@ -40,7 +40,7 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 
 void Renderer::LoadScene()
 {
-    uint32_t numberOfMeshes = 1;
+    uint32_t numberOfMeshes = 100;
     Logger::Log(LogLevel::Info, "Loading %d objects into buffer", numberOfMeshes);
 
     Material materials[] =
@@ -66,14 +66,19 @@ void Renderer::LoadScene()
     };
 
     std::mutex addMeshMutex;
-    std::vector<Mesh> meshesLoaded;
+    std::vector<Entity> entitiesLoaded;
     auto asyncLoadMeshInfoBuffer = [&](const int &index)
     {
         Mesh car = meshLoader.LoadFromFile("car.obj");
         car.material = std::make_shared<Material>(materials[index % 3]);
 
+        Entity entity{};
+        entity.id = index;
+        entity.mesh = std::make_shared<Mesh>(car);
+        entity.translation = { index * 2.0f , 0.0f, 0.0f };
+
         addMeshMutex.lock();
-        meshesLoaded.push_back(car);
+        entitiesLoaded.push_back(entity);
         addMeshMutex.unlock();
     };
 
@@ -85,9 +90,8 @@ void Renderer::LoadScene()
         meshIndices.begin(),
         meshIndices.end(),
         asyncLoadMeshInfoBuffer);
-
-    for (Mesh &meshLoaded : meshesLoaded)
+    for (Entity &entityLoaded : entitiesLoaded)
     {
-        drawEngine->LoadIntoBuffer(meshLoaded);
+        drawEngine->LoadIntoBuffer(entityLoaded);
     }
 }

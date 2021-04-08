@@ -22,8 +22,6 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
         filename,
         aiProcess_Triangulate
         | aiProcess_JoinIdenticalVertices
-        | aiProcess_FlipUVs
-        | aiProcess_FlipWindingOrder
         | aiProcess_PreTransformVertices);
     const uint32_t numMeshes = scene->mNumMeshes;
     aiMesh **meshes = scene->mMeshes;
@@ -57,9 +55,9 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
         for (uint32_t i = 0; i < numFaces; i++)
         {
             uint32_t *importedIndices = faces[i].mIndices;
-            indices.push_back(importedIndices[2]);
-            indices.push_back(importedIndices[1]);
             indices.push_back(importedIndices[0]);
+            indices.push_back(importedIndices[1]);
+            indices.push_back(importedIndices[2]);
         }
     }
 

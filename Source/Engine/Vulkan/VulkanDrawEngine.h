@@ -12,7 +12,6 @@
 #include "VulkanPipeline.h"
 #include "VulkanShader.h"
 
-struct Mesh;
 class VulkanPipeline;
 
 class VulkanDrawEngine : public DrawEngine
@@ -24,13 +23,24 @@ public:
     void Destroy() override;
     void DrawFrame() override;
     void Initialize() override;
-    void LoadIntoBuffer(Mesh &mesh) override;
+    void LoadIntoBuffer(Entity &entity) override;
     void UpdateCamera(Camera *camera) override;
 
 private:
-    // The game treats Z-axis as the up axis, while Vulkan/OpenGL treats Y-axis as the up axis
-    // Therefore, a conversion is required
-    inline static glm::vec3 ConvertToVulkanCoordinates(glm::vec3 input)
+    // The game treats Z-axis as the upward axis, while Vulkan/OpenGL treats Y-axis as the upward axis
+    // Therefore, a conversion is required.
+    // Texture v-coordinate must also be flipped as the y-axis texture viewport in Vulkan is flipped.
+    inline static Vertex ConvertToVulkanVertex(const Vertex &input)
+    {
+        return
+        {
+            { input.position.x, input.position.z, input.position.y },
+            { input.normal.x, input.normal.z, input.normal.y },
+            { input.uv.x, 1.0f - input.uv.y }
+        };
+    }
+
+    inline static glm::vec3 ConvertToVulkanCoordinates(const glm::vec3 &input)
     {
         return { input.x, input.z, input.y };
     }

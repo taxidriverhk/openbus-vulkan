@@ -1,7 +1,7 @@
 #pragma once
 
 class Camera;
-struct Mesh;
+struct Entity;
 
 class DrawEngine
 {
@@ -12,6 +12,6 @@ public:
     virtual void Destroy() = 0;
     virtual void DrawFrame() = 0;
     virtual void Initialize() = 0;
-    virtual void LoadIntoBuffer(Mesh &mesh) = 0;
+    virtual void LoadIntoBuffer(Entity &entity) = 0;
     virtual void UpdateCamera(Camera *camera) = 0;
 };

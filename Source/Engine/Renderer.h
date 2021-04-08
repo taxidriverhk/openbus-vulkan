@@ -5,7 +5,7 @@
 #include "Camera.h"
 #include "DrawEngine.h"
 #include "Screen.h"
-#include "Mesh.h"
+#include "Entity.h"
 
 class Renderer
 {

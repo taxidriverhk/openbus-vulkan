@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <execution>
+
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -5,7 +8,7 @@
 
 #include "Common/Logger.h"
 #include "Engine/Camera.h"
-#include "Engine/Mesh.h"
+#include "Engine/Entity.h"
 #include "VulkanDrawEngine.h"
 
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
@@ -85,10 +88,27 @@ void VulkanDrawEngine::CreatePipeline()
     pipeline->Create();
 }
 
-void VulkanDrawEngine::LoadIntoBuffer(Mesh &mesh)
+void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
 {
-    // TODO: need to do coordinate conversion here
-    uint32_t bufferId = bufferManager->LoadIntoBuffer(mesh.vertices, mesh.indices, mesh.material.get());
+    // TODO: maybe use model matrix to reuse the same vertex buffer? Or instanced rendering?
+    std::shared_ptr<Mesh> mesh = entity.mesh;
+    glm::vec3 translation = entity.translation;
+
+    std::vector<Vertex> vertices = mesh->vertices;
+    std::vector<Vertex> transformedVertices(vertices.size());
+    std::transform(
+        std::execution::par,
+        vertices.begin(),
+        vertices.end(),
+        transformedVertices.begin(),
+        [&](Vertex &vertex)
+        {
+            Vertex convetedVertex = ConvertToVulkanVertex(vertex);
+            convetedVertex.position += translation;
+            return convetedVertex;
+        });
+
+    uint32_t bufferId = bufferManager->LoadIntoBuffer(transformedVertices, mesh->indices, mesh->material.get());
     staticBufferIds.insert(bufferId);
 }
 
@@ -98,7 +118,6 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
     glm::vec3 target = ConvertToVulkanCoordinates(camera->GetTarget());
     glm::vec3 up = ConvertToVulkanCoordinates(camera->GetUp());
 
-    // Conversions required for Vulkan depth range
     VulkanUniformBufferInput input{};
     input.model = glm::identity<glm::mat4>();
     input.projection = glm::perspective(
@@ -106,6 +125,7 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
         camera->GetAspect(),
         camera->GetZNear(),
         camera->GetZFar());
+    // Conversion required for Vulkan depth range
     input.projection[1][1] *= -1;
     input.view = glm::lookAt(position, target, up);
 
