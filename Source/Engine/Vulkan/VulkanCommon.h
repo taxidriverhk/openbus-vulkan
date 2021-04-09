@@ -20,7 +20,7 @@ static constexpr VkDescriptorPoolSize STATIC_PIPELINE_DESCRIPTOR_POOL_SIZES[] =
 {
     {
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,          // type
-        3                                           // maximum count
+        3 + 8192 * 3                                // maximum count
     },
     {
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -42,8 +42,8 @@ static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_UNIFORM_DESCRIPTOR
     }
 };
 
-static constexpr int STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDING_COUNT = 1;
-static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDINGS[] =
+static constexpr int STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT = 1;
+static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDINGS[] =
 {
     // Texture sampler (diffuse only for now)
     {
@@ -51,6 +51,19 @@ static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_PER_OBJECT_DESCRIP
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         1,
         VK_SHADER_STAGE_FRAGMENT_BIT,
+        nullptr
+    }
+};
+
+static constexpr int STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDING_COUNT = 1;
+static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDINGS[] =
+{
+    // Instance buffer for each object
+    {
+        0,
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        1,
+        VK_SHADER_STAGE_VERTEX_BIT,
         nullptr
     }
 };

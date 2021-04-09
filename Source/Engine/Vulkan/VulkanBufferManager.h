@@ -2,7 +2,6 @@
 
 #include <random>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -16,6 +15,15 @@
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"
 
+struct VulkanDrawingCommand;
+struct VulkanDrawingBuffer
+{
+    uint32_t instanceBufferId;
+    uint32_t vertexBufferId;
+    uint32_t indexBufferId;
+    uint32_t imageBufferId;
+};
+
 class VulkanBufferManager
 {
 public:
@@ -28,6 +36,9 @@ public:
 
     // Vertex/Texture Buffering
     uint32_t LoadIntoBuffer(
+        uint32_t meshId,
+        uint32_t imageId,
+        VulkanInstanceBufferInput &instanceBuffer,
         std::vector<Vertex> &vertices,
         std::vector<uint32_t> &indices,
         Material *material);
@@ -61,7 +72,6 @@ private:
 
     uint32_t GenerateBufferId();
 
-    void RecordCommandBuffers();
     void RecreateSwapChainAndBuffers();
 
     VmaAllocator vmaAllocator;
@@ -85,10 +95,17 @@ private:
     // Active frame in use by the GPU
     uint32_t currentInFlightFrame;
 
-    std::unordered_set<uint32_t> bufferIds;
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> vertexBuffers;
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> indexBuffers;
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> bufferIdToImageBufferMap;
+    std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> instanceBuffers;
+
+    std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> vertexBuffers;
+    std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> indexBuffers;
+    std::unordered_map<uint32_t, uint32_t> vertexBufferCount;
+
+    std::unordered_map<uint32_t, std::shared_ptr<VulkanImage>> imageBuffers;
+    std::unordered_map<uint32_t, uint32_t> imageBufferCount;
+
+    std::unordered_map<uint32_t, VulkanDrawingBuffer> drawingBuffers;
+    std::unordered_map<uint32_t, VulkanDrawingCommand> drawingCommandCache;
 
     bool uniformBufferUpdated;
     VulkanUniformBufferInput uniformBufferInput;

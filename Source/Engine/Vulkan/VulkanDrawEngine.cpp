@@ -15,7 +15,7 @@ VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
     : context(),
       screen(screen),
       enableDebugging(enableDebugging),
-      staticBufferIds()
+      bufferIds()
 {
 }
 
@@ -53,11 +53,11 @@ void VulkanDrawEngine::Initialize()
 
 void VulkanDrawEngine::ClearBuffers()
 {
-    for (uint32_t vertexBufferId : staticBufferIds)
+    for (uint32_t bufferId : bufferIds)
     {
-        bufferManager->UnloadBuffer(vertexBufferId);
+        bufferManager->UnloadBuffer(bufferId);
     }
-    staticBufferIds.clear();
+    bufferIds.clear();
 }
 
 void VulkanDrawEngine::CreateBuffer()
@@ -90,7 +90,6 @@ void VulkanDrawEngine::CreatePipeline()
 
 void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
 {
-    // TODO: maybe use model matrix to reuse the same vertex buffer? Or instanced rendering?
     std::shared_ptr<Mesh> mesh = entity.mesh;
     glm::vec3 translation = entity.translation;
 
@@ -103,13 +102,23 @@ void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
         transformedVertices.begin(),
         [&](Vertex &vertex)
         {
-            Vertex convetedVertex = ConvertToVulkanVertex(vertex);
-            convetedVertex.position += translation;
-            return convetedVertex;
+            return ConvertToVulkanVertex(vertex);
         });
 
-    uint32_t bufferId = bufferManager->LoadIntoBuffer(transformedVertices, mesh->indices, mesh->material.get());
-    staticBufferIds.insert(bufferId);
+    glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
+    glm::mat4 translatedMatrix = glm::translate(identitiyMatrix, translation);
+
+    VulkanInstanceBufferInput instanceBufferInput{};
+    instanceBufferInput.transformation = translatedMatrix;
+
+    uint32_t bufferId = bufferManager->LoadIntoBuffer(
+        mesh->id,
+        mesh->material->id,
+        instanceBufferInput,
+        transformedVertices,
+        mesh->indices,
+        mesh->material.get());
+    bufferIds.insert(bufferId);
 }
 
 void VulkanDrawEngine::UpdateCamera(Camera *camera)

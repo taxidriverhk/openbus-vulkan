@@ -144,36 +144,85 @@ void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
 }
 
 uint32_t VulkanBufferManager::LoadIntoBuffer(
+    uint32_t meshId,
+    uint32_t imageId,
+    VulkanInstanceBufferInput &instanceBufferInput,
     std::vector<Vertex> &vertices,
     std::vector<uint32_t> &indices,
     Material *material)
 {
     uint32_t bufferId = GenerateBufferId();
 
-    std::unique_ptr<VulkanBuffer> vertexBuffer = std::make_unique<VulkanBuffer>(
-        context, commandPool, vmaAllocator);
-    vertexBuffer->Load(
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        vertices.data(),
-        static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
-    vertexBuffers.insert(std::make_pair(bufferId, std::move(vertexBuffer)));
+    if (vertexBuffers.count(meshId) == 0)
+    {
+        std::shared_ptr<VulkanBuffer> vertexBuffer = std::make_shared<VulkanBuffer>(
+            context, commandPool, vmaAllocator);
+        vertexBuffer->Load(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            vertices.data(),
+            static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
+        vertexBuffers.insert(std::make_pair(meshId, std::move(vertexBuffer)));
 
-    std::unique_ptr<VulkanBuffer> indexBuffer = std::make_unique<VulkanBuffer>(
-        context, commandPool, vmaAllocator);
-    indexBuffer->Load(
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        indices.data(),
-        static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
-    indexBuffers.insert(std::make_pair(bufferId, std::move(indexBuffer)));
+        std::shared_ptr<VulkanBuffer> indexBuffer = std::make_shared<VulkanBuffer>(
+            context, commandPool, vmaAllocator);
+        indexBuffer->Load(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            indices.data(),
+            static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
+        indexBuffers.insert(std::make_pair(meshId, std::move(indexBuffer)));
 
-    // TODO: only load the diffuse image for now
-    std::unique_ptr<VulkanImage> diffuseImage = std::make_unique<VulkanImage>(
-        context, commandPool, imageVmaAllocator);
-    std::shared_ptr<Image> imageToLoad = material->diffuseImage;
-    diffuseImage->Load(imageToLoad.get(), descriptorPool, pipeline->GetPerObjectDescriptorSetLayout());
-    bufferIdToImageBufferMap.insert(std::make_pair(bufferId, std::move(diffuseImage)));
+        vertexBufferCount[meshId] = 1;
+    }
+    else
+    {
+        vertexBufferCount[meshId] = vertexBufferCount[meshId] + 1;
+    }
+
+    if (imageBuffers.count(imageId) == 0)
+    {
+        // TODO: only load the diffuse image for now
+        std::shared_ptr<VulkanImage> diffuseImage = std::make_shared<VulkanImage>(
+            context, commandPool, imageVmaAllocator);
+        std::shared_ptr<Image> imageToLoad = material->diffuseImage;
+        diffuseImage->Load(imageToLoad.get(), descriptorPool, pipeline->GetImageDescriptorSetLayout());
+        imageBuffers.insert(std::make_pair(imageId, std::move(diffuseImage)));
+
+        imageBufferCount[imageId] = 1;
+    }
+    else
+    {
+        imageBufferCount[imageId] = imageBufferCount[imageId] + 1;
+    }
+
+    std::shared_ptr<VulkanBuffer> instanceBuffer = std::make_shared<VulkanBuffer>(
+        context, commandPool, vmaAllocator);
+    instanceBuffer->Load(
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        &instanceBufferInput,
+        sizeof(VulkanInstanceBufferInput));
+    instanceBuffer->CreateDescriptorSet(
+        descriptorPool,
+        pipeline->GetInstanceDescriptorSetLayout(),
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        sizeof(VulkanInstanceBufferInput));
+    instanceBuffers.insert(std::make_pair(bufferId, std::move(instanceBuffer)));
+
+    VulkanDrawingBuffer drawingBuffer{};
+    drawingBuffer.instanceBufferId = bufferId;
+    drawingBuffer.vertexBufferId = meshId;
+    drawingBuffer.indexBufferId = meshId;
+    drawingBuffer.imageBufferId = imageId;
+    drawingBuffers.insert(std::make_pair(bufferId, drawingBuffer));
+
+    VulkanDrawingCommand drawingCommand{};
+    drawingCommand.instanceBuffer = instanceBuffers[drawingBuffer.instanceBufferId].get();
+    drawingCommand.vertexBuffer = vertexBuffers[drawingBuffer.vertexBufferId].get();
+    drawingCommand.indexBuffer = indexBuffers[drawingBuffer.indexBufferId].get();
+    drawingCommand.imageBuffer = imageBuffers[drawingBuffer.imageBufferId].get();
+    drawingCommandCache.insert(std::make_pair(bufferId, drawingCommand));
 
     return bufferId;
 }
@@ -209,19 +258,40 @@ void VulkanBufferManager::Submit(uint32_t &imageIndex)
 
 void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
 {
-    std::unique_ptr<VulkanBuffer> &vertexBuffer = vertexBuffers[bufferId];
-    vertexBuffer->Unload();
-    vertexBuffers.erase(bufferId);
+    if (drawingBuffers.count(bufferId) > 0)
+    {
+        VulkanDrawingBuffer drawingBuffer = drawingBuffers[bufferId];
+        
+        uint32_t instanceBufferId = drawingBuffer.instanceBufferId;
+        std::shared_ptr<VulkanBuffer> instanceBuffer = instanceBuffers[instanceBufferId];
+        instanceBuffer->Unload();
+        instanceBuffers.erase(instanceBufferId);
 
-    std::unique_ptr<VulkanBuffer> &indexBuffer = indexBuffers[bufferId];
-    indexBuffer->Unload();
-    indexBuffers.erase(bufferId);
+        uint32_t vertexBufferId = drawingBuffer.vertexBufferId;
+        vertexBufferCount[vertexBufferId] = vertexBufferCount[vertexBufferId] - 1;
+        if (vertexBufferCount[vertexBufferId] == 0)
+        {
+            std::shared_ptr<VulkanBuffer> vertexBuffer = vertexBuffers[vertexBufferId];
+            vertexBuffer->Unload();
+            vertexBuffers.erase(vertexBufferId);
 
-    std::unique_ptr<VulkanImage> &imageBuffer = bufferIdToImageBufferMap[bufferId];
-    imageBuffer->Unload();
-    bufferIdToImageBufferMap.erase(bufferId);
+            std::shared_ptr<VulkanBuffer> indexBuffer = indexBuffers[vertexBufferId];
+            indexBuffer->Unload();
+            indexBuffers.erase(vertexBufferId);
+        }
 
-    bufferIds.erase(bufferId);
+        uint32_t imageBufferId = drawingBuffer.imageBufferId;
+        imageBufferCount[imageBufferId] = imageBufferCount[imageBufferId] - 1;
+        if (imageBufferCount[imageBufferId] == 0)
+        {
+            std::shared_ptr<VulkanImage> imageBuffer = imageBuffers[imageBufferId];
+            imageBuffer->Unload();
+            imageBuffers.erase(imageBufferId);
+        }
+
+        drawingBuffers.erase(bufferId);
+        drawingCommandCache.erase(bufferId);
+    }
 }
 
 void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
@@ -239,9 +309,7 @@ void VulkanBufferManager::CreateCommandBuffers()
             context,
             pipeline,
             commandPool,
-            vertexBuffers,
-            indexBuffers,
-            bufferIdToImageBufferMap,
+            drawingCommandCache,
             uniformBuffers[i].get());
         commandBuffer->Create();
         commandBuffers[i] = std::move(commandBuffer);
@@ -399,18 +467,8 @@ uint32_t VulkanBufferManager::GenerateBufferId()
     do
     {
         nextBufferId = distribution(generator);
-    } while (bufferIds.find(nextBufferId) != bufferIds.end());
-
-    bufferIds.insert(nextBufferId);
+    } while (instanceBuffers.count(nextBufferId) != 0);
     return nextBufferId;
-}
-
-void VulkanBufferManager::RecordCommandBuffers()
-{
-    for (uint32_t i = 0; i < frameBuffers.size(); i++)
-    {
-        commandBuffers[i]->Record(frameBuffers[i]);
-    }
 }
 
 void VulkanBufferManager::RecreateSwapChainAndBuffers()

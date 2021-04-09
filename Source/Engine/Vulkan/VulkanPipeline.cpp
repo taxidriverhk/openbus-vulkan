@@ -5,7 +5,8 @@
 VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanShader *vertexShader, VulkanShader *fragmentShader)
     : context(context),
       uniformDescriptorSetLayout(),
-      perObjectDescriptorSetLayout(),
+      imageDescriptorSetLayout(),
+      instanceDescriptorSetLayout(),
       fragmentShader(fragmentShader),
       vertexShader(vertexShader),
       renderPass(),
@@ -30,19 +31,27 @@ void VulkanPipeline::Create()
         vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformDescriptorSetLayoutInfo, nullptr, &uniformDescriptorSetLayout),
         "Failed to create uniform descriptor set layout");
 
-    VkDescriptorSetLayoutCreateInfo perObjectDescriptorSetLayoutInfo{};
-    perObjectDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    perObjectDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    perObjectDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_PER_OBJECT_DESCRIPTOR_LAYOUT_BINDINGS;
+    VkDescriptorSetLayoutCreateInfo imageDescriptorSetLayoutInfo{};
+    imageDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    imageDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    imageDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDINGS;
     ASSERT_VK_RESULT_SUCCESS(
-        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &perObjectDescriptorSetLayoutInfo, nullptr, &perObjectDescriptorSetLayout),
-        "Failed to create per object descriptor set layout");
+        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &imageDescriptorSetLayoutInfo, nullptr, &imageDescriptorSetLayout),
+        "Failed to create image descriptor set layout");
 
-    VkDescriptorSetLayout descriptorSetLayouts[] = { uniformDescriptorSetLayout, perObjectDescriptorSetLayout };
+    VkDescriptorSetLayoutCreateInfo instanceDescriptorSetLayoutInfo{};
+    instanceDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    instanceDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    instanceDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDINGS;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &instanceDescriptorSetLayoutInfo, nullptr, &instanceDescriptorSetLayout),
+        "Failed to create instance descriptor set layout");
+
+    VkDescriptorSetLayout descriptorSetLayouts[] = { uniformDescriptorSetLayout, imageDescriptorSetLayout, instanceDescriptorSetLayout };
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.setLayoutCount = 3;
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
     ASSERT_VK_RESULT_SUCCESS(
         vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
@@ -156,7 +165,8 @@ void VulkanPipeline::Destroy()
 {
     VkDevice logicalDevice = context->GetLogicalDevice();
     vkDestroyDescriptorSetLayout(logicalDevice, uniformDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(logicalDevice, perObjectDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(logicalDevice, imageDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(logicalDevice, instanceDescriptorSetLayout, nullptr);
     vkDestroyPipeline(logicalDevice, pipeline, nullptr);
     vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
     vkDestroyRenderPass(logicalDevice, renderPass, nullptr);

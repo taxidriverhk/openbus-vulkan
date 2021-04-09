@@ -41,7 +41,7 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 void Renderer::LoadScene()
 {
     uint32_t numberOfMeshes = 100;
-    Logger::Log(LogLevel::Info, "Loading %d objects into buffer", numberOfMeshes);
+    Logger::Log(LogLevel::Info, "Loading models and images from files");
 
     Material materials[] =
     {
@@ -70,6 +70,7 @@ void Renderer::LoadScene()
     auto asyncLoadMeshInfoBuffer = [&](const int &index)
     {
         Mesh car = meshLoader.LoadFromFile("car.obj");
+        car.id = 1;
         car.material = std::make_shared<Material>(materials[index % 3]);
 
         Entity entity{};
@@ -90,8 +91,10 @@ void Renderer::LoadScene()
         meshIndices.begin(),
         meshIndices.end(),
         asyncLoadMeshInfoBuffer);
+    Logger::Log(LogLevel::Info, "Loading %d objects into buffer", numberOfMeshes);
     for (Entity &entityLoaded : entitiesLoaded)
     {
         drawEngine->LoadIntoBuffer(entityLoaded);
     }
+    Logger::Log(LogLevel::Info, "Finished loading %d objects", numberOfMeshes);
 }

@@ -6,15 +6,11 @@ VulkanDefaultRenderCommand::VulkanDefaultRenderCommand(
     VulkanContext *context,
     VulkanPipeline *pipeline,
     VkCommandPool pool,
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers,
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers,
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap,
+    std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands,
     VulkanBuffer *uniformBuffer)
     : VulkanCommand(context, pipeline, pool),
       dataUpdated(true),
-      vertexBuffers(vertexBuffers),
-      indexBuffers(indexBuffers),
-      bufferIdToImageBufferMap(bufferIdToImageBufferMap),
+      drawingCommands(drawingCommands),
       uniformBuffer(uniformBuffer)
 {
 }
@@ -34,13 +30,14 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
     VkPipelineLayout pipelineLayout = GetPipeline()->GetPipelineLayout();
     VkCommandBuffer commandBuffer = BeginCommandBuffer(frameBuffer);
 
-    for (const auto &vertexBufferEntry : vertexBuffers)
+    for (const auto &[bufferId, drawingCommand] : drawingCommands)
     {
         BindPipeline();
 
-        uint32_t bufferId = vertexBufferEntry.first;
-        VulkanBuffer *vertexBuffer = vertexBufferEntry.second.get();
-        VulkanBuffer *indexBuffer = indexBuffers[bufferId].get();
+        VulkanBuffer *instanceBuffer = drawingCommand.instanceBuffer;
+        VulkanBuffer *vertexBuffer = drawingCommand.vertexBuffer;
+        VulkanBuffer *indexBuffer = drawingCommand.indexBuffer;
+        VulkanImage *imageBuffer = drawingCommand.imageBuffer;
 
         // Bind vertex buffer
         VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
@@ -51,7 +48,9 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
         // Bind uniform descriptor set
         uniformBuffer->BindDescriptorSet(commandBuffer, 0, pipelineLayout);
         // Bind image sampler descriptor set
-        bufferIdToImageBufferMap[bufferId]->BindDescriptorSet(commandBuffer, 1, pipelineLayout);
+        imageBuffer->BindDescriptorSet(commandBuffer, 1, pipelineLayout);
+        // Bind instance descriptor set
+        instanceBuffer->BindDescriptorSet(commandBuffer, 2, pipelineLayout);
 
         uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);

@@ -1,12 +1,17 @@
 #pragma once
 
-#include <memory>
-#include <unordered_map>
-
 #include <vulkan/vulkan.h>
 
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
 #include "VulkanCommand.h"
+
+struct VulkanDrawingCommand
+{
+    VulkanBuffer *instanceBuffer;
+    VulkanBuffer *vertexBuffer;
+    VulkanBuffer *indexBuffer;
+    VulkanImage *imageBuffer;
+};
 
 class VulkanDefaultRenderCommand : public VulkanCommand
 {
@@ -15,9 +20,7 @@ public:
         VulkanContext *context,
         VulkanPipeline *pipeline,
         VkCommandPool pool,
-        std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers,
-        std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers,
-        std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap,
+        std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands,
         VulkanBuffer *uniformBuffer);
     ~VulkanDefaultRenderCommand();
 
@@ -27,8 +30,6 @@ public:
 private:
     bool dataUpdated;
 
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &vertexBuffers;
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanBuffer>> &indexBuffers;
-    std::unordered_map<uint32_t, std::unique_ptr<VulkanImage>> &bufferIdToImageBufferMap;
+    std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands;
     VulkanBuffer *uniformBuffer;
 };

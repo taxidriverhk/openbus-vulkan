@@ -5,6 +5,11 @@
 
 #include "Engine/Vulkan/VulkanContext.h"
 
+struct VulkanInstanceBufferInput
+{
+    glm::mat4 transformation;
+};
+
 struct VulkanUniformBufferInput
 {
     glm::mat4 model;

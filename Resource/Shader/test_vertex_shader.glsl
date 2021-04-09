@@ -6,6 +6,9 @@ layout(set = 0, binding = 0) uniform UniformBufferInput{
     mat4 view;
     mat4 projection;
 } inUniform;
+layout(set = 2, binding = 0) uniform InstanceBufferInput{
+    mat4 transformation;
+} inInstance;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -15,7 +18,7 @@ layout(location = 0) out vec3 fNormal;
 layout(location = 1) out vec2 fUV;
 
 void main() {
-    gl_Position = inUniform.projection * inUniform.view * inUniform.model * vec4(inPosition, 1.0);
+    gl_Position = inUniform.projection * inUniform.view * inInstance.transformation * vec4(inPosition, 1.0);
     fNormal = inNormal;
     fUV = inUV;
 }

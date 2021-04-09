@@ -34,7 +34,7 @@ private:
     {
         return
         {
-            { input.position.x, input.position.z, input.position.y },
+            { -input.position.x, input.position.z, input.position.y },
             { input.normal.x, input.normal.z, input.normal.y },
             { input.uv.x, 1.0f - input.uv.y }
         };
@@ -60,7 +60,5 @@ private:
     std::unique_ptr<VulkanShader> vertexShader;
     std::unique_ptr<VulkanShader> fragmentShader;
 
-    // TODO: replace with entity ID to buffer ID map to allow
-    // drawing multiple instances of the same object with different transformations
-    std::unordered_set<uint32_t> staticBufferIds;
+    std::unordered_set<uint32_t> bufferIds;
 };
