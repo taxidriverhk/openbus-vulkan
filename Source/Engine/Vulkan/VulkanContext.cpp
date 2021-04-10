@@ -19,15 +19,19 @@ VulkanContext::VulkanContext(Screen *screen, const bool &enableDebugging)
     presentQueueIndex(),
     presentQueue(),
     oldSwapChain(),
+    msaaSamples(VK_SAMPLE_COUNT_1_BIT),
     swapChain(),
     swapChainImageFormat(VK_FORMAT_UNDEFINED),
     swapChainExtent(),
     swapChainImages(),
     swapChainImageViews(),
+    colorImage(),
+    colorImageView(),
+    colorImageMemory(),
     depthImage(),
-    depthImageMemory(),
     depthImageView(),
     depthImageFormat(),
+    depthImageMemory(),
     screen(screen),
     enableDebugging(enableDebugging)
 {
@@ -52,12 +56,14 @@ void VulkanContext::Create()
     FindGraphicsAndPresentQueues();
     CreateSwapChain();
     CreateImageViews();
+    CreateColorImage();
     CreateDepthImage();
 }
 
 void VulkanContext::Destroy()
 {
     DestroyDepthImage();
+    DestroyColorImage();
     DestroyImageViews();
     DestroySwapChain();
     
@@ -78,10 +84,12 @@ void VulkanContext::RecreateSwapChain()
 {
     oldSwapChain = swapChain;
     DestroyDepthImage();
+    DestroyColorImage();
     DestroyImageViews();
     CreateSwapChain();
     DestroyOldSwapChain();
     CreateImageViews();
+    CreateColorImage();
     CreateDepthImage();
 }
 
@@ -90,31 +98,36 @@ void VulkanContext::WaitIdle()
     vkDeviceWaitIdle(logicalDevice);
 }
 
-void VulkanContext::CreateDepthImage()
+void VulkanContext::CreateImageForFrameBuffer(
+    VkFormat format,
+    VkImageUsageFlags usage,
+    VkImageAspectFlags aspect,
+    VkImage &image,
+    VkImageView &imageView,
+    VkDeviceMemory &deviceMemory)
 {
-    depthImageFormat = FindDepthImageFormat();
-    VkImageCreateInfo depthImageInfo{};
-    depthImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    depthImageInfo.imageType = VK_IMAGE_TYPE_2D;
-    depthImageInfo.extent.width = swapChainExtent.width;
-    depthImageInfo.extent.height = swapChainExtent.height;
-    depthImageInfo.extent.depth = 1;
-    depthImageInfo.mipLevels = 1;
-    depthImageInfo.arrayLayers = 1;
-    depthImageInfo.format = depthImageFormat;
-    depthImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    depthImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthImageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    depthImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = swapChainExtent.width;
+    imageInfo.extent.height = swapChainExtent.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = format;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = usage;
+    imageInfo.samples = msaaSamples;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     ASSERT_VK_RESULT_SUCCESS(
-        vkCreateImage(logicalDevice, &depthImageInfo, nullptr, &depthImage),
-        "Failed to create depth image");
+        vkCreateImage(logicalDevice, &imageInfo, nullptr, &image),
+        "Failed to create image");
 
     VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(logicalDevice, depthImage, &memRequirements);
+    vkGetImageMemoryRequirements(logicalDevice, image, &memRequirements);
 
-    uint32_t depthImageMemoryTypeIndex = 0;
+    uint32_t imageMemoryTypeIndex = 0;
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
@@ -122,34 +135,57 @@ void VulkanContext::CreateDepthImage()
         if ((memRequirements.memoryTypeBits & (1 << i))
             && (memProperties.memoryTypes[i].propertyFlags
                 & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
-            depthImageMemoryTypeIndex = i;
+            imageMemoryTypeIndex = i;
             break;
         }
     }
 
-    VkMemoryAllocateInfo depthMemoryAllocInfo{};
-    depthMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    depthMemoryAllocInfo.allocationSize = memRequirements.size;
-    depthMemoryAllocInfo.memoryTypeIndex = depthImageMemoryTypeIndex;
+    VkMemoryAllocateInfo memoryAllocInfo{};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = memRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = imageMemoryTypeIndex;
     ASSERT_VK_RESULT_SUCCESS(
-        vkAllocateMemory(logicalDevice, &depthMemoryAllocInfo, nullptr, &depthImageMemory),
-        "Failed to allocate depth image memory");
+        vkAllocateMemory(logicalDevice, &memoryAllocInfo, nullptr, &deviceMemory),
+        "Failed to allocate image memory");
 
-    vkBindImageMemory(logicalDevice, depthImage, depthImageMemory, 0);
+    vkBindImageMemory(logicalDevice, image, deviceMemory, 0);
 
-    VkImageViewCreateInfo depthImageViewInfo{};
-    depthImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    depthImageViewInfo.image = depthImage;
-    depthImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    depthImageViewInfo.format = depthImageFormat;
-    depthImageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    depthImageViewInfo.subresourceRange.baseMipLevel = 0;
-    depthImageViewInfo.subresourceRange.levelCount = 1;
-    depthImageViewInfo.subresourceRange.baseArrayLayer = 0;
-    depthImageViewInfo.subresourceRange.layerCount = 1;
+    VkImageViewCreateInfo imageViewInfo{};
+    imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewInfo.image = image;
+    imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewInfo.format = format;
+    imageViewInfo.subresourceRange.aspectMask = aspect;
+    imageViewInfo.subresourceRange.baseMipLevel = 0;
+    imageViewInfo.subresourceRange.levelCount = 1;
+    imageViewInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewInfo.subresourceRange.layerCount = 1;
     ASSERT_VK_RESULT_SUCCESS(
-        vkCreateImageView(logicalDevice, &depthImageViewInfo, nullptr, &depthImageView),
-        "Failed to create depth image view");
+        vkCreateImageView(logicalDevice, &imageViewInfo, nullptr, &imageView),
+        "Failed to create image view");
+}
+
+void VulkanContext::CreateColorImage()
+{
+    CreateImageForFrameBuffer(
+        swapChainImageFormat,
+        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        colorImage,
+        colorImageView,
+        colorImageMemory);
+}
+
+void VulkanContext::CreateDepthImage()
+{
+    depthImageFormat = FindDepthImageFormat();
+    CreateImageForFrameBuffer(
+        depthImageFormat,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        depthImage,
+        depthImageView,
+        depthImageMemory);
 }
 
 void VulkanContext::CreateImageViews()
@@ -364,6 +400,13 @@ void VulkanContext::CreateWindowSurface()
     }
 }
 
+void VulkanContext::DestroyColorImage()
+{
+    vkDestroyImageView(logicalDevice, colorImageView, nullptr);
+    vkDestroyImage(logicalDevice, colorImage, nullptr);
+    vkFreeMemory(logicalDevice, colorImageMemory, nullptr);
+}
+
 void VulkanContext::DestroyDepthImage()
 {
     vkDestroyImageView(logicalDevice, depthImageView, nullptr);
@@ -472,12 +515,39 @@ void VulkanContext::FindPhysicalDevice()
         bool swapChainSupported = TryFindSwapChainDetail(capabilities, formats, presentModes);
         if (queueFamiliesFound && swapChainSupported)
         {
+            msaaSamples = GetMaxSampleCount();
             return;
         }
     }
 
     physicalDevice = VK_NULL_HANDLE;
     throw std::runtime_error("Failed to find suitable phyiscal device/GPU");
+}
+
+VkSampleCountFlagBits VulkanContext::GetMaxSampleCount()
+{
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+
+    VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts
+        & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+    VkSampleCountFlagBits possibleBits[] =
+    {
+        VK_SAMPLE_COUNT_64_BIT,
+        VK_SAMPLE_COUNT_32_BIT,
+        VK_SAMPLE_COUNT_16_BIT,
+        VK_SAMPLE_COUNT_8_BIT,
+        VK_SAMPLE_COUNT_4_BIT,
+        VK_SAMPLE_COUNT_2_BIT
+    };
+    for (uint32_t i = 0; i < 6; i++)
+    {
+        if (counts & possibleBits[i])
+        {
+            return possibleBits[i];
+        }
+    }
+    return VK_SAMPLE_COUNT_1_BIT;
 }
 
 bool VulkanContext::TryFindSwapChainDetail(

@@ -31,6 +31,7 @@ public:
     VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
     VkDevice GetLogicalDevice() const { return logicalDevice; }
     
+    VkImageView GetColorImageView() const { return colorImageView; }
     VkImageView GetDepthImageView() const { return depthImageView; }
     VkFormat GetDepthImageFormat() const { return depthImageFormat; }
 
@@ -40,9 +41,21 @@ public:
     std::vector<VkImage> GetSwapChainImages() const { return swapChainImages; }
     std::vector<VkImageView> GetSwapChainImageViews() const { return swapChainImageViews; }
 
+    // TODO: may use a config struct
+    VkSampleCountFlagBits GetMSAASampleBits() const { return msaaSamples; }
+
 private:
     static constexpr char * VULKAN_VALIDATION_LAYER = "VK_LAYER_KHRONOS_validation";
 
+    void CreateImageForFrameBuffer(
+        VkFormat format,
+        VkImageUsageFlags usage,
+        VkImageAspectFlags aspect,
+        VkImage &image,
+        VkImageView &imageView,
+        VkDeviceMemory &deviceMemory);
+
+    void CreateColorImage();
     void CreateDepthImage();
     void CreateImageViews();
     void CreateInstance();
@@ -50,6 +63,7 @@ private:
     void CreateSwapChain();
     void CreateWindowSurface();
 
+    void DestroyColorImage();
     void DestroyDepthImage();
     void DestroyImageViews();
     void DestroyOldSwapChain();
@@ -59,6 +73,7 @@ private:
     VkFormat FindDepthImageFormat();
     void FindGraphicsAndPresentQueues();
     void FindPhysicalDevice();
+    VkSampleCountFlagBits GetMaxSampleCount();
     bool TryFindSwapChainDetail(
         VkSurfaceCapabilitiesKHR &capabilities,
         std::vector<VkSurfaceFormatKHR> &formats,
@@ -85,10 +100,15 @@ private:
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 
+    VkImage colorImage;
+    VkImageView colorImageView;
+    VkDeviceMemory colorImageMemory;
     VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
     VkFormat depthImageFormat;
+    VkDeviceMemory depthImageMemory;
+
+    VkSampleCountFlagBits msaaSamples;
 
     Screen *screen;
 };

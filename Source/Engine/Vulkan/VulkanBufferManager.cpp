@@ -343,17 +343,23 @@ void VulkanBufferManager::CreateFrameBuffers()
 {
     VkRenderPass renderPass = pipeline->GetRenderPass();
     VkExtent2D swapChainExtent = context->GetSwapChainExtent();
+    VkImageView colorImageView = context->GetColorImageView();
     VkImageView depthImageView = context->GetDepthImageView();
     std::vector<VkImageView> swapChainImageViews = context->GetSwapChainImageViews();
     for (VkImageView swapChainImageView : swapChainImageViews)
     {
         VkFramebuffer frameBuffer;
-        VkImageView attachments[] = { swapChainImageView, depthImageView };
+        VkImageView attachments[] =
+        {
+            colorImageView,
+            depthImageView,
+            swapChainImageView
+        };
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = 2;
+        framebufferInfo.attachmentCount = 3;
         framebufferInfo.pAttachments = attachments;
         framebufferInfo.width = swapChainExtent.width;
         framebufferInfo.height = swapChainExtent.height;
