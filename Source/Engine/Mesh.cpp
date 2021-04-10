@@ -1,3 +1,4 @@
+#include <unordered_map>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -14,15 +15,14 @@ MeshLoader::~MeshLoader()
 
 Mesh MeshLoader::LoadFromFile(const std::string filename)
 {
+    std::unordered_map<Vertex, uint32_t> uniqueVertices;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(
         filename,
-        aiProcess_Triangulate
-        | aiProcess_JoinIdenticalVertices
-        | aiProcess_PreTransformVertices);
+        aiProcess_Triangulate);
     const uint32_t numMeshes = scene->mNumMeshes;
     aiMesh **meshes = scene->mMeshes;
     
@@ -35,9 +35,6 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
         const aiVector3D *importedVertices = mesh->mVertices;
         const aiVector3D *importedNormals = mesh->mNormals;
 
-        uint32_t numFaces = mesh->mNumFaces;
-        const aiFace *faces = mesh->mFaces;
-
         for (uint32_t i = 0; i < numVertices; i++)
         {
             Vertex vertex{};
@@ -49,15 +46,14 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
             vertex.normal.z = importedNormals[i].z;
             vertex.uv.x = texCoords[i].x;
             vertex.uv.y = texCoords[i].y;
-            vertices.push_back(vertex);
-        }
 
-        for (uint32_t i = 0; i < numFaces; i++)
-        {
-            uint32_t *importedIndices = faces[i].mIndices;
-            indices.push_back(importedIndices[0]);
-            indices.push_back(importedIndices[1]);
-            indices.push_back(importedIndices[2]);
+            if (uniqueVertices.count(vertex) == 0)
+            {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+
+            indices.push_back(uniqueVertices[vertex]);
         }
     }
 

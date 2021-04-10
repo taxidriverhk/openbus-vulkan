@@ -35,7 +35,7 @@ private:
         return
         {
             { -input.position.x, input.position.z, input.position.y },
-            { input.normal.x, input.normal.z, input.normal.y },
+            { -input.normal.x, input.normal.z, input.normal.y },
             { input.uv.x, 1.0f - input.uv.y }
         };
     }

@@ -17,7 +17,7 @@ void main() {
     // TODO: hard-code some values for now
     float shininess = 0.15;
     float ambientStrength = 0.35;
-    vec4 lightColor = vec4(vec3(0.0), 1.0);
+    vec4 lightColor = vec4(vec3(0.5), 1.0);
     vec4 ambient = ambientStrength * vec4(1.0);
     vec4 diffuseColor = vec4(1.0);
     vec4 specularColor = vec4(0.0);
