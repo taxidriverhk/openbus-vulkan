@@ -1,3 +1,4 @@
+#include "Common/Logger.h"
 #include "VulkanCommon.h"
 #include "VulkanShader.h"
 
@@ -41,6 +42,8 @@ bool VulkanShader::Compile(const std::string &shaderCodePath)
 
     if (result.GetCompilationStatus() != shaderc_compilation_status_success)
     {
+        std::string errorMessage = result.GetErrorMessage();
+        Logger::Log(LogLevel::Error, "Failed to compile the shader: %s", errorMessage.c_str());
         return false;
     }
 

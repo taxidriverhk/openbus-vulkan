@@ -75,7 +75,7 @@ void VulkanDrawEngine::CreatePipeline()
     if (!vertexShader->Compile("shaders/test_vertex_shader.glsl")
         || !fragmentShader->Compile("shaders/test_fragment_shader.glsl"))
     {
-        std::runtime_error("Failed to compile shader code");
+        throw std::runtime_error("Failed to compile shader code");
     }
     
     vertexShader->Load();
@@ -128,7 +128,6 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
     glm::vec3 up = ConvertToVulkanCoordinates(camera->GetUp());
 
     VulkanUniformBufferInput input{};
-    input.model = glm::identity<glm::mat4>();
     input.projection = glm::perspective(
         camera->GetFieldOfView(),
         camera->GetAspect(),
@@ -137,6 +136,8 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
     // Conversion required for Vulkan depth range
     input.projection[1][1] *= -1;
     input.view = glm::lookAt(position, target, up);
+    input.lightPosition = { 10.0f, 10.0f, 10.0f };
+    input.eyePosition = position;
 
     bufferManager->UpdateUniformBuffer(input);
 }
