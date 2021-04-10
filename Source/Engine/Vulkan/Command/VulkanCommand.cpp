@@ -1,16 +1,17 @@
 #include "Engine/Vulkan/VulkanCommon.h"
 #include "Engine/Vulkan/VulkanContext.h"
 #include "Engine/Vulkan/VulkanPipeline.h"
+#include "Engine/Vulkan/VulkanRenderPass.h"
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
 #include "Engine/Vulkan/Image/VulkanImage.h"
 #include "VulkanCommand.h"
 
 VulkanCommand::VulkanCommand(
     VulkanContext *context,
-    VulkanPipeline *pipeline,
+    VulkanRenderPass *renderPass,
     VkCommandPool pool)
     : context(context),
-      pipeline(pipeline),
+      renderPass(renderPass),
       pool(pool),
       buffer()
 {
@@ -64,7 +65,7 @@ VkCommandBuffer VulkanCommand::BeginCommandBuffer(VkFramebuffer frameBuffer)
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = pipeline->GetRenderPass();
+    renderPassBeginInfo.renderPass = renderPass->GetRenderPass();
     renderPassBeginInfo.framebuffer = frameBuffer;
     renderPassBeginInfo.renderArea.offset = { 0, 0 };
     renderPassBeginInfo.renderArea.extent = context->GetSwapChainExtent();
@@ -86,7 +87,7 @@ void VulkanCommand::EndCommandBuffer()
     ASSERT_VK_RESULT_SUCCESS(vkEndCommandBuffer(buffer), "Failed to end the command buffer");
 }
 
-void VulkanCommand::BindPipeline()
+void VulkanCommand::BindPipeline(VulkanPipeline *pipeline)
 {
     vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
 }

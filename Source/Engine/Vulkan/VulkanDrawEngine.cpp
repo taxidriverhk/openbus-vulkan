@@ -9,6 +9,7 @@
 #include "Common/Logger.h"
 #include "Engine/Camera.h"
 #include "Engine/Entity.h"
+#include "VulkanCommon.h"
 #include "VulkanDrawEngine.h"
 
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
@@ -29,10 +30,8 @@ void VulkanDrawEngine::Destroy()
 
     ClearBuffers();
     bufferManager->Destroy();
-    pipeline->Destroy();
-
-    vertexShader->Unload();
-    fragmentShader->Unload();
+    staticPipeline->Destroy();
+    renderPass->Destroy();
     context->Destroy();
 }
 
@@ -47,7 +46,10 @@ void VulkanDrawEngine::Initialize()
     context = std::make_unique<VulkanContext>(screen, enableDebugging);
     context->Create();
 
-    CreatePipeline();
+    renderPass = std::make_unique<VulkanRenderPass>(context.get());
+    renderPass->Create();
+
+    CreatePipelines();
     CreateBuffer();
 }
 
@@ -62,30 +64,37 @@ void VulkanDrawEngine::ClearBuffers()
 
 void VulkanDrawEngine::CreateBuffer()
 {
-    bufferManager = std::make_unique<VulkanBufferManager>(context.get(), pipeline.get());
+    VulkanDrawingPipelines pipelines{};
+    pipelines.staticPipeline = staticPipeline.get();
+
+    bufferManager = std::make_unique<VulkanBufferManager>(context.get(), renderPass.get(), pipelines);
     bufferManager->Create();
 }
 
-void VulkanDrawEngine::CreatePipeline()
+void VulkanDrawEngine::CreatePipelines()
 {
-    // TODO: test code to verify that the drawing works
-    vertexShader = std::make_unique<VulkanShader>(context.get(), VulkanShaderType::Vertex);
-    fragmentShader = std::make_unique<VulkanShader>(context.get(), VulkanShaderType::Fragment);
+    VulkanShader staticVertexShader(context.get(), VulkanShaderType::Vertex);
+    VulkanShader staticFragmentShader(context.get(), VulkanShaderType::Fragment);
 
-    if (!vertexShader->Compile("shaders/test_vertex_shader.glsl")
-        || !fragmentShader->Compile("shaders/test_fragment_shader.glsl"))
+    if (!staticVertexShader.Compile("shaders/static_vertex_shader.glsl")
+        || !staticFragmentShader.Compile("shaders/static_fragment_shader.glsl"))
     {
         throw std::runtime_error("Failed to compile shader code");
     }
     
-    vertexShader->Load();
-    fragmentShader->Load();
+    staticVertexShader.Load();
+    staticFragmentShader.Load();
 
-    pipeline = std::make_unique<VulkanPipeline>(
-        context.get(),
-        vertexShader.get(),
-        fragmentShader.get());
-    pipeline->Create();
+    staticPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
+    staticPipeline->Create(staticVertexShader, staticFragmentShader);
+
+    staticVertexShader.Unload();
+    staticFragmentShader.Unload();
+}
+
+void VulkanDrawEngine::LoadCubeMap(CubeMap &cubeMap)
+{
+
 }
 
 void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)

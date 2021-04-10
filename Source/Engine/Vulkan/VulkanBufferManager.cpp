@@ -4,9 +4,13 @@
 #include "Engine/Vulkan/Command/VulkanDefaultRenderCommand.h"
 #include "VulkanBufferManager.h"
 
-VulkanBufferManager::VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline)
+VulkanBufferManager::VulkanBufferManager(
+    VulkanContext *context,
+    VulkanRenderPass *renderPass,
+    VulkanDrawingPipelines pipelines)
     : context(context),
-      pipeline(pipeline),
+      renderPass(renderPass),
+      pipelines(pipelines),
       vmaAllocator(),
       imageVmaAllocator(),
       commandBuffers(),
@@ -186,7 +190,7 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
         std::shared_ptr<VulkanImage> diffuseImage = std::make_shared<VulkanImage>(
             context, commandPool, imageVmaAllocator);
         std::shared_ptr<Image> imageToLoad = material->diffuseImage;
-        diffuseImage->Load(imageToLoad.get(), descriptorPool, pipeline->GetImageDescriptorSetLayout());
+        diffuseImage->Load(imageToLoad.get(), descriptorPool, pipelines.staticPipeline->GetImageDescriptorSetLayout());
         imageBuffers.insert(std::make_pair(imageId, std::move(diffuseImage)));
 
         imageBufferCount[imageId] = 1;
@@ -205,7 +209,7 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
         sizeof(VulkanInstanceBufferInput));
     instanceBuffer->CreateDescriptorSet(
         descriptorPool,
-        pipeline->GetInstanceDescriptorSetLayout(),
+        pipelines.staticPipeline->GetInstanceDescriptorSetLayout(),
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         sizeof(VulkanInstanceBufferInput));
     instanceBuffers.insert(std::make_pair(bufferId, std::move(instanceBuffer)));
@@ -307,7 +311,8 @@ void VulkanBufferManager::CreateCommandBuffers()
     {
         std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanDefaultRenderCommand>(
             context,
-            pipeline,
+            renderPass,
+            pipelines,
             commandPool,
             drawingCommandCache,
             uniformBuffers[i].get());
@@ -341,7 +346,6 @@ void VulkanBufferManager::CreateDescriptorPool()
 
 void VulkanBufferManager::CreateFrameBuffers()
 {
-    VkRenderPass renderPass = pipeline->GetRenderPass();
     VkExtent2D swapChainExtent = context->GetSwapChainExtent();
     VkImageView colorImageView = context->GetColorImageView();
     VkImageView depthImageView = context->GetDepthImageView();
@@ -358,7 +362,7 @@ void VulkanBufferManager::CreateFrameBuffers()
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.renderPass = renderPass->GetRenderPass();
         framebufferInfo.attachmentCount = 3;
         framebufferInfo.pAttachments = attachments;
         framebufferInfo.width = swapChainExtent.width;
@@ -432,7 +436,7 @@ void VulkanBufferManager::CreateUniformBuffers()
             sizeof(VulkanUniformBufferInput));
         uniformBuffer->CreateDescriptorSet(
             descriptorPool,
-            pipeline->GetUniformDescriptorSetLayout(),
+            pipelines.staticPipeline->GetUniformDescriptorSetLayout(),
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             sizeof(VulkanUniformBufferInput));
         uniformBuffers.push_back(std::move(uniformBuffer));

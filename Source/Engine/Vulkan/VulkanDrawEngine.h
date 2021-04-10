@@ -23,6 +23,7 @@ public:
     void Destroy() override;
     void DrawFrame() override;
     void Initialize() override;
+    void LoadCubeMap(CubeMap &cubeMap) override;
     void LoadIntoBuffer(Entity &entity) override;
     void UpdateCamera(Camera *camera) override;
 
@@ -47,18 +48,16 @@ private:
 
     void ClearBuffers();
     void CreateBuffer();
-    void CreatePipeline();
+    void CreatePipelines();
 
     bool enableDebugging;
 
     Screen *screen;
     std::unique_ptr<VulkanContext> context;
+    std::unique_ptr<VulkanRenderPass> renderPass;
 
     std::unique_ptr<VulkanBufferManager> bufferManager;
-    std::unique_ptr<VulkanPipeline> pipeline;
-
-    std::unique_ptr<VulkanShader> vertexShader;
-    std::unique_ptr<VulkanShader> fragmentShader;
+    std::unique_ptr<VulkanPipeline> staticPipeline;
 
     std::unordered_set<uint32_t> bufferIds;
 };

@@ -44,6 +44,11 @@ struct Mesh
     std::shared_ptr<Material> material;
 };
 
+struct CubeMap
+{
+    std::vector<Image> images;
+};
+
 class MeshLoader
 {
 public:

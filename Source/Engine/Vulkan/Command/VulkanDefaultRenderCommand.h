@@ -5,20 +5,16 @@
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
 #include "VulkanCommand.h"
 
-struct VulkanDrawingCommand
-{
-    VulkanBuffer *instanceBuffer;
-    VulkanBuffer *vertexBuffer;
-    VulkanBuffer *indexBuffer;
-    VulkanImage *imageBuffer;
-};
+struct VulkanDrawingPipelines;
+struct VulkanDrawingCommand;
 
 class VulkanDefaultRenderCommand : public VulkanCommand
 {
 public:
     VulkanDefaultRenderCommand(
         VulkanContext *context,
-        VulkanPipeline *pipeline,
+        VulkanRenderPass *renderPass,
+        VulkanDrawingPipelines pipelines,
         VkCommandPool pool,
         std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands,
         VulkanBuffer *uniformBuffer);
@@ -30,6 +26,7 @@ public:
 private:
     bool dataUpdated;
 
+    VulkanDrawingPipelines pipelines;
     std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands;
     VulkanBuffer *uniformBuffer;
 };

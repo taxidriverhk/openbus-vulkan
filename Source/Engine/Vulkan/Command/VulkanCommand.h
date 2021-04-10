@@ -8,13 +8,14 @@ class VulkanBuffer;
 class VulkanContext;
 class VulkanImage;
 class VulkanPipeline;
+class VulkanRenderPass;
 
 class VulkanCommand
 {
 public:
     VulkanCommand(
         VulkanContext *context,
-        VulkanPipeline *pipeline,
+        VulkanRenderPass *renderPass,
         VkCommandPool pool);
     ~VulkanCommand();
 
@@ -25,15 +26,13 @@ public:
     virtual void Record(VkFramebuffer frameBuffer) = 0;
 
 protected:
-    VulkanPipeline *GetPipeline() const { return pipeline; }
-
     VkCommandBuffer BeginCommandBuffer(VkFramebuffer frameBuffer);
-    void BindPipeline();
+    void BindPipeline(VulkanPipeline *pipeline);
     void EndCommandBuffer();
 
 private:
     VulkanContext *context;
-    VulkanPipeline *pipeline;
+    VulkanRenderPass *renderPass;
     VkCommandBuffer buffer;
     VkCommandPool pool;
 };

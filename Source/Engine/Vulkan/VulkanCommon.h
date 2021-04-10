@@ -97,3 +97,29 @@ static constexpr VkFormat DEPTH_IMAGE_FORMATS[] =
     VK_FORMAT_D32_SFLOAT_S8_UINT,
     VK_FORMAT_D24_UNORM_S8_UINT
 };
+
+class VulkanBuffer;
+class VulkanImage;
+class VulkanPipeline;
+
+struct VulkanDrawingBuffer
+{
+    uint32_t instanceBufferId;
+    uint32_t vertexBufferId;
+    uint32_t indexBufferId;
+    uint32_t imageBufferId;
+};
+
+struct VulkanDrawingCommand
+{
+    VulkanBuffer *instanceBuffer;
+    VulkanBuffer *vertexBuffer;
+    VulkanBuffer *indexBuffer;
+    VulkanImage *imageBuffer;
+};
+
+struct VulkanDrawingPipelines
+{
+    VulkanPipeline *staticPipeline;
+    VulkanPipeline *cubeMapPipeline;
+};

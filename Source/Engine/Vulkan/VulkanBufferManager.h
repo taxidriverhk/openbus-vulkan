@@ -12,22 +12,21 @@
 #include "Buffer/VulkanBuffer.h"
 #include "Command/VulkanCommand.h"
 #include "Image/VulkanImage.h"
+#include "VulkanCommon.h"
 #include "VulkanContext.h"
+#include "VulkanRenderPass.h"
 #include "VulkanPipeline.h"
 
+struct VulkanDrawingPipelines;
 struct VulkanDrawingCommand;
-struct VulkanDrawingBuffer
-{
-    uint32_t instanceBufferId;
-    uint32_t vertexBufferId;
-    uint32_t indexBufferId;
-    uint32_t imageBufferId;
-};
 
 class VulkanBufferManager
 {
 public:
-    VulkanBufferManager(VulkanContext *context, VulkanPipeline *pipeline);
+    VulkanBufferManager(
+        VulkanContext *context,
+        VulkanRenderPass *renderPass,
+        VulkanDrawingPipelines pipelines);
     ~VulkanBufferManager();
 
     // Initialization
@@ -74,10 +73,13 @@ private:
 
     void RecreateSwapChainAndBuffers();
 
+    VulkanContext *context;
+    VulkanRenderPass *renderPass;
+
     VmaAllocator vmaAllocator;
     VmaAllocator imageVmaAllocator;
-    VulkanContext *context;
-    VulkanPipeline *pipeline;
+
+    VulkanDrawingPipelines pipelines;
 
     VkCommandPool commandPool;
     VkDescriptorPool descriptorPool;
