@@ -14,6 +14,5 @@ layout(location = 0) out vec3 fPosition;
 
 void main() {
     fPosition = inPosition;
-    fPosition.xy *= -1.0;
     gl_Position = inUniform.projection * vec4(inPosition, 1.0);
 }

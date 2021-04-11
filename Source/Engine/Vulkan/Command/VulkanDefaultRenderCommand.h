@@ -18,8 +18,8 @@ public:
         VulkanDrawingPipelines pipelines,
         VkCommandPool pool,
         std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands,
-        VulkanBuffer *uniformBuffer,
-        VulkanImage *cubeMapBuffer);
+        VulkanCubeMapBuffer cubeMapBuffer,
+        VulkanBuffer *uniformBuffer);
     ~VulkanDefaultRenderCommand();
 
     void Record(VkFramebuffer frameBuffer) override;
@@ -30,6 +30,6 @@ private:
 
     VulkanDrawingPipelines pipelines;
     std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands;
+    VulkanCubeMapBuffer cubeMapBuffer;
     VulkanBuffer *uniformBuffer;
-    VulkanImage *cubeMapBuffer;
 };

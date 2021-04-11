@@ -8,6 +8,14 @@
 #include "VulkanRenderPass.h"
 #include "VulkanShader.h"
 
+struct VulkanPipelineConfig
+{
+    VulkanShader *vertexShader;
+    VulkanShader *fragmentShader;
+    VkCullModeFlags cullMode;
+    VkFrontFace frontFace;
+};
+
 class VulkanPipeline
 {
 public:
@@ -20,7 +28,7 @@ public:
     VkDescriptorSetLayout GetImageDescriptorSetLayout() const { return imageDescriptorSetLayout; }
     VkDescriptorSetLayout GetInstanceDescriptorSetLayout() const { return instanceDescriptorSetLayout; }
 
-    void Create(VulkanShader &vertexShader, VulkanShader &fragmentShader);
+    void Create(VulkanPipelineConfig config);
     void Destroy();
 
 private:

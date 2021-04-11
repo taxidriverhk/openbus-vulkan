@@ -10,14 +10,14 @@ VulkanDefaultRenderCommand::VulkanDefaultRenderCommand(
     VulkanDrawingPipelines pipelines,
     VkCommandPool pool,
     std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands,
-    VulkanBuffer *uniformBuffer,
-    VulkanImage *cubeMapBuffer)
+    VulkanCubeMapBuffer cubeMapBuffer,
+    VulkanBuffer *uniformBuffer)
     : VulkanCommand(context, renderPass, pool),
       pipelines(pipelines),
       dataUpdated(true),
       drawingCommands(drawingCommands),
-      uniformBuffer(uniformBuffer),
-      cubeMapBuffer(cubeMapBuffer)
+      cubeMapBuffer(cubeMapBuffer),
+      uniformBuffer(uniformBuffer)
 {
 }
 
@@ -63,11 +63,22 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
 
-    BindPipeline(cubeMapPipeline);
-    // Bind cubemap descriptor set
-    cubeMapBuffer->BindDescriptorSet(commandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
-    // TODO: Draw the cube
-    // vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+    VulkanBuffer *cubeMapVertexBuffer = cubeMapBuffer.vertexBuffer;
+    VulkanBuffer *cubeMapIndexBuffer = cubeMapBuffer.indexBuffer;
+    if (cubeMapVertexBuffer->IsLoaded())
+    {
+        BindPipeline(cubeMapPipeline);
+        // Bind cubemap mesh
+        VkDeviceSize offsets[] = { 0 };
+        VkBuffer cubeMapVertexBuffers[] = { cubeMapVertexBuffer->GetBuffer() };
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, cubeMapVertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, cubeMapIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        // Bind cubemap descriptor set
+        cubeMapBuffer.imageBuffer->BindDescriptorSet(commandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
+        // Draw the cube map
+        uint32_t indexCount = cubeMapIndexBuffer->Size() / sizeof(uint32_t);
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+    }
 
     EndCommandBuffer();
 

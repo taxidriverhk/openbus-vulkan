@@ -17,20 +17,20 @@ VulkanPipeline::~VulkanPipeline()
 {
 }
 
-void VulkanPipeline::Create(VulkanShader &vertexShader, VulkanShader &fragmentShader)
+void VulkanPipeline::Create(VulkanPipelineConfig config)
 {
     CreateDescriptorLayouts();
 
     VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
     vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertexShaderStageInfo.module = vertexShader.GetShaderModule();
+    vertexShaderStageInfo.module = config.vertexShader->GetShaderModule();
     vertexShaderStageInfo.pName = SHADER_MAIN_FUNCTION_NAME;
 
     VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
     fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragmentShaderStageInfo.module = fragmentShader.GetShaderModule();
+    fragmentShaderStageInfo.module = config.fragmentShader->GetShaderModule();
     fragmentShaderStageInfo.pName = SHADER_MAIN_FUNCTION_NAME;
 
     VkVertexInputBindingDescription bindingDescription{};
@@ -63,8 +63,8 @@ void VulkanPipeline::Create(VulkanShader &vertexShader, VulkanShader &fragmentSh
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer.cullMode = config.cullMode;
+    rasterizer.frontFace = config.frontFace;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling{};

@@ -24,7 +24,9 @@ VulkanBufferManager::VulkanBufferManager(
       uniformBufferUpdated(true),
       uniformBuffers(),
       uniformBufferInput(),
-      cubeMapBuffer(),
+      cubeMapImage(),
+      cubeMapIndexBuffer(),
+      cubeMapVertexBuffer(),
       generator(),
       distribution(1, MAX_VERTEX_BUFFERS)
 {
@@ -319,7 +321,7 @@ void VulkanBufferManager::UpdateCubeMapImage(std::vector<Image *> &images)
     {
         imagePixels.push_back(image->GetPixels());
     }
-    cubeMapBuffer->UpdateImagePixels(
+    cubeMapImage->UpdateImagePixels(
         imagePixels,
         images[0]->GetWidth(),
         images[0]->GetHeight());
@@ -333,6 +335,11 @@ void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
 
 void VulkanBufferManager::CreateCommandBuffers()
 {
+    VulkanCubeMapBuffer cubeMapBuffer{};
+    cubeMapBuffer.imageBuffer = cubeMapImage.get();
+    cubeMapBuffer.vertexBuffer = cubeMapVertexBuffer.get();
+    cubeMapBuffer.indexBuffer = cubeMapIndexBuffer.get();
+
     commandBuffers.resize(frameBuffers.size());
     for (uint32_t i = 0; i < commandBuffers.size(); i++)
     {
@@ -342,8 +349,8 @@ void VulkanBufferManager::CreateCommandBuffers()
             pipelines,
             commandPool,
             drawingCommandCache,
-            uniformBuffers[i].get(),
-            cubeMapBuffer.get());
+            cubeMapBuffer,
+            uniformBuffers[i].get());
         commandBuffer->Create();
         commandBuffers[i] = std::move(commandBuffer);
     }
@@ -362,10 +369,59 @@ void VulkanBufferManager::CreateCommandPool()
 
 void VulkanBufferManager::CreateCubeMapBuffer()
 {
-    // TODO: create mesh for the cube map, and need to determine the image size more wisely
-    cubeMapBuffer = std::make_unique<VulkanImage>(
+    // TODO: may consider loading the cube from a model file with configurable size multiplier
+    const uint32_t cubeMapVertexCount = 8;
+    std::array<Vertex, cubeMapVertexCount> cubeMapVertices;
+    cubeMapVertices[0].position = { 1.0f, 1.0f, -1.0f };
+    cubeMapVertices[1].position = { 1.0f, -1.0f, -1.0f };
+    cubeMapVertices[2].position = { 1.0f, 1.0f, 1.0f };
+    cubeMapVertices[3].position = { 1.0f, -1.0f, 1.0f };
+    cubeMapVertices[4].position = { -1.0f, 1.0f, -1.0f };
+    cubeMapVertices[5].position = { -1.0f, -1.0f, -1.0f };
+    cubeMapVertices[6].position = { -1.0f, 1.0f, 1.0f };
+    cubeMapVertices[7].position = { -1.0f, -1.0f, 1.0f };
+
+    const float sizeMultiplier = 500.0f;
+    for (uint32_t i = 0; i < cubeMapVertexCount; i++)
+    {
+        cubeMapVertices[i].position *= sizeMultiplier;
+    }
+
+    const uint32_t cubeMapIndexCount = 36;
+    std::array<uint32_t, cubeMapIndexCount> cubeMapIndices =
+    {
+        4, 2, 0,
+        2, 7, 3,
+        6, 5, 7,
+        1, 7, 5,
+        0, 3, 1,
+        4, 1, 5,
+        4, 6, 2,
+        2, 6, 7,
+        6, 4, 5,
+        1, 3, 7,
+        0, 2, 3,
+        4, 0, 1
+    };
+
+    cubeMapVertexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+    cubeMapVertexBuffer->Load(
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        cubeMapVertices.data(),
+        static_cast<uint32_t>(sizeof(Vertex) * cubeMapVertexCount));
+
+    cubeMapIndexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+    cubeMapIndexBuffer->Load(
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        cubeMapIndices.data(),
+        static_cast<uint32_t>(sizeof(uint32_t) * cubeMapIndexCount));
+
+    // TODO: need to determine the image size more wisely
+    cubeMapImage = std::make_unique<VulkanImage>(
         context, commandPool, imageVmaAllocator, VulkanImageType::CubeMap);
-    cubeMapBuffer->Load(
+    cubeMapImage->Load(
         std::vector<uint8_t *>(),
         512,
         512,
@@ -495,7 +551,9 @@ void VulkanBufferManager::DestroyCommandBuffers()
 
 void VulkanBufferManager::DestroyCubeMapBuffer()
 {
-    cubeMapBuffer->Unload();
+    cubeMapImage->Unload();
+    cubeMapIndexBuffer->Unload();
+    cubeMapVertexBuffer->Unload();
 }
 
 void VulkanBufferManager::DestroyFrameBuffers()

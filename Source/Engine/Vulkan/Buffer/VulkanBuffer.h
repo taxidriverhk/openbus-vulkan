@@ -27,6 +27,7 @@ public:
         VmaAllocator &allocator);
     ~VulkanBuffer();
 
+    bool IsLoaded() const { return loaded; }
     uint32_t Size() const { return size; }
     VkBuffer GetBuffer() const { return buffer; }
 

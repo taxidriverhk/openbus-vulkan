@@ -102,11 +102,21 @@ void VulkanDrawEngine::CreatePipelines()
     cubeMapVertexShader.Load();
     cubeMapFragmentShader.Load();
 
+    VulkanPipelineConfig staticPipelineConfig{};
+    staticPipelineConfig.vertexShader = &staticVertexShader;
+    staticPipelineConfig.fragmentShader = &staticFragmentShader;
+    staticPipelineConfig.cullMode = VK_CULL_MODE_BACK_BIT;
+    staticPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     staticPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
-    staticPipeline->Create(staticVertexShader, staticFragmentShader);
+    staticPipeline->Create(staticPipelineConfig);
 
+    VulkanPipelineConfig cubeMapPipelineConfig{};
+    cubeMapPipelineConfig.vertexShader = &cubeMapVertexShader;
+    cubeMapPipelineConfig.fragmentShader = &cubeMapFragmentShader;
+    cubeMapPipelineConfig.cullMode = VK_CULL_MODE_NONE;
+    cubeMapPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     cubeMapPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
-    cubeMapPipeline->Create(cubeMapVertexShader, cubeMapFragmentShader);
+    cubeMapPipeline->Create(cubeMapPipelineConfig);
 
     staticVertexShader.Unload();
     staticFragmentShader.Unload();

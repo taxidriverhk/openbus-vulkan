@@ -2,7 +2,7 @@
 
 Camera::Camera(int screenWidth, int screenHeight)
     : zNear(0.1f),
-      zFar(100.0f),
+      zFar(1000.0f),
       aspect((float) screenWidth / screenHeight),
       zoomFactor(1.0f),
       position(0.0, 0.0, 0.0),

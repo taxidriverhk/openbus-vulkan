@@ -107,6 +107,13 @@ class VulkanBuffer;
 class VulkanImage;
 class VulkanPipeline;
 
+struct VulkanCubeMapBuffer
+{
+    VulkanBuffer *vertexBuffer;
+    VulkanBuffer *indexBuffer;
+    VulkanImage *imageBuffer;
+};
+
 struct VulkanDrawingBuffer
 {
     uint32_t instanceBufferId;

@@ -103,7 +103,9 @@ private:
     uint32_t currentInFlightFrame;
 
     // Cubemap buffers
-    std::unique_ptr<VulkanImage> cubeMapBuffer;
+    std::unique_ptr<VulkanBuffer> cubeMapVertexBuffer;
+    std::unique_ptr<VulkanBuffer> cubeMapIndexBuffer;
+    std::unique_ptr<VulkanImage> cubeMapImage;
 
     // Static scene buffers
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> instanceBuffers;

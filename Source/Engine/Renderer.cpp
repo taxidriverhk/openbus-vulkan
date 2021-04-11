@@ -40,7 +40,7 @@ void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
 
 void Renderer::LoadScene()
 {
-    uint32_t numberOfMeshes = 100;
+    uint32_t numberOfMeshes = 10;
     Logger::Log(LogLevel::Info, "Loading models and images from files");
 
     Material materials[] =
