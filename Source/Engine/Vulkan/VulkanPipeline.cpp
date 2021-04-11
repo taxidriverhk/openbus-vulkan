@@ -19,39 +19,7 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::Create(VulkanShader &vertexShader, VulkanShader &fragmentShader)
 {
-    VkDescriptorSetLayoutCreateInfo uniformDescriptorSetLayoutInfo{};
-    uniformDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    uniformDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    uniformDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDINGS;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformDescriptorSetLayoutInfo, nullptr, &uniformDescriptorSetLayout),
-        "Failed to create uniform descriptor set layout");
-
-    VkDescriptorSetLayoutCreateInfo imageDescriptorSetLayoutInfo{};
-    imageDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    imageDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    imageDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDINGS;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &imageDescriptorSetLayoutInfo, nullptr, &imageDescriptorSetLayout),
-        "Failed to create image descriptor set layout");
-
-    VkDescriptorSetLayoutCreateInfo instanceDescriptorSetLayoutInfo{};
-    instanceDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    instanceDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    instanceDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDINGS;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &instanceDescriptorSetLayoutInfo, nullptr, &instanceDescriptorSetLayout),
-        "Failed to create instance descriptor set layout");
-
-    VkDescriptorSetLayout descriptorSetLayouts[] = { uniformDescriptorSetLayout, imageDescriptorSetLayout, instanceDescriptorSetLayout };
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.setLayoutCount = 3;
-    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
-        "Failed to create pipeline layout");
+    CreateDescriptorLayouts();
 
     VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
     vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -157,12 +125,56 @@ void VulkanPipeline::Create(VulkanShader &vertexShader, VulkanShader &fragmentSh
         "Failed to create pipeline");
 }
 
+void VulkanPipeline::CreateDescriptorLayouts()
+{
+    VkDescriptorSetLayoutCreateInfo uniformDescriptorSetLayoutInfo{};
+    uniformDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    uniformDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    uniformDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDINGS;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformDescriptorSetLayoutInfo, nullptr, &uniformDescriptorSetLayout),
+        "Failed to create uniform descriptor set layout");
+
+    VkDescriptorSetLayoutCreateInfo imageDescriptorSetLayoutInfo{};
+    imageDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    imageDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    imageDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDINGS;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &imageDescriptorSetLayoutInfo, nullptr, &imageDescriptorSetLayout),
+        "Failed to create image descriptor set layout");
+
+    VkDescriptorSetLayoutCreateInfo instanceDescriptorSetLayoutInfo{};
+    instanceDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    instanceDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    instanceDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDINGS;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &instanceDescriptorSetLayoutInfo, nullptr, &instanceDescriptorSetLayout),
+        "Failed to create instance descriptor set layout");
+
+    VkDescriptorSetLayout descriptorSetLayouts[] = { uniformDescriptorSetLayout, imageDescriptorSetLayout, instanceDescriptorSetLayout };
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 3;
+    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
+        "Failed to create pipeline layout");
+}
+
 void VulkanPipeline::Destroy()
+{
+    DestroyDescriptorLayouts();
+
+    VkDevice logicalDevice = context->GetLogicalDevice();
+    vkDestroyPipeline(logicalDevice, pipeline, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
+}
+
+void VulkanPipeline::DestroyDescriptorLayouts()
 {
     VkDevice logicalDevice = context->GetLogicalDevice();
     vkDestroyDescriptorSetLayout(logicalDevice, uniformDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(logicalDevice, imageDescriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(logicalDevice, instanceDescriptorSetLayout, nullptr);
-    vkDestroyPipeline(logicalDevice, pipeline, nullptr);
-    vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
 }

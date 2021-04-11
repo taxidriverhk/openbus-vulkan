@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #define VMA_IMPLEMENTATION
 
 #include "Engine/Vulkan/VulkanCommon.h"
@@ -22,6 +24,7 @@ VulkanBufferManager::VulkanBufferManager(
       uniformBufferUpdated(true),
       uniformBuffers(),
       uniformBufferInput(),
+      cubeMapBuffer(),
       generator(),
       distribution(1, MAX_VERTEX_BUFFERS)
 {
@@ -40,7 +43,10 @@ void VulkanBufferManager::Create()
     CreateMemoryAllocator();
 
     CreateCommandPool();
+
     CreateUniformBuffers();
+    CreateCubeMapBuffer();
+
     CreateCommandBuffers();
 
     CreateSynchronizationObjects();
@@ -49,6 +55,7 @@ void VulkanBufferManager::Create()
 void VulkanBufferManager::Destroy()
 {
     DestroyUniformBuffers();
+    DestroyCubeMapBuffer();
 
     // Destroying the descriptor pool will automatically free the descriptor sets
     // created using the pool, so no need to explicitly free each descriptor set
@@ -188,9 +195,14 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
     {
         // TODO: only load the diffuse image for now
         std::shared_ptr<VulkanImage> diffuseImage = std::make_shared<VulkanImage>(
-            context, commandPool, imageVmaAllocator);
+            context, commandPool, imageVmaAllocator, VulkanImageType::Texture);
         std::shared_ptr<Image> imageToLoad = material->diffuseImage;
-        diffuseImage->Load(imageToLoad.get(), descriptorPool, pipelines.staticPipeline->GetImageDescriptorSetLayout());
+        diffuseImage->Load(
+            std::vector<uint8_t *>({ imageToLoad->GetPixels() }),
+            imageToLoad->GetWidth(),
+            imageToLoad->GetHeight(),
+            descriptorPool,
+            pipelines.staticPipeline->GetImageDescriptorSetLayout());
         imageBuffers.insert(std::make_pair(imageId, std::move(diffuseImage)));
 
         imageBufferCount[imageId] = 1;
@@ -298,6 +310,21 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
     }
 }
 
+void VulkanBufferManager::UpdateCubeMapImage(std::vector<Image *> &images)
+{
+    assert(images.size() > 0);
+
+    std::vector<uint8_t *> imagePixels;
+    for (Image *image : images)
+    {
+        imagePixels.push_back(image->GetPixels());
+    }
+    cubeMapBuffer->UpdateImagePixels(
+        imagePixels,
+        images[0]->GetWidth(),
+        images[0]->GetHeight());
+}
+
 void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
 {
     uniformBufferInput = input;
@@ -315,7 +342,8 @@ void VulkanBufferManager::CreateCommandBuffers()
             pipelines,
             commandPool,
             drawingCommandCache,
-            uniformBuffers[i].get());
+            uniformBuffers[i].get(),
+            cubeMapBuffer.get());
         commandBuffer->Create();
         commandBuffers[i] = std::move(commandBuffer);
     }
@@ -330,6 +358,19 @@ void VulkanBufferManager::CreateCommandPool()
     ASSERT_VK_RESULT_SUCCESS(
         vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool),
         "Failed to create command pool");
+}
+
+void VulkanBufferManager::CreateCubeMapBuffer()
+{
+    // TODO: create mesh for the cube map, and need to determine the image size more wisely
+    cubeMapBuffer = std::make_unique<VulkanImage>(
+        context, commandPool, imageVmaAllocator, VulkanImageType::CubeMap);
+    cubeMapBuffer->Load(
+        std::vector<uint8_t *>(),
+        512,
+        512,
+        descriptorPool,
+        pipelines.cubeMapPipeline->GetImageDescriptorSetLayout());
 }
 
 void VulkanBufferManager::CreateDescriptorPool()
@@ -450,6 +491,11 @@ void VulkanBufferManager::DestroyCommandBuffers()
         commandBuffer->Destroy();
     }
     commandBuffers.clear();
+}
+
+void VulkanBufferManager::DestroyCubeMapBuffer()
+{
+    cubeMapBuffer->Unload();
 }
 
 void VulkanBufferManager::DestroyFrameBuffers()

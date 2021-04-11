@@ -49,6 +49,7 @@ private:
     void ClearBuffers();
     void CreateBuffer();
     void CreatePipelines();
+    void DestroyPipelines();
 
     bool enableDebugging;
 
@@ -57,7 +58,9 @@ private:
     std::unique_ptr<VulkanRenderPass> renderPass;
 
     std::unique_ptr<VulkanBufferManager> bufferManager;
+
     std::unique_ptr<VulkanPipeline> staticPipeline;
+    std::unique_ptr<VulkanPipeline> cubeMapPipeline;
 
     std::unordered_set<uint32_t> bufferIds;
 };

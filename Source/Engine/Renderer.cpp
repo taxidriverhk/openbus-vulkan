@@ -97,4 +97,14 @@ void Renderer::LoadScene()
         drawEngine->LoadIntoBuffer(entityLoaded);
     }
     Logger::Log(LogLevel::Info, "Finished loading %d objects", numberOfMeshes);
+
+    Logger::Log(LogLevel::Info, "Loading skybox into buffer");
+    Image skyBoxImage("sky.bmp");
+    CubeMap cubeMap{};
+    for (int i = 0; i < 6; i++)
+    {
+        cubeMap.images.push_back(&skyBoxImage);
+    }
+    drawEngine->LoadCubeMap(cubeMap);
+    Logger::Log(LogLevel::Info, "Finished loading skybox into buffer");
 }

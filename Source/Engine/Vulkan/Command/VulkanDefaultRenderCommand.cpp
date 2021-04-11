@@ -10,12 +10,14 @@ VulkanDefaultRenderCommand::VulkanDefaultRenderCommand(
     VulkanDrawingPipelines pipelines,
     VkCommandPool pool,
     std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands,
-    VulkanBuffer *uniformBuffer)
+    VulkanBuffer *uniformBuffer,
+    VulkanImage *cubeMapBuffer)
     : VulkanCommand(context, renderPass, pool),
       pipelines(pipelines),
       dataUpdated(true),
       drawingCommands(drawingCommands),
-      uniformBuffer(uniformBuffer)
+      uniformBuffer(uniformBuffer),
+      cubeMapBuffer(cubeMapBuffer)
 {
 }
 
@@ -32,6 +34,7 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
     }
 
     VulkanPipeline *staticPipeline = pipelines.staticPipeline;
+    VulkanPipeline *cubeMapPipeline = pipelines.cubeMapPipeline;
     VkCommandBuffer commandBuffer = BeginCommandBuffer(frameBuffer);
 
     for (const auto &[bufferId, drawingCommand] : drawingCommands)
@@ -59,6 +62,12 @@ void VulkanDefaultRenderCommand::Record(VkFramebuffer frameBuffer)
         uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
     }
+
+    BindPipeline(cubeMapPipeline);
+    // Bind cubemap descriptor set
+    cubeMapBuffer->BindDescriptorSet(commandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
+    // TODO: Draw the cube
+    // vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 
     EndCommandBuffer();
 

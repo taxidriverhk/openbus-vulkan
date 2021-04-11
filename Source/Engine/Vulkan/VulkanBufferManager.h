@@ -33,6 +33,9 @@ public:
     void Create();
     void Destroy();
 
+    // Cubemap Buffering
+    void UpdateCubeMapImage(std::vector<Image *>& images);
+
     // Vertex/Texture Buffering
     uint32_t LoadIntoBuffer(
         uint32_t meshId,
@@ -60,12 +63,14 @@ private:
 
     void CreateCommandBuffers();
     void CreateCommandPool();
+    void CreateCubeMapBuffer();
     void CreateDescriptorPool();
     void CreateFrameBuffers();
     void CreateMemoryAllocator();
     void CreateSynchronizationObjects();
     void CreateUniformBuffers();
     void DestroyCommandBuffers();
+    void DestroyCubeMapBuffer();
     void DestroyFrameBuffers();
     void DestroyUniformBuffers();
 
@@ -97,6 +102,10 @@ private:
     // Active frame in use by the GPU
     uint32_t currentInFlightFrame;
 
+    // Cubemap buffers
+    std::unique_ptr<VulkanImage> cubeMapBuffer;
+
+    // Static scene buffers
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> instanceBuffers;
 
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> vertexBuffers;

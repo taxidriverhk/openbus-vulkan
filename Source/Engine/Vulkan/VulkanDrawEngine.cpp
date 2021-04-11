@@ -30,9 +30,17 @@ void VulkanDrawEngine::Destroy()
 
     ClearBuffers();
     bufferManager->Destroy();
-    staticPipeline->Destroy();
+
+    DestroyPipelines();
+
     renderPass->Destroy();
     context->Destroy();
+}
+
+void VulkanDrawEngine::DestroyPipelines()
+{
+    cubeMapPipeline->Destroy();
+    staticPipeline->Destroy();
 }
 
 void VulkanDrawEngine::DrawFrame()
@@ -66,6 +74,7 @@ void VulkanDrawEngine::CreateBuffer()
 {
     VulkanDrawingPipelines pipelines{};
     pipelines.staticPipeline = staticPipeline.get();
+    pipelines.cubeMapPipeline = cubeMapPipeline.get();
 
     bufferManager = std::make_unique<VulkanBufferManager>(context.get(), renderPass.get(), pipelines);
     bufferManager->Create();
@@ -75,26 +84,39 @@ void VulkanDrawEngine::CreatePipelines()
 {
     VulkanShader staticVertexShader(context.get(), VulkanShaderType::Vertex);
     VulkanShader staticFragmentShader(context.get(), VulkanShaderType::Fragment);
-
-    if (!staticVertexShader.Compile("shaders/static_vertex_shader.glsl")
-        || !staticFragmentShader.Compile("shaders/static_fragment_shader.glsl"))
+    if (!staticVertexShader.Compile(STATIC_PIPELINE_VERTEX_SHADER)
+        || !staticFragmentShader.Compile(STATIC_PIPELINE_FRAGMENT_SHADER))
     {
-        throw std::runtime_error("Failed to compile shader code");
+        throw std::runtime_error("Failed to compile static scene shader code");
     }
-    
     staticVertexShader.Load();
     staticFragmentShader.Load();
+
+    VulkanShader cubeMapVertexShader(context.get(), VulkanShaderType::Vertex);
+    VulkanShader cubeMapFragmentShader(context.get(), VulkanShaderType::Fragment);
+    if (!cubeMapVertexShader.Compile(CUBEMAP_PIPELINE_VERTEX_SHADER)
+        || !cubeMapFragmentShader.Compile(CUBEMAP_PIPELINE_FRAGMENT_SHADER))
+    {
+        throw std::runtime_error("Failed to compile static scene shader code");
+    }
+    cubeMapVertexShader.Load();
+    cubeMapFragmentShader.Load();
 
     staticPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
     staticPipeline->Create(staticVertexShader, staticFragmentShader);
 
+    cubeMapPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
+    cubeMapPipeline->Create(cubeMapVertexShader, cubeMapFragmentShader);
+
     staticVertexShader.Unload();
     staticFragmentShader.Unload();
+    cubeMapVertexShader.Unload();
+    cubeMapFragmentShader.Unload();
 }
 
 void VulkanDrawEngine::LoadCubeMap(CubeMap &cubeMap)
 {
-
+    bufferManager->UpdateCubeMapImage(cubeMap.images);
 }
 
 void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)

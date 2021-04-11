@@ -7,11 +7,14 @@
 VulkanImage::VulkanImage(
     VulkanContext *context,
     VkCommandPool &commandPool,
-    VmaAllocator &allocator)
+    VmaAllocator &allocator,
+    VulkanImageType type)
     : context(context),
       commandPool(commandPool),
       allocator(allocator),
+      type(type),
       allocation(),
+      descriptorSet(),
       format(VK_FORMAT_R8G8B8A8_SRGB),
       image(),
       imageView(),
@@ -30,9 +33,14 @@ void VulkanImage::BindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setN
         commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, setNumber, 1, &descriptorSet, 0, nullptr);
 }
 
-void VulkanImage::Load(Image *srcImage, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+void VulkanImage::Load(
+    std::vector<uint8_t *> imagePixels,
+    uint32_t width,
+    uint32_t height,
+    VkDescriptorPool descriptorPool,
+    VkDescriptorSetLayout descriptorSetLayout)
 {
-    CreateImage(srcImage);
+    CreateImage(imagePixels, width, height);
     CreateImageView();
     CreateSampler();
     CreateDescriptorSet(descriptorPool, descriptorSetLayout);
@@ -56,13 +64,11 @@ void VulkanImage::Unload()
     this->loaded = false;
 }
 
-void VulkanImage::CreateImage(Image *srcImage)
+void VulkanImage::CreateImage(
+    std::vector<uint8_t *> imagePixels,
+    uint32_t width,
+    uint32_t height)
 {
-    uint32_t width = static_cast<uint32_t>(srcImage->GetWidth());
-    uint32_t height = static_cast<uint32_t>(srcImage->GetHeight());
-    uint8_t *pixels = srcImage->GetPixels();
-    VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * sizeof(uint32_t);
-
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -70,7 +76,6 @@ void VulkanImage::CreateImage(Image *srcImage)
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
     imageInfo.format = format;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -78,33 +83,26 @@ void VulkanImage::CreateImage(Image *srcImage)
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+    if (type == VulkanImageType::Texture)
+    {
+        imageInfo.arrayLayers = 1;
+    }
+    else if (type == VulkanImageType::CubeMap)
+    {
+        imageInfo.arrayLayers = 6;
+        imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+
     VmaAllocationCreateInfo allocationInfo{};
     allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     ASSERT_VK_RESULT_SUCCESS(
         vmaCreateImage(allocator, &imageInfo, &allocationInfo, &image, &allocation, nullptr),
         "Failed to allocate image");
 
-    RunPipelineBarrierCommand(format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    VkBuffer stagingBuffer;
-    VmaAllocation stagingAllocation;
-    VulkanBuffer::CreateBuffer(
-        allocator,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        imageSize,
-        stagingBuffer,
-        stagingAllocation);
-
-    void *mappedData;
-    vmaMapMemory(allocator, stagingAllocation, &mappedData);
-    memcpy(mappedData, pixels, imageSize);
-    vmaUnmapMemory(allocator, stagingAllocation);
-    CopyDataToImageBuffer(stagingBuffer, width, height);
-
-    RunPipelineBarrierCommand(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
+    if (imagePixels.size() > 0)
+    {
+        UpdateImagePixels(imagePixels, width, height);
+    }
 }
 
 void VulkanImage::CreateImageView()
@@ -114,13 +112,21 @@ void VulkanImage::CreateImageView()
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = format;
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
+    if (type == VulkanImageType::Texture)
+    {
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.subresourceRange.layerCount = 1;
+    }
+    else if (type == VulkanImageType::CubeMap)
+    {
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        viewInfo.subresourceRange.layerCount = 6;
+    }
 
     ASSERT_VK_RESULT_SUCCESS(
         vkCreateImageView(logicalDevice, &viewInfo, nullptr, &imageView),
@@ -201,20 +207,25 @@ VkCommandBuffer VulkanImage::BeginSingleUseCommandBuffer()
     return commandBuffer;
 }
 
-void VulkanImage::CopyDataToImageBuffer(VkBuffer stagingBuffer, uint32_t width, uint32_t height)
+void VulkanImage::CopyDataToImageBuffer(
+    VkBuffer stagingBuffer,
+    VkDeviceSize offset,
+    uint32_t layerIndex,
+    uint32_t width,
+    uint32_t height)
 {
     VkCommandBuffer commandBuffer = BeginSingleUseCommandBuffer();
 
     VkBufferImageCopy region{};
-    region.bufferOffset = 0;
+    region.bufferOffset = offset;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
+    region.imageSubresource.baseArrayLayer = layerIndex;
     region.imageOffset = { 0, 0, 0 };
     region.imageExtent = { width, height, 1 };
+    region.imageSubresource.layerCount = 1;
 
     vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -254,7 +265,14 @@ void VulkanImage::RunPipelineBarrierCommand(VkFormat format, VkImageLayout oldLa
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
+    if (type == VulkanImageType::Texture)
+    {
+        barrier.subresourceRange.layerCount = 1;
+    }
+    else if (type == VulkanImageType::CubeMap)
+    {
+        barrier.subresourceRange.layerCount = 6;
+    }
 
     VkPipelineStageFlags sourceStage;
     VkPipelineStageFlags destinationStage;
@@ -294,4 +312,52 @@ void VulkanImage::RunPipelineBarrierCommand(VkFormat format, VkImageLayout oldLa
         &barrier);
 
     EndSingleUseCommandBuffer(commandBuffer);
+}
+
+void VulkanImage::UpdateImagePixels(
+    std::vector<uint8_t *> imagePixels,
+    uint32_t width,
+    uint32_t height)
+{
+    // TODO: VkImage must be recreated if the size has changed, otherwise it could crash the game
+
+    RunPipelineBarrierCommand(format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkDeviceSize imageSize = 0, layerSize = 1;
+    if (type == VulkanImageType::Texture)
+    {
+        imageSize = static_cast<VkDeviceSize>(width) * height * static_cast<VkDeviceSize>(sizeof(uint32_t));
+        layerSize = imageSize;
+    }
+    else if (type == VulkanImageType::CubeMap)
+    {
+        // Cube map has six images to load into
+        imageSize = 6 * static_cast<VkDeviceSize>(width) * height * static_cast<VkDeviceSize>(sizeof(uint32_t));
+        layerSize = imageSize / 6;
+    }
+
+    VkBuffer stagingBuffer;
+    VmaAllocation stagingAllocation;
+    VulkanBuffer::CreateBuffer(
+        allocator,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        imageSize,
+        stagingBuffer,
+        stagingAllocation);
+
+    void *mappedData;
+    vmaMapMemory(allocator, stagingAllocation, &mappedData);
+    for (uint32_t layer = 0; layer < imagePixels.size(); layer++)
+    {
+        uint8_t *pixels = imagePixels[layer];
+        VkDeviceSize offset = layer * layerSize;
+        memcpy(static_cast<uint8_t *>(mappedData) + offset, pixels, layerSize);
+        CopyDataToImageBuffer(stagingBuffer, offset, layer, width, height);
+    }
+    vmaUnmapMemory(allocator, stagingAllocation);
+
+    RunPipelineBarrierCommand(format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
 }

@@ -24,6 +24,9 @@ public:
     void Destroy();
 
 private:
+    void CreateDescriptorLayouts();
+    void DestroyDescriptorLayouts();
+
     VulkanContext *context;
     VulkanRenderPass *renderPass;
 

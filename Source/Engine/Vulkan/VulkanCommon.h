@@ -15,6 +15,11 @@
 
 static constexpr char *SHADER_MAIN_FUNCTION_NAME = "main";
 
+static constexpr char *STATIC_PIPELINE_VERTEX_SHADER = "shaders/static_vertex_shader.glsl";
+static constexpr char *STATIC_PIPELINE_FRAGMENT_SHADER = "shaders/static_fragment_shader.glsl";
+static constexpr char *CUBEMAP_PIPELINE_VERTEX_SHADER = "shaders/cubemap_vertex_shader.glsl";
+static constexpr char *CUBEMAP_PIPELINE_FRAGMENT_SHADER = "shaders/cubemap_fragment_shader.glsl";
+
 static constexpr int STATIC_PIPELINE_DESCRIPTOR_POOL_SIZE_COUNT = 2;
 static constexpr VkDescriptorPoolSize STATIC_PIPELINE_DESCRIPTOR_POOL_SIZES[] =
 {

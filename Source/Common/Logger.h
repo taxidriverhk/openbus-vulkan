@@ -18,9 +18,9 @@ public:
     static void Log(const LogLevel level, std::string message, ...);
 
 private:
-    static char * LOG_FILE_NAME;
-    static int MAX_LOG_FILE_SIZE;
-    static int MAX_LOG_FILE_COUNT;
+    static constexpr char * LOG_FILE_NAME = "application.log";
+    static constexpr int MAX_LOG_FILE_SIZE = 1000000;
+    static constexpr int MAX_LOG_FILE_COUNT = 5;
     static bool isInitialized;
 
     static void Initialize();

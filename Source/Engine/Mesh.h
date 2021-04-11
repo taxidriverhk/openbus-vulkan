@@ -46,7 +46,7 @@ struct Mesh
 
 struct CubeMap
 {
-    std::vector<Image> images;
+    std::vector<Image *> images;
 };
 
 class MeshLoader

@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
+#include "Engine/Vulkan/Image/VulkanImage.h"
 #include "VulkanCommand.h"
 
 struct VulkanDrawingPipelines;
@@ -17,7 +18,8 @@ public:
         VulkanDrawingPipelines pipelines,
         VkCommandPool pool,
         std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands,
-        VulkanBuffer *uniformBuffer);
+        VulkanBuffer *uniformBuffer,
+        VulkanImage *cubeMapBuffer);
     ~VulkanDefaultRenderCommand();
 
     void Record(VkFramebuffer frameBuffer) override;
@@ -29,4 +31,5 @@ private:
     VulkanDrawingPipelines pipelines;
     std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands;
     VulkanBuffer *uniformBuffer;
+    VulkanImage *cubeMapBuffer;
 };

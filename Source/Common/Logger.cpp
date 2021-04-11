@@ -9,9 +9,6 @@
 #include "Logger.h"
 
 bool Logger::isInitialized = false;
-char * Logger::LOG_FILE_NAME = "application.log";
-int Logger::MAX_LOG_FILE_SIZE = 1000000;
-int Logger::MAX_LOG_FILE_COUNT = 5;
 
 void Logger::Log(const LogLevel level, const char *format, ...)
 {
