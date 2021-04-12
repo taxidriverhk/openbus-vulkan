@@ -277,6 +277,8 @@ void VulkanContext::CreateLogicalDevice()
     queueCreateInfo.pQueuePriorities = &queuePriority;
 
     VkPhysicalDeviceFeatures physicalDeviceFeatures{};
+    physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
+
     VkDeviceCreateInfo logicalDeviceCreateInfo{};
     logicalDeviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     logicalDeviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
