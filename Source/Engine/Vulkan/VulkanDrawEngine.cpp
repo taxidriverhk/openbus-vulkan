@@ -11,7 +11,7 @@
 #include "Engine/Entity.h"
 #include "VulkanCommon.h"
 #include "VulkanDrawEngine.h"
-#include "Engine/Vulkan/Command/VulkanDefaultRenderCommand.h"
+#include "Command/VulkanCommandManager.h"
 
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
     : context(),
@@ -31,8 +31,11 @@ void VulkanDrawEngine::Destroy()
     context->WaitIdle();
 
     DestroyCommandBuffers();
-
-    ClearBuffers();
+    for (uint32_t bufferId : bufferIds)
+    {
+        bufferManager->UnloadBuffer(bufferId);
+    }
+    bufferIds.clear();
     bufferManager->Destroy();
 
     DestroySynchronizationObjects();
@@ -76,10 +79,24 @@ void VulkanDrawEngine::Initialize()
     renderPass = std::make_unique<VulkanRenderPass>(context.get());
     renderPass->Create();
 
+    CreateCommandPool();
     CreatePipelines();
     CreateFrameBuffers();
     CreateSynchronizationObjects();
-    CreateBuffer();
+
+    VulkanDrawingPipelines pipelines{};
+    pipelines.staticPipeline = staticPipeline.get();
+    pipelines.cubeMapPipeline = cubeMapPipeline.get();
+
+    std::thread::id threadId = std::this_thread::get_id();
+    VkCommandPool commandPool = commandPools[threadId];
+    bufferManager = std::make_unique<VulkanBufferManager>(
+        context.get(),
+        renderPass.get(),
+        pipelines,
+        commandPool,
+        static_cast<uint32_t>(frameBuffers.size()));
+    bufferManager->Create();
     CreateCommandBuffers();
 }
 
@@ -114,56 +131,46 @@ void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
     }
     imagesInFlight[imageIndex] = inFlightFences[currentInFlightFrame];
 
-    // Recording should happen only if the images are changed
-    commandBuffers[imageIndex]->Record(frameBuffers[imageIndex]);
-}
-
-void VulkanDrawEngine::ClearBuffers()
-{
-    for (uint32_t bufferId : bufferIds)
-    {
-        bufferManager->UnloadBuffer(bufferId);
-    }
-    bufferIds.clear();
-}
-
-void VulkanDrawEngine::CreateBuffer()
-{
-    VulkanDrawingPipelines pipelines{};
-    pipelines.staticPipeline = staticPipeline.get();
-    pipelines.cubeMapPipeline = cubeMapPipeline.get();
-
-    bufferManager = std::make_unique<VulkanBufferManager>(
-        context.get(),
-        renderPass.get(),
-        pipelines,
-        static_cast<uint32_t>(frameBuffers.size()));
-    bufferManager->Create();
+    // Recording should happen only if the data are changed
+    commandManager->Record(
+        imageIndex,
+        frameBuffers[imageIndex],
+        bufferManager->GetUniformBuffer(imageIndex),
+        bufferManager->GetCubeMapBuffer(),
+        bufferManager->GetDrawingCommands());
 }
 
 void VulkanDrawEngine::CreateCommandBuffers()
 {
+    std::thread::id threadId = std::this_thread::get_id();
+    VkCommandPool commandPool = commandPools[threadId];
+
     VulkanDrawingPipelines pipelines{};
     pipelines.staticPipeline = staticPipeline.get();
     pipelines.cubeMapPipeline = cubeMapPipeline.get();
 
-    VulkanCubeMapBuffer &cubeMapBuffer = bufferManager->GetCubeMapBuffer();
-    std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands = bufferManager->GetDrawingCommands();
-    commandBuffers.resize(frameBuffers.size());
-    for (uint32_t i = 0; i < commandBuffers.size(); i++)
-    {
-        VulkanBuffer *uniformBuffer = bufferManager->GetUniformBuffer(i);
-        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanDefaultRenderCommand>(
-            context.get(),
-            renderPass.get(),
-            pipelines,
-            bufferManager->GetCommandPool(),
-            drawingCommands,
-            cubeMapBuffer,
-            uniformBuffer);
-        commandBuffer->Create();
-        commandBuffers[i] = std::move(commandBuffer);
-    }
+    commandManager = std::make_unique<VulkanCommandManager>(
+        context.get(),
+        renderPass.get(),
+        pipelines,
+        commandPool);
+    commandManager->Create(static_cast<uint32_t>(frameBuffers.size()));
+}
+
+void VulkanDrawEngine::CreateCommandPool()
+{
+    std::thread::id threadId = std::this_thread::get_id();
+    VkCommandPool commandPool;
+
+    VkCommandPoolCreateInfo commandPoolInfo{};
+    commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
+    commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    ASSERT_VK_RESULT_SUCCESS(
+        vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool),
+        "Failed to create command pool");
+
+    commandPools.insert(std::make_pair(threadId, commandPool));
 }
 
 void VulkanDrawEngine::CreateFrameBuffers()
@@ -275,11 +282,7 @@ void VulkanDrawEngine::CreateSynchronizationObjects()
 
 void VulkanDrawEngine::DestroyCommandBuffers()
 {
-    for (std::unique_ptr<VulkanCommand> &commandBuffer : commandBuffers)
-    {
-        commandBuffer->Destroy();
-    }
-    commandBuffers.clear();
+    commandManager->Destroy();
 }
 
 void VulkanDrawEngine::DestroyFrameBuffers()
@@ -391,7 +394,7 @@ void VulkanDrawEngine::Submit(uint32_t &imageIndex)
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkCommandBuffer commandBuffer = commandBuffers[imageIndex]->GetBuffer();
+    VkCommandBuffer commandBuffer = commandManager->GetCommandBuffer(imageIndex);
     VkSemaphore semaphoresToWaitFor[] = { imageAvailableSemaphores[currentInFlightFrame] };
     VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentInFlightFrame] };
     VkPipelineStageFlags stagesToWaitFor[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };

@@ -27,6 +27,7 @@ public:
         VulkanContext *context,
         VulkanRenderPass *renderPass,
         VulkanDrawingPipelines pipelines,
+        VkCommandPool commandPool,
         uint32_t frameBufferSize);
     ~VulkanBufferManager();
 
@@ -60,7 +61,6 @@ private:
     // Only used for buffer ID generation, not a real limit
     static constexpr uint32_t MAX_VERTEX_BUFFERS = 20000;
 
-    void CreateCommandPool();
     void CreateCubeMapBuffer();
     void CreateDescriptorPool();
     void CreateMemoryAllocator();

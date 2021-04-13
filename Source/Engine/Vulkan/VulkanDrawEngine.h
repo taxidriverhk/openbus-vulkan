@@ -13,6 +13,7 @@
 #include "VulkanShader.h"
 
 class VulkanPipeline;
+class VulkanCommandManager;
 
 class VulkanDrawEngine : public DrawEngine
 {
@@ -48,9 +49,8 @@ private:
         return { input.x, input.z, input.y };
     }
 
-    void ClearBuffers();
-    void CreateBuffer();
     void CreateCommandBuffers();
+    void CreateCommandPool();
     void CreateFrameBuffers();
     void CreatePipelines();
     void CreateSynchronizationObjects();
@@ -71,16 +71,17 @@ private:
     std::unique_ptr<VulkanContext> context;
     std::unique_ptr<VulkanRenderPass> renderPass;
 
-    std::unique_ptr<VulkanBufferManager> bufferManager;
+    std::unordered_map<std::thread::id, VkCommandPool> commandPools;
+    std::unique_ptr<VulkanCommandManager> commandManager;
 
     std::unique_ptr<VulkanPipeline> staticPipeline;
     std::unique_ptr<VulkanPipeline> cubeMapPipeline;
 
     std::unordered_set<uint32_t> bufferIds;
+    std::unique_ptr<VulkanBufferManager> bufferManager;
 
     // Based on number of swap chain images (which is usually 3)
     std::vector<VkFramebuffer> frameBuffers;
-    std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
     std::vector<VkFence> imagesInFlight;
 
     // Based on the maximum allowed frames in flight

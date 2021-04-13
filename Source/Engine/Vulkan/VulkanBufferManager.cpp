@@ -3,21 +3,21 @@
 #define VMA_IMPLEMENTATION
 
 #include "Engine/Vulkan/VulkanCommon.h"
-#include "Engine/Vulkan/Command/VulkanDefaultRenderCommand.h"
 #include "VulkanBufferManager.h"
 
 VulkanBufferManager::VulkanBufferManager(
     VulkanContext *context,
     VulkanRenderPass *renderPass,
     VulkanDrawingPipelines pipelines,
+    VkCommandPool commandPool,
     uint32_t frameBufferSize)
     : context(context),
       renderPass(renderPass),
       pipelines(pipelines),
       frameBufferSize(frameBufferSize),
+      commandPool(commandPool),
       vmaAllocator(),
       imageVmaAllocator(),
-      commandPool(),
       descriptorPool(),
       indexBuffers(),
       vertexBuffers(),
@@ -41,11 +41,7 @@ VulkanBufferManager::~VulkanBufferManager()
 void VulkanBufferManager::Create()
 {
     CreateDescriptorPool();
-
     CreateMemoryAllocator();
-
-    CreateCommandPool();
-
     CreateUniformBuffers();
     CreateCubeMapBuffer();
 }
@@ -218,17 +214,6 @@ void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
     }
 
     uniformBufferUpdated = true;
-}
-
-void VulkanBufferManager::CreateCommandPool()
-{
-    VkCommandPoolCreateInfo commandPoolInfo{};
-    commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
-    commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool),
-        "Failed to create command pool");
 }
 
 void VulkanBufferManager::CreateCubeMapBuffer()
