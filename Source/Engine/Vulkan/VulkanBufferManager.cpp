@@ -9,16 +9,16 @@
 VulkanBufferManager::VulkanBufferManager(
     VulkanContext *context,
     VulkanRenderPass *renderPass,
-    VulkanDrawingPipelines pipelines)
+    VulkanDrawingPipelines pipelines,
+    uint32_t frameBufferSize)
     : context(context),
       renderPass(renderPass),
       pipelines(pipelines),
+      frameBufferSize(frameBufferSize),
       vmaAllocator(),
       imageVmaAllocator(),
-      commandBuffers(),
       commandPool(),
       descriptorPool(),
-      currentInFlightFrame(0),
       indexBuffers(),
       vertexBuffers(),
       uniformBufferUpdated(true),
@@ -28,7 +28,9 @@ VulkanBufferManager::VulkanBufferManager(
       cubeMapIndexBuffer(),
       cubeMapVertexBuffer(),
       generator(),
-      distribution(1, MAX_VERTEX_BUFFERS)
+      distribution(1, MAX_VERTEX_BUFFERS),
+      drawingCommandCache{},
+      cubeMapBufferCache{}
 {
 }
 
@@ -38,8 +40,6 @@ VulkanBufferManager::~VulkanBufferManager()
 
 void VulkanBufferManager::Create()
 {
-    CreateFrameBuffers();
-
     CreateDescriptorPool();
 
     CreateMemoryAllocator();
@@ -48,10 +48,6 @@ void VulkanBufferManager::Create()
 
     CreateUniformBuffers();
     CreateCubeMapBuffer();
-
-    CreateCommandBuffers();
-
-    CreateSynchronizationObjects();
 }
 
 void VulkanBufferManager::Destroy()
@@ -64,96 +60,10 @@ void VulkanBufferManager::Destroy()
     vkDestroyDescriptorPool(context->GetLogicalDevice(), descriptorPool, nullptr);
 
     VkDevice logicalDevice = context->GetLogicalDevice();
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        vkDestroySemaphore(logicalDevice, renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(logicalDevice, imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(logicalDevice, inFlightFences[i], nullptr);
-    }
-
-    DestroyCommandBuffers();
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 
     vmaDestroyAllocator(vmaAllocator);
     vmaDestroyAllocator(imageVmaAllocator);
-
-    DestroyFrameBuffers();
-}
-
-void VulkanBufferManager::Draw(uint32_t &imageIndex)
-{
-    BeginFrame(imageIndex);
-    Submit(imageIndex);
-    EndFrame(imageIndex);
-}
-
-void VulkanBufferManager::BeginFrame(uint32_t &imageIndex)
-{
-    VkDevice logicalDevice = context->GetLogicalDevice();
-    VkSwapchainKHR swapChain = context->GetSwapChain();
-
-    ASSERT_VK_RESULT_SUCCESS(
-        vkWaitForFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame], VK_TRUE, UINT64_MAX),
-        "Failed to wait for fences");
-
-    VkResult acquireImageResult = vkAcquireNextImageKHR(
-        logicalDevice,
-        swapChain,
-        UINT64_MAX,
-        imageAvailableSemaphores[currentInFlightFrame],
-        VK_NULL_HANDLE,
-        &imageIndex);
-    if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
-    {
-        RecreateSwapChainAndBuffers();
-        return;
-    }
-
-    if (uniformBufferUpdated)
-    {
-        uniformBuffers[imageIndex]->Update(&uniformBufferInput, sizeof(VulkanUniformBufferInput));
-        uniformBufferUpdated = false;
-    }
-
-    // The acquire image is still in use
-    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
-    {
-        ASSERT_VK_RESULT_SUCCESS(
-            vkWaitForFences(logicalDevice, 1, &imagesInFlight[currentInFlightFrame], VK_TRUE, UINT64_MAX),
-            "Failed to wait for fences");
-    }
-    imagesInFlight[imageIndex] = inFlightFences[currentInFlightFrame];
-
-    // Recording should happen only if the images are changed
-    commandBuffers[imageIndex]->Record(frameBuffers[imageIndex]);
-}
-
-void VulkanBufferManager::EndFrame(uint32_t &imageIndex)
-{
-    VkSwapchainKHR swapChain = context->GetSwapChain();
-    VkQueue presentQueue = context->GetPresentQueue();
-
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentInFlightFrame] };
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-
-    VkSwapchainKHR swapChains[] = { swapChain };
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &imageIndex;
-
-    VkResult presentImageResult = vkQueuePresentKHR(presentQueue, &presentInfo);
-    if (presentImageResult == VK_ERROR_OUT_OF_DATE_KHR
-        || presentImageResult == VK_SUBOPTIMAL_KHR
-        || context->GetScreen()->IsResized())
-    {
-        context->GetScreen()->ResetResizeState();
-        RecreateSwapChainAndBuffers();
-    }
-
-    currentInFlightFrame = (currentInFlightFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 uint32_t VulkanBufferManager::LoadIntoBuffer(
@@ -245,35 +155,6 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
     return bufferId;
 }
 
-void VulkanBufferManager::Submit(uint32_t &imageIndex)
-{
-    VkDevice logicalDevice = context->GetLogicalDevice();
-    VkQueue graphicsQueue = context->GetGraphicsQueue();
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkCommandBuffer commandBuffer = commandBuffers[imageIndex]->GetBuffer();
-    VkSemaphore semaphoresToWaitFor[] = { imageAvailableSemaphores[currentInFlightFrame] };
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentInFlightFrame] };
-    VkPipelineStageFlags stagesToWaitFor[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = semaphoresToWaitFor;
-    submitInfo.pWaitDstStageMask = stagesToWaitFor;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    ASSERT_VK_RESULT_SUCCESS(
-        vkResetFences(logicalDevice, 1, &inFlightFences[currentInFlightFrame]),
-        "Failed to reset fences");
-
-    ASSERT_VK_RESULT_SUCCESS(
-        vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentInFlightFrame]),
-        "Failed to submit the command for drawing the buffer");
-}
-
 void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
 {
     if (drawingBuffers.count(bufferId) > 0)
@@ -330,30 +211,13 @@ void VulkanBufferManager::UpdateCubeMapImage(std::vector<Image *> &images)
 void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
 {
     uniformBufferInput = input;
-    uniformBufferUpdated = true;
-}
-
-void VulkanBufferManager::CreateCommandBuffers()
-{
-    VulkanCubeMapBuffer cubeMapBuffer{};
-    cubeMapBuffer.imageBuffer = cubeMapImage.get();
-    cubeMapBuffer.vertexBuffer = cubeMapVertexBuffer.get();
-    cubeMapBuffer.indexBuffer = cubeMapIndexBuffer.get();
-
-    commandBuffers.resize(frameBuffers.size());
-    for (uint32_t i = 0; i < commandBuffers.size(); i++)
+    
+    for (uint32_t i = 0; i < frameBufferSize; i++)
     {
-        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanDefaultRenderCommand>(
-            context,
-            renderPass,
-            pipelines,
-            commandPool,
-            drawingCommandCache,
-            cubeMapBuffer,
-            uniformBuffers[i].get());
-        commandBuffer->Create();
-        commandBuffers[i] = std::move(commandBuffer);
+        uniformBuffers[i]->Update(&uniformBufferInput, sizeof(VulkanUniformBufferInput));
     }
+
+    uniformBufferUpdated = true;
 }
 
 void VulkanBufferManager::CreateCommandPool()
@@ -427,6 +291,10 @@ void VulkanBufferManager::CreateCubeMapBuffer()
         512,
         descriptorPool,
         pipelines.cubeMapPipeline->GetImageDescriptorSetLayout());
+
+    cubeMapBufferCache.imageBuffer = cubeMapImage.get();
+    cubeMapBufferCache.vertexBuffer = cubeMapVertexBuffer.get();
+    cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
 }
 
 void VulkanBufferManager::CreateDescriptorPool()
@@ -439,39 +307,6 @@ void VulkanBufferManager::CreateDescriptorPool()
     ASSERT_VK_RESULT_SUCCESS(
         vkCreateDescriptorPool(context->GetLogicalDevice(), &poolInfo, nullptr, &descriptorPool),
         "Failed to create descriptor pool");
-}
-
-void VulkanBufferManager::CreateFrameBuffers()
-{
-    VkExtent2D swapChainExtent = context->GetSwapChainExtent();
-    VkImageView colorImageView = context->GetColorImageView();
-    VkImageView depthImageView = context->GetDepthImageView();
-    std::vector<VkImageView> swapChainImageViews = context->GetSwapChainImageViews();
-    for (VkImageView swapChainImageView : swapChainImageViews)
-    {
-        VkFramebuffer frameBuffer;
-        VkImageView attachments[] =
-        {
-            colorImageView,
-            depthImageView,
-            swapChainImageView
-        };
-
-        VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass->GetRenderPass();
-        framebufferInfo.attachmentCount = 3;
-        framebufferInfo.pAttachments = attachments;
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
-        framebufferInfo.layers = 1;
-
-        ASSERT_VK_RESULT_SUCCESS(
-            vkCreateFramebuffer(context->GetLogicalDevice(), &framebufferInfo, nullptr, &frameBuffer),
-            "Failed to create frame buffer");
-
-        frameBuffers.push_back(frameBuffer);
-    }
 }
 
 void VulkanBufferManager::CreateMemoryAllocator()
@@ -490,39 +325,9 @@ void VulkanBufferManager::CreateMemoryAllocator()
         "Failed to create image VMA allocator");
 }
 
-void VulkanBufferManager::CreateSynchronizationObjects()
-{
-    std::vector<VkImage> swapChainImages = context->GetSwapChainImages();
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
-
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    VkDevice logicalDevice = context->GetLogicalDevice();
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        ASSERT_VK_RESULT_SUCCESS(
-            vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]),
-            "Failed to create synchronization objects for a frame");
-        ASSERT_VK_RESULT_SUCCESS(
-            vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]),
-            "Failed to create synchronization objects for a frame");
-        ASSERT_VK_RESULT_SUCCESS(
-            vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]),
-            "Failed to create synchronization objects for a frame");
-    }
-}
-
 void VulkanBufferManager::CreateUniformBuffers()
 {
-    for (uint32_t i = 0; i < frameBuffers.size(); i++)
+    for (uint32_t i = 0; i < frameBufferSize; i++)
     {
         std::unique_ptr<VulkanBuffer> uniformBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
         VulkanUniformBufferInput defaultUniformBufferInput{};
@@ -540,30 +345,11 @@ void VulkanBufferManager::CreateUniformBuffers()
     }
 }
 
-void VulkanBufferManager::DestroyCommandBuffers()
-{
-    for (std::unique_ptr<VulkanCommand> &commandBuffer : commandBuffers)
-    {
-        commandBuffer->Destroy();
-    }
-    commandBuffers.clear();
-}
-
 void VulkanBufferManager::DestroyCubeMapBuffer()
 {
     cubeMapImage->Unload();
     cubeMapIndexBuffer->Unload();
     cubeMapVertexBuffer->Unload();
-}
-
-void VulkanBufferManager::DestroyFrameBuffers()
-{
-    VkDevice logicalDevice = context->GetLogicalDevice();
-    for (VkFramebuffer frameBuffer : frameBuffers)
-    {
-        vkDestroyFramebuffer(logicalDevice, frameBuffer, nullptr);
-    }
-    frameBuffers.clear();
 }
 
 void VulkanBufferManager::DestroyUniformBuffers()
@@ -583,29 +369,4 @@ uint32_t VulkanBufferManager::GenerateBufferId()
         nextBufferId = distribution(generator);
     } while (instanceBuffers.count(nextBufferId) != 0);
     return nextBufferId;
-}
-
-void VulkanBufferManager::RecreateSwapChainAndBuffers()
-{
-    Screen *screen = context->GetScreen();
-    int newWidth = screen->GetWidth(),
-        newHeight = screen->GetHeight();
-    // Do nothing when the window is minimized
-    // TODO: this loop may block the entire game,
-    // need to have a fix (ex. auto-pause the game)
-    while (newWidth == 0 || newHeight == 0)
-    {
-        newWidth = screen->GetWidth();
-        newHeight = screen->GetHeight();
-        SDL_WaitEvent(nullptr);
-    }
-    context->WaitIdle();
-
-    DestroyCommandBuffers();
-    DestroyFrameBuffers();
-
-    context->RecreateSwapChain();
-
-    CreateFrameBuffers();
-    CreateCommandBuffers();
 }

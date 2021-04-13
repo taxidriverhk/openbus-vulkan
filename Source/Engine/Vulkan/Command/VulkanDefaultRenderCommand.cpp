@@ -14,7 +14,6 @@ VulkanDefaultRenderCommand::VulkanDefaultRenderCommand(
     VulkanBuffer *uniformBuffer)
     : VulkanCommand(context, renderPass, pool),
       pipelines(pipelines),
-      dataUpdated(true),
       drawingCommands(drawingCommands),
       cubeMapBuffer(cubeMapBuffer),
       uniformBuffer(uniformBuffer)

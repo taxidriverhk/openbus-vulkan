@@ -28,6 +28,8 @@ public:
     void UpdateCamera(Camera *camera) override;
 
 private:
+    static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
     // The game treats Z-axis as the upward axis, while Vulkan/OpenGL treats Y-axis as the upward axis
     // Therefore, a conversion is required.
     // Texture v-coordinate must also be flipped as the y-axis texture viewport in Vulkan is flipped.
@@ -48,8 +50,20 @@ private:
 
     void ClearBuffers();
     void CreateBuffer();
+    void CreateCommandBuffers();
+    void CreateFrameBuffers();
     void CreatePipelines();
+    void CreateSynchronizationObjects();
+    void DestroyCommandBuffers();
+    void DestroyFrameBuffers();
     void DestroyPipelines();
+    void DestroySynchronizationObjects();
+
+    void BeginFrame(uint32_t &imageIndex);
+    void EndFrame(uint32_t &imageIndex);
+    void Submit(uint32_t &imageIndex);
+
+    void RecreateSwapChain();
 
     bool enableDebugging;
 
@@ -63,4 +77,17 @@ private:
     std::unique_ptr<VulkanPipeline> cubeMapPipeline;
 
     std::unordered_set<uint32_t> bufferIds;
+
+    // Based on number of swap chain images (which is usually 3)
+    std::vector<VkFramebuffer> frameBuffers;
+    std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
+    std::vector<VkFence> imagesInFlight;
+
+    // Based on the maximum allowed frames in flight
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
+
+    // Active frame in use by the GPU
+    uint32_t currentInFlightFrame;
 };

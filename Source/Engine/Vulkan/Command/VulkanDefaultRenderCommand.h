@@ -23,11 +23,8 @@ public:
     ~VulkanDefaultRenderCommand();
 
     void Record(VkFramebuffer frameBuffer) override;
-    void SetDataUpdated(bool nextState) { dataUpdated = nextState; }
 
 private:
-    bool dataUpdated;
-
     VulkanDrawingPipelines pipelines;
     std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands;
     VulkanCubeMapBuffer cubeMapBuffer;

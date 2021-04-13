@@ -13,6 +13,7 @@ VulkanCommand::VulkanCommand(
     : context(context),
       renderPass(renderPass),
       pool(pool),
+      dataUpdated(true),
       buffer()
 {
 }

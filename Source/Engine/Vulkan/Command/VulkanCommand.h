@@ -20,6 +20,7 @@ public:
     ~VulkanCommand();
 
     VkCommandBuffer GetBuffer() const { return buffer; }
+    void SetDataUpdated(bool nextState) { dataUpdated = nextState; }
 
     void Create();
     void Destroy();
@@ -29,6 +30,8 @@ protected:
     VkCommandBuffer BeginCommandBuffer(VkFramebuffer frameBuffer);
     void BindPipeline(VulkanPipeline *pipeline);
     void EndCommandBuffer();
+
+    bool dataUpdated;
 
 private:
     VulkanContext *context;

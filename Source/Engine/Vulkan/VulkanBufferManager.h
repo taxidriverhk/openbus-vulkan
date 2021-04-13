@@ -26,7 +26,8 @@ public:
     VulkanBufferManager(
         VulkanContext *context,
         VulkanRenderPass *renderPass,
-        VulkanDrawingPipelines pipelines);
+        VulkanDrawingPipelines pipelines,
+        uint32_t frameBufferSize);
     ~VulkanBufferManager();
 
     // Initialization
@@ -47,37 +48,29 @@ public:
     void UnloadBuffer(uint32_t bufferId);
     void UpdateUniformBuffer(VulkanUniformBufferInput input);
 
-    // Buffer Drawing
-    void Draw(uint32_t &imageIndex);
+    // TODO: temporary code, will be moved to command manager later
+    VkCommandPool GetCommandPool() const { return commandPool; }
+    VulkanCubeMapBuffer &GetCubeMapBuffer() { return cubeMapBufferCache; }
+    VulkanBuffer *GetUniformBuffer(uint32_t index) const { return uniformBuffers[index].get(); }
+    std::unordered_map<uint32_t, VulkanDrawingCommand> &GetDrawingCommands() { return drawingCommandCache; }
 
 private:
     // Should be good enough for images per scene
     static constexpr uint32_t MAX_DESCRIPTOR_SETS = 3 * 8192U;
-    static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
     // Only used for buffer ID generation, not a real limit
     static constexpr uint32_t MAX_VERTEX_BUFFERS = 20000;
 
-    void BeginFrame(uint32_t &imageIndex);
-    void EndFrame(uint32_t &imageIndex);
-    void Submit(uint32_t &imageIndex);
-
-    void CreateCommandBuffers();
     void CreateCommandPool();
     void CreateCubeMapBuffer();
     void CreateDescriptorPool();
-    void CreateFrameBuffers();
     void CreateMemoryAllocator();
-    void CreateSynchronizationObjects();
     void CreateUniformBuffers();
-    void DestroyCommandBuffers();
     void DestroyCubeMapBuffer();
-    void DestroyFrameBuffers();
     void DestroyUniformBuffers();
 
     uint32_t GenerateBufferId();
 
-    void RecreateSwapChainAndBuffers();
-
+    uint32_t frameBufferSize;
     VulkanContext *context;
     VulkanRenderPass *renderPass;
 
@@ -89,20 +82,8 @@ private:
     VkCommandPool commandPool;
     VkDescriptorPool descriptorPool;
 
-    // Based on number of swap chain images (which is usually 3)
-    std::vector<VkFramebuffer> frameBuffers;
-    std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
-    std::vector<VkFence> imagesInFlight;
-
-    // Based on the maximum allowed frames in flight
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
-
-    // Active frame in use by the GPU
-    uint32_t currentInFlightFrame;
-
     // Cubemap buffers
+    VulkanCubeMapBuffer cubeMapBufferCache;
     std::unique_ptr<VulkanBuffer> cubeMapVertexBuffer;
     std::unique_ptr<VulkanBuffer> cubeMapIndexBuffer;
     std::unique_ptr<VulkanImage> cubeMapImage;
