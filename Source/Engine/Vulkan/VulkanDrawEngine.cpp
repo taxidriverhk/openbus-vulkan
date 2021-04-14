@@ -11,6 +11,7 @@
 #include "Engine/Entity.h"
 #include "VulkanCommon.h"
 #include "VulkanDrawEngine.h"
+#include "Buffer/VulkanBufferManager.h"
 #include "Command/VulkanCommandManager.h"
 
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)

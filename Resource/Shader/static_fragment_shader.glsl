@@ -13,6 +13,8 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     vec4 objectColor = texture(inSampler, fUV);
+    if (objectColor.a < 1)
+        discard;
 
     // TODO: hard-code some values for now
     float shininess = 0.15;
@@ -36,4 +38,5 @@ void main() {
     vec4 specular = pow(RdotV, shininess) * lightColor * specularColor;
 
     outColor = (ambient + diffuse + specular) * objectColor;
+    outColor.a = objectColor.a;
 }

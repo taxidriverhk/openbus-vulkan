@@ -16,6 +16,7 @@ VulkanCommandManager::VulkanCommandManager(
       renderPass(renderPass),
       commandPool(commandPool),
       pipelines(pipelines),
+      frameBufferSize(0),
       dataUpdated()
 {
 }

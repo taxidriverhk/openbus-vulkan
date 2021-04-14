@@ -7,12 +7,12 @@
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
 
-#include "VulkanBufferManager.h"
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"
 #include "VulkanShader.h"
 
 class VulkanPipeline;
+class VulkanBufferManager;
 class VulkanCommandManager;
 
 class VulkanDrawEngine : public DrawEngine

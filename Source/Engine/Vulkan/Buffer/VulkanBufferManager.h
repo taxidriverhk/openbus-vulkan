@@ -9,13 +9,13 @@
 #include "vk_mem_alloc.hpp"
 
 #include "Engine/Mesh.h"
-#include "Buffer/VulkanBuffer.h"
-#include "Command/VulkanCommand.h"
-#include "Image/VulkanImage.h"
-#include "VulkanCommon.h"
-#include "VulkanContext.h"
-#include "VulkanRenderPass.h"
-#include "VulkanPipeline.h"
+#include "Engine/Vulkan/VulkanCommon.h"
+#include "Engine/Vulkan/VulkanContext.h"
+#include "Engine/Vulkan/VulkanRenderPass.h"
+#include "Engine/Vulkan/VulkanPipeline.h"
+#include "Engine/Vulkan/Command/VulkanCommand.h"
+#include "Engine/Vulkan/Image/VulkanImage.h"
+#include "VulkanBuffer.h"
 
 struct VulkanDrawingPipelines;
 struct VulkanDrawingCommand;
@@ -49,8 +49,6 @@ public:
     void UnloadBuffer(uint32_t bufferId);
     void UpdateUniformBuffer(VulkanUniformBufferInput input);
 
-    // TODO: temporary code, will be moved to command manager later
-    VkCommandPool GetCommandPool() const { return commandPool; }
     VulkanCubeMapBuffer &GetCubeMapBuffer() { return cubeMapBufferCache; }
     VulkanBuffer *GetUniformBuffer(uint32_t index) const { return uniformBuffers[index].get(); }
     std::unordered_map<uint32_t, VulkanDrawingCommand> &GetDrawingCommands() { return drawingCommandCache; }
