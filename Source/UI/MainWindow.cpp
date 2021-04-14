@@ -1,25 +1,29 @@
 #include "MainWindow.h"
 
 MainWindow::MainWindow()
-      : game(std::make_unique<Game>())
 {
     resize(WINDOW_WIDTH, WINDOW_HEIGHT);
     setWindowTitle(Util::FormatWindowTitle("Main Window").c_str());
 
     mainLayout = std::make_unique<QWidget>();
 
-    startButton = std::make_unique<QPushButton>("Start", mainLayout.get());
-    startButton->resize(100, 100);
-    startButton->move(400, 200);
+    startAction = std::make_unique<QAction>("Start", this);
+    shutdownAction = std::make_unique<QAction>("Shutdown", this);
+    exitAction = std::make_unique<QAction>("Exit", this);
 
-    shutdownButton = std::make_unique<QPushButton>("Shutdown", mainLayout.get());
-    shutdownButton->setDisabled(true);
-    shutdownButton->resize(100, 100);
-    shutdownButton->move(400, 350);
+    gameMenu = menuBar()->addMenu("Game");
+    gameMenu->addAction(startAction.get());
+    gameMenu->addAction(shutdownAction.get());
+    gameMenu->addSeparator();
+    gameMenu->addAction(exitAction.get());
 
     setCentralWidget(mainLayout.get());
-    connect(startButton.get(), &QPushButton::clicked, this, &MainWindow::StartButtonClicked);
-    connect(shutdownButton.get(), &QPushButton::clicked, this, &MainWindow::ShutdownButtonClicked);
+
+    connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
+    connect(startAction.get(), &QAction::triggered, this, &MainWindow::StartButtonClicked);
+    connect(shutdownAction.get(), &QAction::triggered, this, &MainWindow::ShutdownButtonClicked);
+
+    game = std::make_unique<Game>();
 }
 
 MainWindow::~MainWindow()
@@ -37,6 +41,11 @@ void MainWindow::Open()
     show();
 }
 
+void MainWindow::ExitButtonClicked()
+{
+    close();
+}
+
 void MainWindow::ShutdownButtonClicked()
 {
     game->SetShouldEndGame(true);
@@ -44,9 +53,9 @@ void MainWindow::ShutdownButtonClicked()
 
 void MainWindow::StartButtonClicked()
 {
-    startButton->setDisabled(true);
-    shutdownButton->setDisabled(false);
+    startAction->setDisabled(true);
+    shutdownAction->setDisabled(false);
     game->Start();
-    startButton->setDisabled(false);
-    shutdownButton->setDisabled(true);
+    startAction->setDisabled(false);
+    shutdownAction->setDisabled(true);
 }

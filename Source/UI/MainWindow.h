@@ -23,11 +23,16 @@ private:
     static constexpr int WINDOW_WIDTH = 1024;
     static constexpr int WINDOW_HEIGHT = 768;
 
+    void ExitButtonClicked();
     void ShutdownButtonClicked();
     void StartButtonClicked();
 
     std::unique_ptr<Game> game;
+
     std::unique_ptr<QWidget> mainLayout;
-    std::unique_ptr<QPushButton> shutdownButton;
-    std::unique_ptr<QPushButton> startButton;
+
+    QMenu *gameMenu;
+    std::unique_ptr<QAction> startAction;
+    std::unique_ptr<QAction> shutdownAction;
+    std::unique_ptr<QAction> exitAction;
 };
