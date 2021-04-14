@@ -19,8 +19,7 @@ public:
     VulkanCommandManager(
         VulkanContext *context,
         VulkanRenderPass *renderPass,
-        VulkanDrawingPipelines pipelines,
-        VkCommandPool commandPool);
+        VulkanDrawingPipelines pipelines);
     ~VulkanCommandManager();
 
     VkCommandBuffer GetCommandBuffer(uint32_t imageIndex) const
@@ -30,6 +29,7 @@ public:
 
     void Create(uint32_t frameBufferSize);
     void Destroy();
+    VkCommandPool GetOrCreateCommandPool(std::thread::id threadId);
     void Record(
         uint32_t imageIndex,
         VkFramebuffer framebuffer,
@@ -42,6 +42,7 @@ private:
     void BindPipeline(VkCommandBuffer commandBuffer, VulkanPipeline *pipeline);
     void EndCommand(VkCommandBuffer commandBuffer);
 
+    std::unordered_map<std::thread::id, VkCommandPool> commandPools;
     std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
     std::vector<bool> dataUpdated;
 
@@ -50,5 +51,4 @@ private:
     VulkanContext *context;
     VulkanRenderPass *renderPass;
     VulkanDrawingPipelines pipelines;
-    VkCommandPool commandPool;
 };

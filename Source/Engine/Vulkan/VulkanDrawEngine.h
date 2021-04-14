@@ -50,7 +50,6 @@ private:
     }
 
     void CreateCommandBuffers();
-    void CreateCommandPool();
     void CreateFrameBuffers();
     void CreatePipelines();
     void CreateSynchronizationObjects();
@@ -71,7 +70,6 @@ private:
     std::unique_ptr<VulkanContext> context;
     std::unique_ptr<VulkanRenderPass> renderPass;
 
-    std::unordered_map<std::thread::id, VkCommandPool> commandPools;
     std::unique_ptr<VulkanCommandManager> commandManager;
 
     std::unique_ptr<VulkanPipeline> staticPipeline;

@@ -80,7 +80,6 @@ void VulkanDrawEngine::Initialize()
     renderPass = std::make_unique<VulkanRenderPass>(context.get());
     renderPass->Create();
 
-    CreateCommandPool();
     CreatePipelines();
     CreateFrameBuffers();
     CreateSynchronizationObjects();
@@ -89,8 +88,8 @@ void VulkanDrawEngine::Initialize()
     pipelines.staticPipeline = staticPipeline.get();
     pipelines.cubeMapPipeline = cubeMapPipeline.get();
 
-    std::thread::id threadId = std::this_thread::get_id();
-    VkCommandPool commandPool = commandPools[threadId];
+    CreateCommandBuffers();
+    VkCommandPool commandPool = commandManager->GetOrCreateCommandPool(std::this_thread::get_id());
     bufferManager = std::make_unique<VulkanBufferManager>(
         context.get(),
         renderPass.get(),
@@ -98,7 +97,6 @@ void VulkanDrawEngine::Initialize()
         commandPool,
         static_cast<uint32_t>(frameBuffers.size()));
     bufferManager->Create();
-    CreateCommandBuffers();
 }
 
 void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
@@ -143,9 +141,6 @@ void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
 
 void VulkanDrawEngine::CreateCommandBuffers()
 {
-    std::thread::id threadId = std::this_thread::get_id();
-    VkCommandPool commandPool = commandPools[threadId];
-
     VulkanDrawingPipelines pipelines{};
     pipelines.staticPipeline = staticPipeline.get();
     pipelines.cubeMapPipeline = cubeMapPipeline.get();
@@ -153,25 +148,8 @@ void VulkanDrawEngine::CreateCommandBuffers()
     commandManager = std::make_unique<VulkanCommandManager>(
         context.get(),
         renderPass.get(),
-        pipelines,
-        commandPool);
+        pipelines);
     commandManager->Create(static_cast<uint32_t>(frameBuffers.size()));
-}
-
-void VulkanDrawEngine::CreateCommandPool()
-{
-    std::thread::id threadId = std::this_thread::get_id();
-    VkCommandPool commandPool;
-
-    VkCommandPoolCreateInfo commandPoolInfo{};
-    commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
-    commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool),
-        "Failed to create command pool");
-
-    commandPools.insert(std::make_pair(threadId, commandPool));
 }
 
 void VulkanDrawEngine::CreateFrameBuffers()
