@@ -6,6 +6,8 @@
 #include <QMainWindow>
 #include <QtWidgets>
 
+class LogViewer;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -29,10 +31,13 @@ private:
 
     std::unique_ptr<Game> game;
 
-    std::unique_ptr<QWidget> mainLayout;
+    std::unique_ptr<QMainWindow> mainLayout;
 
     QMenu *gameMenu;
     std::unique_ptr<QAction> startAction;
     std::unique_ptr<QAction> shutdownAction;
     std::unique_ptr<QAction> exitAction;
+
+    std::unique_ptr<QDockWidget> gameScreen;
+    std::unique_ptr<LogViewer> logViewer;
 };

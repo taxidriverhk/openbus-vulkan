@@ -1,3 +1,4 @@
+#include "LogViewer.h"
 #include "MainWindow.h"
 
 MainWindow::MainWindow()
@@ -5,7 +6,7 @@ MainWindow::MainWindow()
     resize(WINDOW_WIDTH, WINDOW_HEIGHT);
     setWindowTitle(Util::FormatWindowTitle("Main Window").c_str());
 
-    mainLayout = std::make_unique<QWidget>();
+    mainLayout = std::make_unique<QMainWindow>();
 
     startAction = std::make_unique<QAction>("Start", this);
     shutdownAction = std::make_unique<QAction>("Shutdown", this);
@@ -18,6 +19,14 @@ MainWindow::MainWindow()
     gameMenu->addAction(exitAction.get());
 
     setCentralWidget(mainLayout.get());
+
+    gameScreen = std::make_unique<QDockWidget>();
+    gameScreen->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
+    mainLayout->addDockWidget(Qt::TopDockWidgetArea, gameScreen.get());
+
+    logViewer = std::make_unique<LogViewer>();
+    logViewer->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
+    mainLayout->addDockWidget(Qt::BottomDockWidgetArea, logViewer.get());
 
     connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
     connect(startAction.get(), &QAction::triggered, this, &MainWindow::StartButtonClicked);

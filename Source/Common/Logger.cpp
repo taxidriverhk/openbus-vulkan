@@ -2,11 +2,46 @@
 
 #include <plog/Log.h>
 #include <plog/Init.h>
-#include <plog/Appenders/ConsoleAppender.h>
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Initializers/RollingFileInitializer.h>
 
 #include "Logger.h"
+
+namespace plog
+{
+    template<class Formatter>
+    class InMemoryAppender : public IAppender
+    {
+    public:
+        InMemoryAppender()
+            : shouldClear(false)
+        {
+        }
+
+        virtual void write(const Record &record)
+        {
+            if (shouldClear)
+            {
+                message.clear();
+                shouldClear = false;
+            }
+            util::nstring formatted = Formatter::format(record);
+            message.append(formatted);
+        }
+
+        std::wstring GetMessage()
+        {
+            shouldClear = true;
+            return message;
+        }
+
+    private:
+        bool shouldClear;
+        std::wstring message;
+    };
+}
+
+static plog::InMemoryAppender<plog::TxtFormatterUtcTime> inMemoryAppender;
 
 bool Logger::isInitialized = false;
 
@@ -63,9 +98,13 @@ void Logger::Log(const LogLevel level, std::string message, ...)
     va_end(args);
 }
 
+std::wstring Logger::GetJoinedMessage()
+{
+    return inMemoryAppender.GetMessage();
+}
+
 void Logger::Initialize()
 {
     static plog::RollingFileAppender<plog::TxtFormatterUtcTime> fileAppender(LOG_FILE_NAME, MAX_LOG_FILE_SIZE, MAX_LOG_FILE_COUNT);
-    static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-    plog::init(plog::debug, &fileAppender).addAppender(&consoleAppender);
+    plog::init(plog::debug, &fileAppender).addAppender(&inMemoryAppender);
 }

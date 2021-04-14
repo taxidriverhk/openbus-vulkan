@@ -1,8 +1,4 @@
-﻿#if _DEBUG
-#pragma comment(linker, "/SUBSYSTEM:CONSOLE")
-#endif
-
-#include <iostream>
+﻿#include <iostream>
 
 #include "Common/Logger.h"
 #include "UI/MainWindow.h"
