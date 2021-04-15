@@ -132,6 +132,11 @@ void VulkanCommandManager::Record(
     dataUpdated[imageIndex] = false;
 }
 
+void VulkanCommandManager::TriggerUpdate(uint32_t imageIndex)
+{
+    dataUpdated[imageIndex] = true;
+}
+
 VkCommandBuffer VulkanCommandManager::BeginCommand(uint32_t imageIndex, VkFramebuffer frameBuffer)
 {
     VkCommandBufferBeginInfo beginInfo{};

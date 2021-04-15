@@ -338,6 +338,11 @@ void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
         mesh->indices,
         mesh->material.get());
     bufferIds.insert(bufferId);
+
+    for (uint32_t i = 0; i < frameBuffers.size(); i++)
+    {
+        commandManager->TriggerUpdate(i);
+    }
 }
 
 void VulkanDrawEngine::RecreateSwapChain()

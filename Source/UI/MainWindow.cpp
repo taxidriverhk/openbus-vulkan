@@ -50,8 +50,11 @@ void MainWindow::Open()
 
 void MainWindow::EndGame()
 {
-    game->SetShouldEndGame(true);
-    gameThread->join();
+    if (game != nullptr)
+    {
+        game->SetShouldEndGame(true);
+        gameThread->join();
+    }
 
     startAction->setDisabled(false);
     shutdownAction->setDisabled(true);

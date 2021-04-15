@@ -36,6 +36,7 @@ public:
         VulkanBuffer *uniformBuffer,
         VulkanCubeMapBuffer &cubeMapBuffer,
         std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands);
+    void TriggerUpdate(uint32_t imageIndex);
 
 private:
     VkCommandBuffer BeginCommand(uint32_t imageIndex, VkFramebuffer frameBuffer);
