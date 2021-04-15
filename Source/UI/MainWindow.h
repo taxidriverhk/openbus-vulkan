@@ -1,10 +1,12 @@
 #pragma once
 
-#include "Game/Game.h"
-#include "Common/Util.h"
+#include <thread>
 
 #include <QMainWindow>
 #include <QtWidgets>
+
+#include "Game/Game.h"
+#include "Common/Util.h"
 
 class LogViewer;
 
@@ -25,10 +27,12 @@ private:
     static constexpr int WINDOW_WIDTH = 1024;
     static constexpr int WINDOW_HEIGHT = 768;
 
+    void EndGame();
     void ExitButtonClicked();
     void ShutdownButtonClicked();
     void StartButtonClicked();
 
+    std::unique_ptr<std::thread> gameThread;
     std::unique_ptr<Game> game;
 
     std::unique_ptr<QMainWindow> mainLayout;

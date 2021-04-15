@@ -2,8 +2,7 @@
 
 #include <string>
 
-#include "SDL.h"
-#include "SDL_vulkan.h"
+#include <SFML/Window.hpp>
 
 class Screen
 {
@@ -12,7 +11,7 @@ public:
     Screen(const int &width, const int &height, const std::string &title);
     ~Screen();
 
-    SDL_Window * GetWindow() const { return screen; }
+    sf::WindowBase *GetWindow() { return window.get(); }
     int GetWidth() const { return width; }
     int GetHeight() const { return height; }
     bool IsResized() const { return resized; }
@@ -22,6 +21,8 @@ public:
     void Create();
     void Refresh();
     bool ShouldClose();
+    void Show();
+    void Wait();
 
 private:
     int width;
@@ -30,6 +31,6 @@ private:
 
     bool resized;
 
-    SDL_Event lastEvent;
-    SDL_Window *screen;
+    sf::Event lastEvent;
+    std::unique_ptr<sf::WindowBase> window;
 };

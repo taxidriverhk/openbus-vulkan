@@ -352,7 +352,7 @@ void VulkanDrawEngine::RecreateSwapChain()
     {
         newWidth = screen->GetWidth();
         newHeight = screen->GetHeight();
-        SDL_WaitEvent(nullptr);
+        
     }
     context->WaitIdle();
 

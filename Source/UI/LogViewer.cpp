@@ -1,20 +1,19 @@
-#include <algorithm>
-
 #include "Common/Logger.h"
 #include "LogViewer.h"
 
 LogViewer::LogViewer()
-    : QDockWidget()
+    : QDockWidget(),
+      logText("")
 {
-    logText = std::make_unique<QPlainTextEdit>(this);
-    logText->setReadOnly(true);
-    logText->document()->setMaximumBlockCount(50);
+    logTextBox = std::make_unique<QPlainTextEdit>(this);
+    logTextBox->setReadOnly(true);
+    logTextBox->document()->setMaximumBlockCount(50);
 
     updateTimer = std::make_unique<QTimer>(nullptr);
-    updateTimer->start(10 * 1000);
+    updateTimer->start(1 * 1000);
     connect(updateTimer.get(), &QTimer::timeout, this, &LogViewer::Update);
 
-    setWidget(logText.get());
+    setWidget(logTextBox.get());
 }
 
 LogViewer::~LogViewer()
@@ -24,6 +23,10 @@ LogViewer::~LogViewer()
 
 void LogViewer::Update()
 {
-    std::wstring message = Logger::GetJoinedMessage();
-    logText->appendPlainText(QString::fromStdWString(message));
+    if (Logger::IsUpdated())
+    {
+        std::wstring message = Logger::GetJoinedMessage();
+        logText = QString::fromStdWString(message);
+        logTextBox->appendPlainText(logText);
+    }
 }

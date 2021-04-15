@@ -234,14 +234,8 @@ void VulkanContext::CreateInstance()
     vulkanCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vulkanCreateInfo.pApplicationInfo = &vulkanApplicationInfo;
 
-    uint32_t sdl2ExtensionCount = 0;
-    if (!SDL_Vulkan_GetInstanceExtensions(screen->GetWindow(), &sdl2ExtensionCount, nullptr))
-    {
-        throw std::runtime_error("Unable to query the number of Vulkan instance extensions");
-    }
-    std::vector<const char *> sdl2Extensions(sdl2ExtensionCount);
-    SDL_Vulkan_GetInstanceExtensions(screen->GetWindow(), &sdl2ExtensionCount, sdl2Extensions.data());
-    std::vector<const char *> extensions(sdl2Extensions);
+    std::vector<const char *> sfmlExtensions = sf::Vulkan::getGraphicsRequiredInstanceExtensions();
+    std::vector<const char *> extensions(sfmlExtensions);
 
     const char *enabledLayerNames[] = { VULKAN_VALIDATION_LAYER };
     if (enableDebugging)
@@ -340,12 +334,17 @@ void VulkanContext::CreateSwapChain()
     }
     else
     {
-        int screenWidthInPixels, screenHeightInPixels;
-        SDL_Vulkan_GetDrawableSize(screen->GetWindow(), &screenWidthInPixels, &screenHeightInPixels);
-        
+        uint32_t screenWidthInPixels = std::clamp<uint32_t>(
+            screen->GetWidth(),
+            capabilities.minImageExtent.width,
+            capabilities.maxImageExtent.width);
+        uint32_t screenHeightInPixels = std::clamp<uint32_t>(
+            screen->GetHeight(),
+            capabilities.minImageExtent.height,
+            capabilities.maxImageExtent.height);
         swapChainExtent = VkExtent2D{
-            static_cast<uint32_t>(screenWidthInPixels),
-            static_cast<uint32_t>(screenHeightInPixels)
+            screenWidthInPixels,
+            screenHeightInPixels
         };
         swapChainExtent.width = std::max(capabilities.minImageExtent.width,
             std::min(capabilities.maxImageExtent.width, swapChainExtent.width));
@@ -353,11 +352,7 @@ void VulkanContext::CreateSwapChain()
             std::min(capabilities.maxImageExtent.height, swapChainExtent.height));
     }
 
-    uint32_t imageCount = capabilities.minImageCount + 1;
-    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount)
-    {
-        imageCount = capabilities.maxImageCount;
-    }
+    uint32_t imageCount = std::clamp<uint32_t>(2, capabilities.minImageCount, capabilities.maxImageCount);
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -396,9 +391,9 @@ void VulkanContext::CreateSwapChain()
 
 void VulkanContext::CreateWindowSurface()
 {
-    if (!SDL_Vulkan_CreateSurface(screen->GetWindow(), instance, &surface))
+    if (!screen->GetWindow()->createVulkanSurface(instance, surface))
     {
-        throw std::runtime_error("Failed to create SDL2 surface");
+        throw std::runtime_error("Failed to create SFML surface");
     }
 }
 
@@ -531,6 +526,7 @@ VkSampleCountFlagBits VulkanContext::GetMaxSampleCount()
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
+    VkSampleCountFlagBits maximumBit = VK_SAMPLE_COUNT_4_BIT;
     VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts
         & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
     VkSampleCountFlagBits possibleBits[] =
@@ -544,7 +540,7 @@ VkSampleCountFlagBits VulkanContext::GetMaxSampleCount()
     };
     for (uint32_t i = 0; i < 6; i++)
     {
-        if (counts & possibleBits[i])
+        if ((counts & possibleBits[i]) && possibleBits[i] == maximumBit)
         {
             return possibleBits[i];
         }

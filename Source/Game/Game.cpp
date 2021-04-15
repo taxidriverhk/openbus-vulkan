@@ -1,4 +1,5 @@
 #include "Game.h"
+#include "Common/Logger.h"
 
 Game::Game()
 {
@@ -24,7 +25,7 @@ void Game::Cleanup()
 void Game::InitializeComponents()
 {
     screen->Create();
-    renderer->CreateContext(screen);
+    renderer->CreateContext(screen.get());
 }
 
 void Game::InitializeState()
@@ -50,15 +51,20 @@ void Game::Start()
 
 void Game::StartGameLoop()
 {
+    Logger::Log(LogLevel::Info, "Initializing graphics context");
     InitializeComponents();
+
+    Logger::Log(LogLevel::Info, "Initializing game state");
     InitializeState();
 
     // TODO: this code should be moved to a separate thread
     // (ideally a separate class like MapBlockManager)
+    Logger::Log(LogLevel::Info, "Loading map");
     renderer->LoadScene();
-
     std::chrono::steady_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
+    Logger::Log(LogLevel::Info, "Entering the game loop");
+    screen->Show();
     while (!ShouldQuit())
     {
         float deltaTime = Util::DeltaTime();

@@ -18,6 +18,7 @@ public:
     static constexpr char *LOG_FILE_NAME = "application.log";
 
     static std::wstring GetJoinedMessage();
+    static bool IsUpdated();
 
     static void Log(const LogLevel level, const char *message, ...);
     static void Log(const LogLevel level, std::string message, ...);

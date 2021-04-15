@@ -60,11 +60,12 @@ VkCommandPool VulkanCommandManager::GetOrCreateCommandPool(std::thread::id threa
 
 void VulkanCommandManager::Destroy()
 {
-    for (auto &commandBuffer : commandBuffers)
+    for (auto &[threadId, commandPool] : commandPools)
     {
-        commandBuffer->Destroy();
+        vkDestroyCommandPool(context->GetLogicalDevice(), commandPool, nullptr);
     }
     commandBuffers.clear();
+    commandPools.clear();
 }
 
 void VulkanCommandManager::Record(

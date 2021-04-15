@@ -15,6 +15,7 @@ public:
 private:
     void Update();
 
+    QString logText;
     std::unique_ptr<QTimer> updateTimer;
-    std::unique_ptr<QPlainTextEdit> logText;
+    std::unique_ptr<QPlainTextEdit> logTextBox;
 };

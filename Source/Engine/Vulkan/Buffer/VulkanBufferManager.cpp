@@ -55,9 +55,6 @@ void VulkanBufferManager::Destroy()
     // created using the pool, so no need to explicitly free each descriptor set
     vkDestroyDescriptorPool(context->GetLogicalDevice(), descriptorPool, nullptr);
 
-    VkDevice logicalDevice = context->GetLogicalDevice();
-    vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
-
     vmaDestroyAllocator(vmaAllocator);
     vmaDestroyAllocator(imageVmaAllocator);
 }

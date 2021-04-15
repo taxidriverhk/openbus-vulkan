@@ -31,8 +31,6 @@ MainWindow::MainWindow()
     connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
     connect(startAction.get(), &QAction::triggered, this, &MainWindow::StartButtonClicked);
     connect(shutdownAction.get(), &QAction::triggered, this, &MainWindow::ShutdownButtonClicked);
-
-    game = std::make_unique<Game>();
 }
 
 MainWindow::~MainWindow()
@@ -41,13 +39,22 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    game->SetShouldEndGame(true);
+    EndGame();
     event->accept();
 }
 
 void MainWindow::Open()
 {
     show();
+}
+
+void MainWindow::EndGame()
+{
+    game->SetShouldEndGame(true);
+    gameThread->join();
+
+    startAction->setDisabled(false);
+    shutdownAction->setDisabled(true);
 }
 
 void MainWindow::ExitButtonClicked()
@@ -57,14 +64,17 @@ void MainWindow::ExitButtonClicked()
 
 void MainWindow::ShutdownButtonClicked()
 {
-    game->SetShouldEndGame(true);
+    EndGame();
 }
 
 void MainWindow::StartButtonClicked()
 {
     startAction->setDisabled(true);
     shutdownAction->setDisabled(false);
-    game->Start();
-    startAction->setDisabled(false);
-    shutdownAction->setDisabled(true);
+    
+    gameThread = std::make_unique<std::thread>([&]
+        {
+            game = std::make_unique<Game>();
+            game->Start();
+        });
 }

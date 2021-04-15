@@ -15,7 +15,7 @@ public:
 
     void Cleanup();
     void DrawScene();
-    void CreateContext(const std::unique_ptr<Screen> &screen);
+    void CreateContext(Screen *screen);
     void LoadScene();
 
 private:

@@ -14,29 +14,29 @@ namespace plog
     {
     public:
         InMemoryAppender()
-            : shouldClear(false)
+            : updated(false)
         {
         }
 
         virtual void write(const Record &record)
         {
-            if (shouldClear)
-            {
-                message.clear();
-                shouldClear = false;
-            }
+            updated = true;
             util::nstring formatted = Formatter::format(record);
             message.append(formatted);
         }
 
         std::wstring GetMessage()
         {
-            shouldClear = true;
-            return message;
+            updated = false;
+            std::wstring result = message;
+            message.clear();
+            return result;
         }
 
+        bool IsUpdated() const { return updated; }
+
     private:
-        bool shouldClear;
+        bool updated;
         std::wstring message;
     };
 }
@@ -101,6 +101,11 @@ void Logger::Log(const LogLevel level, std::string message, ...)
 std::wstring Logger::GetJoinedMessage()
 {
     return inMemoryAppender.GetMessage();
+}
+
+bool Logger::IsUpdated()
+{
+    return inMemoryAppender.IsUpdated();
 }
 
 void Logger::Initialize()

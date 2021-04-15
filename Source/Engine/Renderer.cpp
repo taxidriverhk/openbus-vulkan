@@ -28,12 +28,12 @@ void Renderer::DrawScene()
     drawEngine->DrawFrame();
 }
 
-void Renderer::CreateContext(const std::unique_ptr<Screen> &screen)
+void Renderer::CreateContext(Screen *screen)
 {
 #if _DEBUG
-    drawEngine = std::make_unique<VulkanDrawEngine>(screen.get(), true);
+    drawEngine = std::make_unique<VulkanDrawEngine>(screen, true);
 #else
-    drawEngine = std::make_unique<VulkanDrawEngine>(screen.get(), false);
+    drawEngine = std::make_unique<VulkanDrawEngine>(screen, false);
 #endif
     drawEngine->Initialize();
 }

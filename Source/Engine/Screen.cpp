@@ -1,13 +1,12 @@
 #include "Screen.h"
 
 Screen::Screen(const int &width, const int &height, const std::string &title)
-      : screen(nullptr),
-        resized(false),
-        lastEvent(),
+      : resized(false),
         width(width),
         height(height),
         title(title)
 {
+    lastEvent.type = sf::Event::Count;
 }
 
 Screen::~Screen()
@@ -16,49 +15,41 @@ Screen::~Screen()
 
 void Screen::Close()
 {
-    lastEvent.type = SDL_FIRSTEVENT;
-    SDL_DestroyWindow(screen);
-    SDL_Quit();
+    window->close();
 }
 
 void Screen::Create()
 {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-    screen = SDL_CreateWindow(
-        title.c_str(),
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        width,
-        height,
-        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    window = std::make_unique<sf::WindowBase>(sf::VideoMode(width, height), title.c_str(), sf::Style::Resize);
+    window->setVisible(false);
 }
 
 void Screen::Refresh()
 {
-    SDL_PollEvent(&lastEvent);
-    switch (lastEvent.type)
+    while (window->pollEvent(lastEvent))
     {
-    case SDL_WINDOWEVENT:
-        SDL_WindowEvent windowEvent = lastEvent.window;
-        if (windowEvent.event == SDL_WINDOWEVENT_SIZE_CHANGED
-            || windowEvent.event == SDL_WINDOWEVENT_MINIMIZED
-            || windowEvent.event == SDL_WINDOWEVENT_RESIZED)
+        if (lastEvent.type == sf::Event::Resized)
         {
-            int newWidth, newHeight;
-            SDL_GetWindowSize(screen, &newWidth, &newHeight);
-
-            width = newWidth;
-            height = newHeight;
+            sf::Vector2u newSize = window->getSize();
+            width = newSize.x;
+            height = newSize.y;
             resized = true;
         }
-        break;
-    case SDL_KEYDOWN:
-        // TODO: use a new controller class to queue the inputs
-        break;
     }
 }
 
 bool Screen::ShouldClose()
 {
-    return lastEvent.type == SDL_QUIT;
+    return lastEvent.type == sf::Event::Closed;
+}
+
+void Screen::Show()
+{
+    window->setVisible(true);
+}
+
+void Screen::Wait()
+{
+    sf::Event eventToWait;
+    window->waitEvent(eventToWait);
 }
