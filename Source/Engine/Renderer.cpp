@@ -47,19 +47,13 @@ void Renderer::LoadScene()
     {
         {
             1,
-            std::make_shared<Image>("car-black.bmp"),
+            std::make_shared<Image>("formula1.png"),
             nullptr,
             nullptr
         },
         {
-            2,
-            std::make_shared<Image>("car-yellow.bmp"),
-            nullptr,
-            nullptr
-        },
-        {
-            3,
-            std::make_shared<Image>("car-red.bmp"),
+            4,
+            std::make_shared<Image>("wallpaper.bmp"),
             nullptr,
             nullptr
         }
@@ -69,17 +63,29 @@ void Renderer::LoadScene()
     std::vector<Entity> entitiesLoaded;
     auto asyncLoadMeshInfoBuffer = [&](const int &index)
     {
-        Mesh car = meshLoader.LoadFromFile("car.obj");
+        Mesh car = meshLoader.LoadFromFile("formula1.obj");
         car.id = 1;
-        car.material = std::make_shared<Material>(materials[index % 3]);
+        car.material = std::make_shared<Material>(materials[0]);
 
-        Entity entity{};
-        entity.id = index;
-        entity.mesh = std::make_shared<Mesh>(car);
-        entity.translation = { index * 2.0f , 0.0f, 0.0f };
+        Mesh formula1 = meshLoader.LoadFromFile("wallpaper.obj");
+        formula1.id = 2;
+        formula1.material = std::make_shared<Material>(materials[1]);
+
+        Entity entity1{};
+        entity1.id = index;
+        entity1.mesh = std::make_shared<Mesh>(car);
+        entity1.translation = { index * 2.0f , 0.0f, 0.0f };
+        entity1.scale = { 0.1f, 0.1f, 0.1f };
+
+        Entity entity2{};
+        entity2.id = index * 2;
+        entity2.mesh = std::make_shared<Mesh>(formula1);
+        entity2.translation = { index * 2.0f , 5.0f, 0.0f };
+        entity2.scale = { 1.0f, 1.0f, 1.0f };
 
         addMeshMutex.lock();
-        entitiesLoaded.push_back(entity);
+        entitiesLoaded.push_back(entity1);
+        entitiesLoaded.push_back(entity2);
         addMeshMutex.unlock();
     };
 

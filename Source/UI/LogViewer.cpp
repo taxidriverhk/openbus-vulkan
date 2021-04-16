@@ -7,10 +7,10 @@ LogViewer::LogViewer()
 {
     logTextBox = std::make_unique<QPlainTextEdit>(this);
     logTextBox->setReadOnly(true);
-    logTextBox->document()->setMaximumBlockCount(50);
+    logTextBox->document()->setMaximumBlockCount(MAX_LINE_COUNT);
 
     updateTimer = std::make_unique<QTimer>(nullptr);
-    updateTimer->start(1 * 1000);
+    updateTimer->start(UPDATE_INTERVAL_MILLIS);
     connect(updateTimer.get(), &QTimer::timeout, this, &LogViewer::Update);
 
     setWidget(logTextBox.get());
@@ -27,6 +27,6 @@ void LogViewer::Update()
     {
         std::wstring message = Logger::GetJoinedMessage();
         logText = QString::fromStdWString(message);
-        logTextBox->appendPlainText(logText);
+        logTextBox->insertPlainText(logText);
     }
 }

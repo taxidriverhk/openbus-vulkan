@@ -310,7 +310,8 @@ void VulkanDrawEngine::LoadCubeMap(CubeMap &cubeMap)
 void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
 {
     std::shared_ptr<Mesh> mesh = entity.mesh;
-    glm::vec3 translation = entity.translation;
+    glm::vec3 translation = ConvertToVulkanCoordinates(entity.translation);
+    glm::vec3 scale = ConvertToVulkanCoordinates(entity.scale);
 
     std::vector<Vertex> vertices = mesh->vertices;
     std::vector<Vertex> transformedVertices(vertices.size());
@@ -326,6 +327,7 @@ void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
 
     glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
     glm::mat4 translatedMatrix = glm::translate(identitiyMatrix, translation);
+    translatedMatrix = glm::scale(translatedMatrix, scale);
 
     VulkanInstanceBufferInput instanceBufferInput{};
     instanceBufferInput.transformation = translatedMatrix;

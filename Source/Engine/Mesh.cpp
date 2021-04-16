@@ -22,10 +22,13 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(
         filename,
-        aiProcess_Triangulate);
+        aiProcess_Triangulate
+        | aiProcess_JoinIdenticalVertices);
     const uint32_t numMeshes = scene->mNumMeshes;
     aiMesh **meshes = scene->mMeshes;
     
+    uint32_t indexOffset = 0;
+
     for (uint32_t m = 0; m < numMeshes; m++)
     {
         const aiMesh *mesh = meshes[m];
@@ -46,16 +49,23 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
             vertex.normal.z = importedNormals[i].z;
             vertex.uv.x = texCoords[i].x;
             vertex.uv.y = texCoords[i].y;
-
-            if (uniqueVertices.count(vertex) == 0)
-            {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
-
-            indices.push_back(uniqueVertices[vertex]);
+            vertices.push_back(vertex);
         }
-    }
+
+        uint32_t numFaces = mesh->mNumFaces;
+        const aiFace *faces = mesh->mFaces;
+        for (uint32_t i = 0; i < numFaces; i++)
+        {
+            uint32_t numIndices = faces[i].mNumIndices;
+            const uint32_t *importedIndices = faces[i].mIndices;
+            for (uint32_t j = 0; j < numIndices; j++)
+            {
+                indices.push_back(importedIndices[j] + indexOffset);
+            }
+        }
+
+        indexOffset += numVertices;
+    } 
 
     Mesh result{};
     result.vertices = vertices;

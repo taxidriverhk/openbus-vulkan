@@ -6,4 +6,5 @@ struct Entity
     std::shared_ptr<Mesh> mesh;
     glm::vec3 translation;
     glm::vec3 rotation;
+    glm::vec3 scale;
 };
