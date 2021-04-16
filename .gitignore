@@ -54,5 +54,6 @@ bin/
 .vs/
 out/
 
-# SFML dlls need to be included
+# Binaries that need to be included
 !Library/sfml/bin/
+!Library/assimp/bin/
