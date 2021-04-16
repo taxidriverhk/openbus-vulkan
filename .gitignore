@@ -53,3 +53,6 @@ bin/
 .vscode/
 .vs/
 out/
+
+# SFML dlls need to be included
+!Library/sfml/bin/
