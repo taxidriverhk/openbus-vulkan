@@ -28,5 +28,8 @@ void LogViewer::Update()
         std::wstring message = Logger::GetJoinedMessage();
         logText = QString::fromStdWString(message);
         logTextBox->insertPlainText(logText);
+
+        QScrollBar *scrollBar = logTextBox->verticalScrollBar();
+        scrollBar->setValue(scrollBar->maximum());
     }
 }

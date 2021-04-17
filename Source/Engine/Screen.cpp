@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "Screen.h"
 
 Screen::Screen(const int &width, const int &height, const std::string &title)
@@ -6,6 +8,8 @@ Screen::Screen(const int &width, const int &height, const std::string &title)
         height(height),
         title(title)
 {
+    assert("Screen width and height must be greater than zero", width > 0 && height > 0);
+
     lastEvent.type = sf::Event::Count;
 }
 

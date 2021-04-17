@@ -359,7 +359,6 @@ void VulkanDrawEngine::RecreateSwapChain()
     {
         newWidth = screen->GetWidth();
         newHeight = screen->GetHeight();
-        
     }
     context->WaitIdle();
 

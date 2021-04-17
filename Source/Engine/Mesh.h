@@ -55,7 +55,7 @@ public:
     MeshLoader();
     ~MeshLoader();
 
-    Mesh LoadFromFile(const std::string filename);
+    bool LoadFromFile(const std::string filename, Mesh &mesh);
 
 private:
 };

@@ -10,6 +10,7 @@ MainWindow::MainWindow()
 
     startAction = std::make_unique<QAction>("Start", this);
     shutdownAction = std::make_unique<QAction>("Shutdown", this);
+    shutdownAction->setEnabled(false);
     exitAction = std::make_unique<QAction>("Exit", this);
 
     gameMenu = menuBar()->addMenu("Game");

@@ -3,6 +3,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "Common/Logger.h"
 #include "Mesh.h"
 
 MeshLoader::MeshLoader()
@@ -13,7 +14,7 @@ MeshLoader::~MeshLoader()
 {
 }
 
-Mesh MeshLoader::LoadFromFile(const std::string filename)
+bool MeshLoader::LoadFromFile(const std::string filename, Mesh &mesh)
 {
     std::unordered_map<Vertex, uint32_t> uniqueVertices;
     std::vector<Vertex> vertices;
@@ -24,6 +25,13 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
         filename,
         aiProcess_Triangulate
         | aiProcess_JoinIdenticalVertices);
+    if (scene == nullptr)
+    {
+        const char *importError = importer.GetErrorString();
+        Logger::Log(LogLevel::Error, "Failed to load mesh from file %s: %s", filename.c_str(), importError);
+        return false;
+    }
+
     const uint32_t numMeshes = scene->mNumMeshes;
     aiMesh **meshes = scene->mMeshes;
     
@@ -67,9 +75,8 @@ Mesh MeshLoader::LoadFromFile(const std::string filename)
         indexOffset += numVertices;
     } 
 
-    Mesh result{};
-    result.vertices = vertices;
-    result.indices = indices;
+    mesh.vertices = vertices;
+    mesh.indices = indices;
 
-    return result;
+    return true;
 }

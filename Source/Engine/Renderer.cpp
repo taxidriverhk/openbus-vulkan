@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <algorithm>
 #include <execution>
 #include <numeric>
@@ -30,11 +31,14 @@ void Renderer::DrawScene()
 
 void Renderer::CreateContext(Screen *screen)
 {
+    assert("Screen must be defined for the renderer", screen != nullptr);
+
 #if _DEBUG
-    drawEngine = std::make_unique<VulkanDrawEngine>(screen, true);
+    bool enableDebugging = true;
 #else
-    drawEngine = std::make_unique<VulkanDrawEngine>(screen, false);
+    bool enableDebugging = false;
 #endif
+    drawEngine = std::make_unique<VulkanDrawEngine>(screen, enableDebugging);
     drawEngine->Initialize();
 }
 
@@ -63,11 +67,17 @@ void Renderer::LoadScene()
     std::vector<Entity> entitiesLoaded;
     auto asyncLoadMeshInfoBuffer = [&](const int &index)
     {
-        Mesh car = meshLoader.LoadFromFile("formula1.obj");
+        Mesh car{}, formula1;
+
+        if (!meshLoader.LoadFromFile("formula1.obj", car)
+            || meshLoader.LoadFromFile("wallpaper.obj", formula1))
+        {
+            throw std::runtime_error("Failed to load models from files");
+        }
+
         car.id = 1;
         car.material = std::make_shared<Material>(materials[0]);
 
-        Mesh formula1 = meshLoader.LoadFromFile("wallpaper.obj");
         formula1.id = 2;
         formula1.material = std::make_shared<Material>(materials[1]);
 

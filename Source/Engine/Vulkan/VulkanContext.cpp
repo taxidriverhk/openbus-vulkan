@@ -2,7 +2,7 @@
 #include "VulkanCommon.h"
 #include "VulkanContext.h"
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
@@ -304,7 +304,10 @@ void VulkanContext::CreateSwapChain()
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> availableFormats;
     std::vector<VkPresentModeKHR> availablePresentModes;
-    TryFindSwapChainDetail(capabilities, availableFormats, availablePresentModes);
+    if (!TryFindSwapChainDetail(capabilities, availableFormats, availablePresentModes))
+    {
+        throw std::runtime_error("Failed to find swap chain detail");
+    }
 
     VkSurfaceFormatKHR chosenFormat = availableFormats.at(0);
     for (const VkSurfaceFormatKHR &availableFormat : availableFormats)
@@ -444,7 +447,7 @@ void VulkanContext::EnableDebugging()
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
         | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
         | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = debugCallback;
+    createInfo.pfnUserCallback = DebugCallback;
 
     PFN_vkCreateDebugUtilsMessengerEXT createDebugFunc = (PFN_vkCreateDebugUtilsMessengerEXT)
         vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -630,7 +633,7 @@ bool VulkanContext::TryFindQueueFamilyIndices(uint32_t &graphicsQueueFamilyIndex
     return false;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,

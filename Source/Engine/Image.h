@@ -5,6 +5,7 @@
 class Image
 {
 public:
+    Image();
     Image(std::string path);
     ~Image();
 
