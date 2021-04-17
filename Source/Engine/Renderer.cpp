@@ -67,30 +67,30 @@ void Renderer::LoadScene()
     std::vector<Entity> entitiesLoaded;
     auto asyncLoadMeshInfoBuffer = [&](const int &index)
     {
-        Mesh car{}, formula1;
+        Mesh formula1{}, wallpaper;
 
-        if (!meshLoader.LoadFromFile("formula1.obj", car)
-            || meshLoader.LoadFromFile("wallpaper.obj", formula1))
+        if (!meshLoader.LoadFromFile("formula1.obj", formula1)
+            || !meshLoader.LoadFromFile("wallpaper.obj", wallpaper))
         {
             throw std::runtime_error("Failed to load models from files");
         }
 
-        car.id = 1;
-        car.material = std::make_shared<Material>(materials[0]);
+        formula1.id = 1;
+        formula1.material = std::make_shared<Material>(materials[0]);
 
-        formula1.id = 2;
-        formula1.material = std::make_shared<Material>(materials[1]);
+        wallpaper.id = 2;
+        wallpaper.material = std::make_shared<Material>(materials[1]);
 
         Entity entity1{};
         entity1.id = index;
-        entity1.mesh = std::make_shared<Mesh>(car);
+        entity1.mesh = std::make_shared<Mesh>(formula1);
         entity1.translation = { index * 2.0f , 0.0f, 0.0f };
         entity1.scale = { 0.1f, 0.1f, 0.1f };
 
         Entity entity2{};
         entity2.id = index * 2;
-        entity2.mesh = std::make_shared<Mesh>(formula1);
-        entity2.translation = { index * 2.0f , 5.0f, 0.0f };
+        entity2.mesh = std::make_shared<Mesh>(wallpaper);
+        entity2.translation = { index * 2.5f , 5.0f, 0.0f };
         entity2.scale = { 1.0f, 1.0f, 1.0f };
 
         addMeshMutex.lock();
