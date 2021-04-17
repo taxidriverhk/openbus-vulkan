@@ -12,8 +12,9 @@ public:
 
     VkCommandBuffer GetBuffer() const { return buffer; }
 
-    void Create();
+    void Create(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     void Destroy();
+    void Reset();
 
 private:
     VulkanContext *context;

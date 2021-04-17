@@ -1,3 +1,5 @@
+#include <future>
+
 #include "Engine/Vulkan/VulkanCommon.h"
 #include "Engine/Vulkan/VulkanContext.h"
 #include "Engine/Vulkan/VulkanPipeline.h"
@@ -33,7 +35,7 @@ void VulkanCommandManager::Create(uint32_t frameBufferSize)
         std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
         commandBuffer->Create();
 
-        commandBuffers.push_back(std::move(commandBuffer));
+        primaryCommandBuffers.push_back(std::move(commandBuffer));
         dataUpdated.push_back(true);
     }
 }
@@ -64,7 +66,7 @@ void VulkanCommandManager::Destroy()
     {
         vkDestroyCommandPool(context->GetLogicalDevice(), commandPool, nullptr);
     }
-    commandBuffers.clear();
+    primaryCommandBuffers.clear();
     commandPools.clear();
 }
 
@@ -80,54 +82,92 @@ void VulkanCommandManager::Record(
         return;
     }
 
-    VkCommandBuffer commandBuffer = BeginCommand(imageIndex, framebuffer);
+    VkCommandBuffer primaryCommandBuffer = BeginPrimaryCommand(imageIndex, framebuffer);
 
-    VulkanPipeline *staticPipeline = pipelines.staticPipeline;
-    VulkanPipeline *cubeMapPipeline = pipelines.cubeMapPipeline;
-    for (const auto &[bufferId, drawingCommand] : drawingCommands)
-    {
-        BindPipeline(commandBuffer, staticPipeline);
+    std::mutex secondaryCommandMutex;
+    std::vector<VkCommandBuffer> secondaryCommandBuffers;
 
-        VulkanBuffer *instanceBuffer = drawingCommand.instanceBuffer;
-        VulkanBuffer *vertexBuffer = drawingCommand.vertexBuffer;
-        VulkanBuffer *indexBuffer = drawingCommand.indexBuffer;
-        VulkanImage *imageBuffer = drawingCommand.imageBuffer;
+    std::future<void> staticCommandFuture = std::async(std::launch::async, [&]()
+        {
+            VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
 
-        // Bind vertex buffer
-        VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        // Bind index buffer
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        // Bind uniform descriptor set
-        uniformBuffer->BindDescriptorSet(commandBuffer, 0, staticPipeline->GetPipelineLayout());
-        // Bind image sampler descriptor set
-        imageBuffer->BindDescriptorSet(commandBuffer, 1, staticPipeline->GetPipelineLayout());
-        // Bind instance descriptor set
-        instanceBuffer->BindDescriptorSet(commandBuffer, 2, staticPipeline->GetPipelineLayout());
+            VulkanPipeline *staticPipeline = pipelines.staticPipeline;
+            for (const auto &[bufferId, drawingCommand] : drawingCommands)
+            {
+                BindPipeline(secondaryCommandBuffer, staticPipeline);
 
-        uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
-        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
-    }
+                VulkanBuffer *instanceBuffer = drawingCommand.instanceBuffer;
+                VulkanBuffer *vertexBuffer = drawingCommand.vertexBuffer;
+                VulkanBuffer *indexBuffer = drawingCommand.indexBuffer;
+                VulkanImage *imageBuffer = drawingCommand.imageBuffer;
 
-    VulkanBuffer *cubeMapVertexBuffer = cubeMapBuffer.vertexBuffer;
-    VulkanBuffer *cubeMapIndexBuffer = cubeMapBuffer.indexBuffer;
-    if (cubeMapVertexBuffer->IsLoaded())
-    {
-        BindPipeline(commandBuffer, cubeMapPipeline);
-        // Bind cubemap mesh
-        VkDeviceSize offsets[] = { 0 };
-        VkBuffer cubeMapVertexBuffers[] = { cubeMapVertexBuffer->GetBuffer() };
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, cubeMapVertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, cubeMapIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        // Bind cubemap descriptor set
-        cubeMapBuffer.imageBuffer->BindDescriptorSet(commandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
-        // Draw the cube map
-        uint32_t indexCount = cubeMapIndexBuffer->Size() / sizeof(uint32_t);
-        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
-    }
+                // Bind vertex buffer
+                VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, vertexBuffers, offsets);
+                // Bind index buffer
+                vkCmdBindIndexBuffer(secondaryCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+                // Bind uniform descriptor set
+                uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, staticPipeline->GetPipelineLayout());
+                // Bind image sampler descriptor set
+                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, staticPipeline->GetPipelineLayout());
+                // Bind instance descriptor set
+                instanceBuffer->BindDescriptorSet(secondaryCommandBuffer, 2, staticPipeline->GetPipelineLayout());
 
-    EndCommand(commandBuffer);
+                uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
+                vkCmdDrawIndexed(secondaryCommandBuffer, indexCount, 1, 0, 0, 0);
+            }
+
+            secondaryCommandMutex.lock();
+            secondaryCommandBuffers.push_back(secondaryCommandBuffer);
+            secondaryCommandMutex.unlock();
+
+            EndCommand(secondaryCommandBuffer);
+        });
+
+    std::future<void> cubeMapFuture = std::async(std::launch::async, [&]()
+        {
+            VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+
+            VulkanPipeline *staticPipeline = pipelines.staticPipeline;
+            VulkanPipeline *cubeMapPipeline = pipelines.cubeMapPipeline;
+
+            VulkanBuffer *cubeMapVertexBuffer = cubeMapBuffer.vertexBuffer;
+            VulkanBuffer *cubeMapIndexBuffer = cubeMapBuffer.indexBuffer;
+            if (cubeMapVertexBuffer->IsLoaded())
+            {
+                BindPipeline(secondaryCommandBuffer, cubeMapPipeline);
+                // Bind cubemap mesh
+                VkDeviceSize offsets[] = { 0 };
+                VkBuffer cubeMapVertexBuffers[] = { cubeMapVertexBuffer->GetBuffer() };
+                vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, cubeMapVertexBuffers, offsets);
+                vkCmdBindIndexBuffer(secondaryCommandBuffer, cubeMapIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+                // Bind uniform descriptor set
+                uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, staticPipeline->GetPipelineLayout());
+                // Bind cubemap descriptor set
+                cubeMapBuffer.imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
+                // Draw the cube map
+                uint32_t indexCount = cubeMapIndexBuffer->Size() / sizeof(uint32_t);
+                vkCmdDrawIndexed(secondaryCommandBuffer, indexCount, 1, 0, 0, 0);
+            }
+
+            secondaryCommandMutex.lock();
+            secondaryCommandBuffers.push_back(secondaryCommandBuffer);
+            secondaryCommandMutex.unlock();
+
+            EndCommand(secondaryCommandBuffer);
+        });
+
+    staticCommandFuture.get();
+    cubeMapFuture.get();
+
+    vkCmdExecuteCommands(
+        primaryCommandBuffer,
+        static_cast<uint32_t>(secondaryCommandBuffers.size()),
+        secondaryCommandBuffers.data());
+
+    vkCmdEndRenderPass(primaryCommandBuffer);
+    EndCommand(primaryCommandBuffer);
 
     dataUpdated[imageIndex] = false;
 }
@@ -137,30 +177,18 @@ void VulkanCommandManager::TriggerUpdate(uint32_t imageIndex)
     dataUpdated[imageIndex] = true;
 }
 
-VkCommandBuffer VulkanCommandManager::BeginCommand(uint32_t imageIndex, VkFramebuffer frameBuffer)
+VkCommandBuffer VulkanCommandManager::BeginPrimaryCommand(uint32_t imageIndex, VkFramebuffer frameBuffer)
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
-    VkCommandBuffer commandBuffer = commandBuffers[imageIndex]->GetBuffer();
+    VkCommandBuffer commandBuffer = primaryCommandBuffers[imageIndex]->GetBuffer();
     ASSERT_VK_RESULT_SUCCESS(
         vkBeginCommandBuffer(commandBuffer, &beginInfo),
         "Failed to begin command buffer");
 
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(context->GetSwapChainExtent().width);
-    viewport.height = static_cast<float>(context->GetSwapChainExtent().height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-    VkRect2D scissor{};
-    scissor.offset = { 0, 0 };
-    scissor.extent = context->GetSwapChainExtent();
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    SetViewPortAndScissor(commandBuffer);
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -175,7 +203,31 @@ VkCommandBuffer VulkanCommandManager::BeginCommand(uint32_t imageIndex, VkFrameb
     renderPassBeginInfo.clearValueCount = 2;
     renderPassBeginInfo.pClearValues = clearValues;
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+    return commandBuffer;
+}
+
+VkCommandBuffer VulkanCommandManager::BeginSecondaryCommand(uint32_t imageIndex, VkFramebuffer frameBuffer)
+{
+    VulkanCommand *secondaryCommandBuffer = RequestSecondaryCommandBuffer(imageIndex);
+    VkCommandBuffer commandBuffer = secondaryCommandBuffer->GetBuffer();
+
+    VkCommandBufferInheritanceInfo inheritanceInfo{};
+    inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+    inheritanceInfo.framebuffer = frameBuffer;
+    inheritanceInfo.renderPass = renderPass->GetRenderPass();
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+    beginInfo.pInheritanceInfo = &inheritanceInfo;
+
+    ASSERT_VK_RESULT_SUCCESS(
+        vkBeginCommandBuffer(commandBuffer, &beginInfo),
+        "Failed to begin command buffer");
+
+    SetViewPortAndScissor(commandBuffer);
 
     return commandBuffer;
 }
@@ -188,6 +240,70 @@ void VulkanCommandManager::BindPipeline(VkCommandBuffer commandBuffer, VulkanPip
 
 void VulkanCommandManager::EndCommand(VkCommandBuffer commandBuffer)
 {
-    vkCmdEndRenderPass(commandBuffer);
     ASSERT_VK_RESULT_SUCCESS(vkEndCommandBuffer(commandBuffer), "Failed to end the command buffer");
+}
+
+VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t imageIndex)
+{
+    std::thread::id threadId = std::this_thread::get_id();
+    VkCommandPool commandPool = GetOrCreateCommandPool(threadId);
+
+    if (secondaryCommandBufferCache.count(threadId) > 0)
+    {
+        SecondaryCommandBufferCache &cache = secondaryCommandBufferCache[threadId];
+        if (cache.buffersInUse < cache.buffers.size())
+        {
+            cache.buffersInUse++;
+            return cache.buffers[cache.buffersInUse].get();
+        }
+        else
+        {
+            std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
+            commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+            cache.buffers.push_back(std::move(commandBuffer));
+            cache.buffersInUse++;
+            return cache.buffers.back().get();
+        }
+    }
+    else
+    {
+        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
+        commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+        secondaryCommandBufferCache[threadId] = SecondaryCommandBufferCache{};
+        secondaryCommandBufferCache[threadId].buffers.push_back(std::move(commandBuffer));
+        secondaryCommandBufferCache[threadId].buffersInUse = 1;
+
+        return secondaryCommandBufferCache[threadId].buffers.back().get();
+    }
+}
+
+void VulkanCommandManager::ResetSecondaryCommandBuffers()
+{
+    for (auto &[threadId, cache] : secondaryCommandBufferCache)
+    {
+        cache.buffersInUse = 0;
+        for (auto &buffer : cache.buffers)
+        {
+            buffer->Reset();
+        }
+    }
+}
+
+void VulkanCommandManager::SetViewPortAndScissor(VkCommandBuffer commandBuffer)
+{
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(context->GetSwapChainExtent().width);
+    viewport.height = static_cast<float>(context->GetSwapChainExtent().height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = context->GetSwapChainExtent();
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }

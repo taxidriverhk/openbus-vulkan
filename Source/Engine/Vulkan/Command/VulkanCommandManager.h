@@ -24,7 +24,7 @@ public:
 
     VkCommandBuffer GetCommandBuffer(uint32_t imageIndex) const
     {
-        return commandBuffers[imageIndex]->GetBuffer();
+        return primaryCommandBuffers[imageIndex]->GetBuffer();
     }
 
     void Create(uint32_t frameBufferSize);
@@ -39,13 +39,28 @@ public:
     void TriggerUpdate(uint32_t imageIndex);
 
 private:
-    VkCommandBuffer BeginCommand(uint32_t imageIndex, VkFramebuffer frameBuffer);
     void BindPipeline(VkCommandBuffer commandBuffer, VulkanPipeline *pipeline);
+
+    // Primary command buffer
+    VkCommandBuffer BeginPrimaryCommand(uint32_t imageIndex, VkFramebuffer frameBuffer);
+    // Secondary command buffer
+    VkCommandBuffer BeginSecondaryCommand(uint32_t imageIndex, VkFramebuffer frameBuffer);
+    VulkanCommand * RequestSecondaryCommandBuffer(uint32_t imageIndex);
+    void ResetSecondaryCommandBuffers();
+
     void EndCommand(VkCommandBuffer commandBuffer);
+    void SetViewPortAndScissor(VkCommandBuffer commandBuffer);
 
     std::unordered_map<std::thread::id, VkCommandPool> commandPools;
-    std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
+    std::vector<std::unique_ptr<VulkanCommand>> primaryCommandBuffers;
     std::vector<bool> dataUpdated;
+
+    struct SecondaryCommandBufferCache
+    {
+        std::vector<std::unique_ptr<VulkanCommand>> buffers;
+        uint32_t buffersInUse;
+    };
+    std::unordered_map<std::thread::id, SecondaryCommandBufferCache> secondaryCommandBufferCache;
 
     uint32_t frameBufferSize;
 
