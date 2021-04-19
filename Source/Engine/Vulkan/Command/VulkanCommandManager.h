@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.h>
 
 struct VulkanCubeMapBuffer;
+struct VulkanTerrainBuffer;
 struct VulkanDrawingPipelines;
 class VulkanCommand;
 class VulkanContext;
@@ -33,10 +34,7 @@ public:
     void Record(
         uint32_t imageIndex,
         VkFramebuffer framebuffer,
-        VulkanBuffer *uniformBuffer,
-        VulkanCubeMapBuffer &cubeMapBuffer,
-        std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands);
-    void TriggerUpdate(uint32_t imageIndex);
+        VulkanDrawingBuffer drawingBuffer);
 
 private:
     void BindPipeline(VkCommandBuffer commandBuffer, VulkanPipeline *pipeline);
@@ -53,7 +51,6 @@ private:
 
     std::unordered_map<std::thread::id, VkCommandPool> commandPools;
     std::vector<std::unique_ptr<VulkanCommand>> primaryCommandBuffers;
-    std::vector<bool> dataUpdated;
 
     struct SecondaryCommandBufferCache
     {

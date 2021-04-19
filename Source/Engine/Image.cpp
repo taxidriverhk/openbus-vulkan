@@ -13,10 +13,10 @@ Image::Image()
 {
 }
 
-Image::Image(std::string path)
+Image::Image(std::string path, ImageColor color)
     : Image()
 {
-    if (!Load(path))
+    if (!Load(path, color))
     {
         throw std::runtime_error("Failed to load image from " + path);
     }
@@ -35,11 +35,16 @@ void Image::Destroy()
     }
 }
 
-bool Image::Load(std::string path)
+bool Image::Load(std::string path, ImageColor color)
 {
     Destroy();
 
-    this->pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    this->pixels = stbi_load(
+        path.c_str(),
+        &width,
+        &height,
+        &channels,
+        color == ImageColor::ColorWithAlpha ? STBI_rgb_alpha : STBI_grey);
     this->path = path;
     return pixels != nullptr;
 }

@@ -9,6 +9,7 @@
 #include "vk_mem_alloc.hpp"
 
 #include "Engine/Mesh.h"
+#include "Engine/Terrain.h"
 #include "Engine/Vulkan/VulkanCommon.h"
 #include "Engine/Vulkan/VulkanContext.h"
 #include "Engine/Vulkan/VulkanRenderPass.h"
@@ -16,9 +17,6 @@
 #include "Engine/Vulkan/Command/VulkanCommand.h"
 #include "Engine/Vulkan/Image/VulkanImage.h"
 #include "VulkanBuffer.h"
-
-struct VulkanDrawingPipelines;
-struct VulkanDrawingCommand;
 
 class VulkanBufferManager
 {
@@ -36,7 +34,11 @@ public:
     void Destroy();
 
     // Cubemap Buffering
-    void UpdateCubeMapImage(std::vector<Image *>& images);
+    void UpdateCubeMapImage(std::vector<Image *> &images);
+
+    // Terrain Buffering
+    void LoadTerrainIntoBuffer(uint32_t terrainId, Terrain &terrain);
+    void UnloadTerrain(uint32_t terrainId);
 
     // Vertex/Texture Buffering
     uint32_t LoadIntoBuffer(
@@ -49,9 +51,7 @@ public:
     void UnloadBuffer(uint32_t bufferId);
     void UpdateUniformBuffer(VulkanUniformBufferInput input);
 
-    VulkanCubeMapBuffer &GetCubeMapBuffer() { return cubeMapBufferCache; }
-    VulkanBuffer *GetUniformBuffer(uint32_t index) const { return uniformBuffers[index].get(); }
-    std::unordered_map<uint32_t, VulkanDrawingCommand> &GetDrawingCommands() { return drawingCommandCache; }
+    VulkanDrawingBuffer GetDrawingBuffer(uint32_t imageIndex);
 
 private:
     // Should be good enough for images per scene
@@ -96,8 +96,13 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<VulkanImage>> imageBuffers;
     std::unordered_map<uint32_t, uint32_t> imageBufferCount;
 
-    std::unordered_map<uint32_t, VulkanDrawingBuffer> drawingBuffers;
-    std::unordered_map<uint32_t, VulkanDrawingCommand> drawingCommandCache;
+    std::unordered_map<uint32_t, VulkanEntityBufferIds> bufferIdCache;
+    std::unordered_map<uint32_t, VulkanEntityBuffer> entityBufferCache;
+
+    // Terrain buffers
+    std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainVertexBuffers;
+    std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainIndexBuffers;
+    std::unordered_map<uint32_t, VulkanTerrainBuffer> terrainBufferCache;
 
     bool uniformBufferUpdated;
     VulkanUniformBufferInput uniformBufferInput;

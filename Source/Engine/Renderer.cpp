@@ -9,8 +9,10 @@
 
 Renderer::Renderer(Camera *camera)
     : camera(camera),
+      drawEngine(),
       meshLoader(),
-      drawEngine()
+      // TODO: read from configuration
+      terrainLoader(1000, 10, 100, 500)
 {
 }
 
@@ -31,7 +33,7 @@ void Renderer::DrawScene()
 
 void Renderer::CreateContext(Screen *screen)
 {
-    assert("Screen must be defined for the renderer", screen != nullptr);
+    assert(("Screen must be defined for the renderer", screen != nullptr));
 
 #if _DEBUG
     bool enableDebugging = true;
@@ -44,6 +46,9 @@ void Renderer::CreateContext(Screen *screen)
 
 void Renderer::LoadScene()
 {
+    Terrain terrain;
+    terrainLoader.LoadFromHeightMap("heightmap.png", terrain);
+
     uint32_t numberOfMeshes = 10;
     Logger::Log(LogLevel::Info, "Loading models and images from files");
 
@@ -110,7 +115,7 @@ void Renderer::LoadScene()
     Logger::Log(LogLevel::Info, "Loading %d objects into buffer", numberOfMeshes);
     for (Entity &entityLoaded : entitiesLoaded)
     {
-        drawEngine->LoadIntoBuffer(entityLoaded);
+        drawEngine->LoadEntity(entityLoaded);
     }
     Logger::Log(LogLevel::Info, "Finished loading %d objects", numberOfMeshes);
 

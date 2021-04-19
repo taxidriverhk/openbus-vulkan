@@ -12,6 +12,9 @@ struct VulkanPipelineConfig
 {
     VulkanShader *vertexShader;
     VulkanShader *fragmentShader;
+
+
+
     VkCullModeFlags cullMode;
     VkFrontFace frontFace;
 };

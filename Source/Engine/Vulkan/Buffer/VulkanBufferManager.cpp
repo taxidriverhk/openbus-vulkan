@@ -29,7 +29,8 @@ VulkanBufferManager::VulkanBufferManager(
       cubeMapVertexBuffer(),
       generator(),
       distribution(1, MAX_VERTEX_BUFFERS),
-      drawingCommandCache{},
+      entityBufferCache{},
+      terrainBufferCache{},
       cubeMapBufferCache{}
 {
 }
@@ -57,6 +58,26 @@ void VulkanBufferManager::Destroy()
 
     vmaDestroyAllocator(vmaAllocator);
     vmaDestroyAllocator(imageVmaAllocator);
+}
+
+VulkanDrawingBuffer VulkanBufferManager::GetDrawingBuffer(uint32_t imageIndex)
+{
+    VulkanDrawingBuffer result{};
+
+    result.cubeMapBuffer = cubeMapBufferCache;
+    result.uniformBuffer = uniformBuffers[imageIndex].get();
+    result.entityBuffers = std::vector<VulkanEntityBuffer>();
+    result.terrainBuffers = std::vector<VulkanTerrainBuffer>();
+    for (auto &entry : entityBufferCache)
+    {
+        result.entityBuffers.push_back(entry.second);
+    }
+    for (auto &entry : terrainBufferCache)
+    {
+        result.terrainBuffers.push_back(entry.second);
+    }
+
+    return result;
 }
 
 uint32_t VulkanBufferManager::LoadIntoBuffer(
@@ -131,35 +152,76 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
         sizeof(VulkanInstanceBufferInput));
     instanceBuffers.insert(std::make_pair(bufferId, std::move(instanceBuffer)));
 
-    VulkanDrawingBuffer drawingBuffer{};
-    drawingBuffer.instanceBufferId = bufferId;
-    drawingBuffer.vertexBufferId = meshId;
-    drawingBuffer.indexBufferId = meshId;
-    drawingBuffer.imageBufferId = imageId;
-    drawingBuffers.insert(std::make_pair(bufferId, drawingBuffer));
+    VulkanEntityBufferIds bufferIds{};
+    bufferIds.instanceBufferId = bufferId;
+    bufferIds.vertexBufferId = meshId;
+    bufferIds.indexBufferId = meshId;
+    bufferIds.imageBufferId = imageId;
+    bufferIdCache.insert(std::make_pair(bufferId, bufferIds));
 
-    VulkanDrawingCommand drawingCommand{};
-    drawingCommand.instanceBuffer = instanceBuffers[drawingBuffer.instanceBufferId].get();
-    drawingCommand.vertexBuffer = vertexBuffers[drawingBuffer.vertexBufferId].get();
-    drawingCommand.indexBuffer = indexBuffers[drawingBuffer.indexBufferId].get();
-    drawingCommand.imageBuffer = imageBuffers[drawingBuffer.imageBufferId].get();
-    drawingCommandCache.insert(std::make_pair(bufferId, drawingCommand));
+    VulkanEntityBuffer entityBuffer{};
+    entityBuffer.instanceBuffer = instanceBuffers[bufferIds.instanceBufferId].get();
+    entityBuffer.vertexBuffer = vertexBuffers[bufferIds.vertexBufferId].get();
+    entityBuffer.indexBuffer = indexBuffers[bufferIds.indexBufferId].get();
+    entityBuffer.imageBuffer = imageBuffers[bufferIds.imageBufferId].get();
+    entityBufferCache.insert(std::make_pair(bufferId, entityBuffer));
 
     return bufferId;
 }
 
+void VulkanBufferManager::LoadTerrainIntoBuffer(uint32_t terrainId, Terrain &terrain)
+{
+    uint32_t bufferId = GenerateBufferId();
+    std::vector<Vertex> &vertices = terrain.vertices;
+    std::vector<uint32_t> &indices = terrain.indices;
+
+    if (terrainVertexBuffers.count(terrainId) == 0)
+    {
+        std::shared_ptr<VulkanBuffer> vertexBuffer = std::make_shared<VulkanBuffer>(
+            context, commandPool, vmaAllocator);
+        vertexBuffer->Load(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            vertices.data(),
+            static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
+        terrainVertexBuffers.insert(std::make_pair(terrainId, std::move(vertexBuffer)));
+
+        std::shared_ptr<VulkanBuffer> indexBuffer = std::make_shared<VulkanBuffer>(
+            context, commandPool, vmaAllocator);
+        indexBuffer->Load(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            indices.data(),
+            static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
+        terrainIndexBuffers.insert(std::make_pair(terrainId, std::move(indexBuffer)));
+    }
+    else
+    {
+        std::shared_ptr<VulkanBuffer> vertexBuffer = terrainVertexBuffers[terrainId];
+        std::shared_ptr<VulkanBuffer> indexBuffer = terrainIndexBuffers[terrainId];
+
+        vertexBuffer->Update(vertices.data(), static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
+        indexBuffer->Update(indices.data(), static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
+    }
+
+    VulkanTerrainBuffer terrainBuffer{};
+    terrainBuffer.vertexBuffer = terrainVertexBuffers[terrainId].get();
+    terrainBuffer.indexBuffer = terrainIndexBuffers[terrainId].get();
+    terrainBufferCache.insert(std::make_pair(terrainId, terrainBuffer));
+}
+
 void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
 {
-    if (drawingBuffers.count(bufferId) > 0)
+    if (bufferIdCache.count(bufferId) > 0)
     {
-        VulkanDrawingBuffer drawingBuffer = drawingBuffers[bufferId];
+        VulkanEntityBufferIds bufferIds = bufferIdCache[bufferId];
         
-        uint32_t instanceBufferId = drawingBuffer.instanceBufferId;
+        uint32_t instanceBufferId = bufferIds.instanceBufferId;
         std::shared_ptr<VulkanBuffer> instanceBuffer = instanceBuffers[instanceBufferId];
         instanceBuffer->Unload();
         instanceBuffers.erase(instanceBufferId);
 
-        uint32_t vertexBufferId = drawingBuffer.vertexBufferId;
+        uint32_t vertexBufferId = bufferIds.vertexBufferId;
         vertexBufferCount[vertexBufferId] = vertexBufferCount[vertexBufferId] - 1;
         if (vertexBufferCount[vertexBufferId] == 0)
         {
@@ -172,7 +234,7 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
             indexBuffers.erase(vertexBufferId);
         }
 
-        uint32_t imageBufferId = drawingBuffer.imageBufferId;
+        uint32_t imageBufferId = bufferIds.imageBufferId;
         imageBufferCount[imageBufferId] = imageBufferCount[imageBufferId] - 1;
         if (imageBufferCount[imageBufferId] == 0)
         {
@@ -181,8 +243,24 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
             imageBuffers.erase(imageBufferId);
         }
 
-        drawingBuffers.erase(bufferId);
-        drawingCommandCache.erase(bufferId);
+        bufferIdCache.erase(bufferId);
+        entityBufferCache.erase(bufferId);
+    }
+}
+
+void VulkanBufferManager::UnloadTerrain(uint32_t terrainId)
+{
+    if (terrainVertexBuffers.count(terrainId) > 0)
+    {
+        std::shared_ptr<VulkanBuffer> vertexBuffer = terrainVertexBuffers[terrainId];
+        vertexBuffer->Unload();
+        terrainVertexBuffers.erase(terrainId);
+
+        std::shared_ptr<VulkanBuffer> indexBuffer = terrainIndexBuffers[terrainId];
+        indexBuffer->Unload();
+        terrainIndexBuffers.erase(terrainId);
+
+        terrainBufferCache.erase(terrainId);
     }
 }
 

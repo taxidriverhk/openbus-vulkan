@@ -9,6 +9,7 @@
 #include "Common/Logger.h"
 #include "Engine/Camera.h"
 #include "Engine/Entity.h"
+#include "Engine/Terrain.h"
 #include "VulkanCommon.h"
 #include "VulkanDrawEngine.h"
 #include "Buffer/VulkanBufferManager.h"
@@ -17,6 +18,7 @@
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
     : context(),
       screen(screen),
+      dataUpdated(),
       enableDebugging(enableDebugging),
       currentInFlightFrame(0),
       bufferIds()
@@ -32,12 +34,7 @@ void VulkanDrawEngine::Destroy()
     context->WaitIdle();
 
     DestroyCommandBuffers();
-    for (uint32_t bufferId : bufferIds)
-    {
-        bufferManager->UnloadBuffer(bufferId);
-    }
-    bufferIds.clear();
-    bufferManager->Destroy();
+    ClearDrawingBuffers();
 
     DestroySynchronizationObjects();
     DestroyFrameBuffers();
@@ -131,12 +128,24 @@ void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
     imagesInFlight[imageIndex] = inFlightFences[currentInFlightFrame];
 
     // Recording should happen only if the data are changed
-    commandManager->Record(
-        imageIndex,
-        frameBuffers[imageIndex],
-        bufferManager->GetUniformBuffer(imageIndex),
-        bufferManager->GetCubeMapBuffer(),
-        bufferManager->GetDrawingCommands());
+    if (dataUpdated[imageIndex])
+    {
+        commandManager->Record(
+            imageIndex,
+            frameBuffers[imageIndex],
+            bufferManager->GetDrawingBuffer(imageIndex));
+        dataUpdated[imageIndex] = false;
+    }
+}
+
+void VulkanDrawEngine::ClearDrawingBuffers()
+{
+    for (uint32_t bufferId : bufferIds)
+    {
+        bufferManager->UnloadBuffer(bufferId);
+    }
+    bufferIds.clear();
+    bufferManager->Destroy();
 }
 
 void VulkanDrawEngine::CreateCommandBuffers()
@@ -150,6 +159,9 @@ void VulkanDrawEngine::CreateCommandBuffers()
         renderPass.get(),
         pipelines);
     commandManager->Create(static_cast<uint32_t>(frameBuffers.size()));
+
+    dataUpdated.resize(frameBuffers.size());
+    MarkDataAsUpdated();
 }
 
 void VulkanDrawEngine::CreateFrameBuffers()
@@ -302,12 +314,17 @@ void VulkanDrawEngine::EndFrame(uint32_t &imageIndex)
     currentInFlightFrame = (currentInFlightFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void VulkanDrawEngine::MarkDataAsUpdated()
+{
+    std::fill(dataUpdated.begin(), dataUpdated.end(), true);
+}
+
 void VulkanDrawEngine::LoadCubeMap(CubeMap &cubeMap)
 {
     bufferManager->UpdateCubeMapImage(cubeMap.images);
 }
 
-void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
+void VulkanDrawEngine::LoadEntity(Entity &entity)
 {
     std::shared_ptr<Mesh> mesh = entity.mesh;
     glm::vec3 translation = ConvertToVulkanCoordinates(entity.translation);
@@ -341,10 +358,12 @@ void VulkanDrawEngine::LoadIntoBuffer(Entity &entity)
         mesh->material.get());
     bufferIds.insert(bufferId);
 
-    for (uint32_t i = 0; i < frameBuffers.size(); i++)
-    {
-        commandManager->TriggerUpdate(i);
-    }
+    MarkDataAsUpdated();
+}
+
+void VulkanDrawEngine::LoadTerrain(Terrain &terrain)
+{
+
 }
 
 void VulkanDrawEngine::RecreateSwapChain()

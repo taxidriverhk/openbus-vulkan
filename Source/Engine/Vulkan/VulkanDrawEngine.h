@@ -25,7 +25,8 @@ public:
     void DrawFrame() override;
     void Initialize() override;
     void LoadCubeMap(CubeMap &cubeMap) override;
-    void LoadIntoBuffer(Entity &entity) override;
+    void LoadEntity(Entity &entity) override;
+    void LoadTerrain(Terrain &terrain) override;
     void UpdateCamera(Camera *camera) override;
 
 private:
@@ -53,6 +54,7 @@ private:
     void CreateFrameBuffers();
     void CreatePipelines();
     void CreateSynchronizationObjects();
+    void ClearDrawingBuffers();
     void DestroyCommandBuffers();
     void DestroyFrameBuffers();
     void DestroyPipelines();
@@ -64,6 +66,8 @@ private:
 
     void RecreateSwapChain();
 
+    void MarkDataAsUpdated();
+
     bool enableDebugging;
 
     Screen *screen;
@@ -74,6 +78,7 @@ private:
 
     std::unique_ptr<VulkanPipeline> staticPipeline;
     std::unique_ptr<VulkanPipeline> cubeMapPipeline;
+    std::unique_ptr<VulkanPipeline> terrainPipeline;
 
     std::unordered_set<uint32_t> bufferIds;
     std::unique_ptr<VulkanBufferManager> bufferManager;
@@ -81,12 +86,13 @@ private:
     // Based on number of swap chain images (which is usually 3)
     std::vector<VkFramebuffer> frameBuffers;
     std::vector<VkFence> imagesInFlight;
+    std::vector<bool> dataUpdated;
 
     // Based on the maximum allowed frames in flight
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
 
-    // Active frame in use by the GPU
+    // Active frame that is in use by the GPU
     uint32_t currentInFlightFrame;
 };

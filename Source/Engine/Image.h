@@ -2,20 +2,26 @@
 
 #include <string>
 
+enum class ImageColor
+{
+    ColorWithAlpha,
+    Grayscale
+};
+
 class Image
 {
 public:
     Image();
-    Image(std::string path);
+    Image(std::string path, ImageColor color = ImageColor::ColorWithAlpha);
     ~Image();
 
     int GetWidth() const { return width; }
     int GetHeight() const { return height; }
     uint8_t *GetPixels() const { return pixels; }
+    bool Load(std::string path, ImageColor color);
 
 private:
     void Destroy();
-    bool Load(std::string path);
 
     std::string path;
     int width;

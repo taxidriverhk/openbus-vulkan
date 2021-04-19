@@ -114,15 +114,14 @@ struct VulkanCubeMapBuffer
     VulkanImage *imageBuffer;
 };
 
-struct VulkanDrawingBuffer
+struct VulkanTerrainBuffer
 {
-    uint32_t instanceBufferId;
-    uint32_t vertexBufferId;
-    uint32_t indexBufferId;
-    uint32_t imageBufferId;
+    VulkanBuffer *vertexBuffer;
+    VulkanBuffer *indexBuffer;
+    VulkanImage *imageBuffer;
 };
 
-struct VulkanDrawingCommand
+struct VulkanEntityBuffer
 {
     VulkanBuffer *instanceBuffer;
     VulkanBuffer *vertexBuffer;
@@ -130,8 +129,25 @@ struct VulkanDrawingCommand
     VulkanImage *imageBuffer;
 };
 
+struct VulkanEntityBufferIds
+{
+    uint32_t instanceBufferId;
+    uint32_t vertexBufferId;
+    uint32_t indexBufferId;
+    uint32_t imageBufferId;
+};
+
 struct VulkanDrawingPipelines
 {
     VulkanPipeline *staticPipeline;
     VulkanPipeline *cubeMapPipeline;
+    VulkanPipeline *terrainPipeline;
+};
+
+struct VulkanDrawingBuffer
+{
+    VulkanBuffer *uniformBuffer;
+    VulkanCubeMapBuffer cubeMapBuffer;
+    std::vector<VulkanTerrainBuffer> terrainBuffers;
+    std::vector<VulkanEntityBuffer> entityBuffers;
 };

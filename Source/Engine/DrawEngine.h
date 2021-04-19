@@ -3,6 +3,7 @@
 class Camera;
 struct CubeMap;
 struct Entity;
+struct Terrain;
 
 class DrawEngine
 {
@@ -13,6 +14,7 @@ public:
     virtual void DrawFrame() = 0;
     virtual void Initialize() = 0;
     virtual void LoadCubeMap(CubeMap &cubemap) = 0;
-    virtual void LoadIntoBuffer(Entity &entity) = 0;
+    virtual void LoadEntity(Entity &entity) = 0;
+    virtual void LoadTerrain(Terrain &terrain) = 0;
     virtual void UpdateCamera(Camera *camera) = 0;
 };

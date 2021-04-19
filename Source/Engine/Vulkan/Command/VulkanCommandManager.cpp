@@ -16,8 +16,7 @@ VulkanCommandManager::VulkanCommandManager(
     : context(context),
       renderPass(renderPass),
       pipelines(pipelines),
-      frameBufferSize(0),
-      dataUpdated()
+      frameBufferSize(0)
 {
 }
 
@@ -36,7 +35,6 @@ void VulkanCommandManager::Create(uint32_t frameBufferSize)
         commandBuffer->Create();
 
         primaryCommandBuffers.push_back(std::move(commandBuffer));
-        dataUpdated.push_back(true);
     }
 }
 
@@ -73,17 +71,11 @@ void VulkanCommandManager::Destroy()
 void VulkanCommandManager::Record(
     uint32_t imageIndex,
     VkFramebuffer framebuffer,
-    VulkanBuffer *uniformBuffer,
-    VulkanCubeMapBuffer &cubeMapBuffer,
-    std::unordered_map<uint32_t, VulkanDrawingCommand> &drawingCommands)
+    VulkanDrawingBuffer drawingBuffer)
 {
-    if (!dataUpdated[imageIndex])
-    {
-        return;
-    }
-
     VkCommandBuffer primaryCommandBuffer = BeginPrimaryCommand(imageIndex, framebuffer);
 
+    VulkanBuffer *uniformBuffer = drawingBuffer.uniformBuffer;
     std::mutex secondaryCommandMutex;
     std::vector<VkCommandBuffer> secondaryCommandBuffers;
 
@@ -92,14 +84,14 @@ void VulkanCommandManager::Record(
             VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
 
             VulkanPipeline *staticPipeline = pipelines.staticPipeline;
-            for (const auto &[bufferId, drawingCommand] : drawingCommands)
+            for (const auto &entityBuffer : drawingBuffer.entityBuffers)
             {
                 BindPipeline(secondaryCommandBuffer, staticPipeline);
 
-                VulkanBuffer *instanceBuffer = drawingCommand.instanceBuffer;
-                VulkanBuffer *vertexBuffer = drawingCommand.vertexBuffer;
-                VulkanBuffer *indexBuffer = drawingCommand.indexBuffer;
-                VulkanImage *imageBuffer = drawingCommand.imageBuffer;
+                VulkanBuffer *instanceBuffer = entityBuffer.instanceBuffer;
+                VulkanBuffer *vertexBuffer = entityBuffer.vertexBuffer;
+                VulkanBuffer *indexBuffer = entityBuffer.indexBuffer;
+                VulkanImage *imageBuffer = entityBuffer.imageBuffer;
 
                 // Bind vertex buffer
                 VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
@@ -132,6 +124,7 @@ void VulkanCommandManager::Record(
             VulkanPipeline *staticPipeline = pipelines.staticPipeline;
             VulkanPipeline *cubeMapPipeline = pipelines.cubeMapPipeline;
 
+            VulkanCubeMapBuffer cubeMapBuffer = drawingBuffer.cubeMapBuffer;
             VulkanBuffer *cubeMapVertexBuffer = cubeMapBuffer.vertexBuffer;
             VulkanBuffer *cubeMapIndexBuffer = cubeMapBuffer.indexBuffer;
             if (cubeMapVertexBuffer->IsLoaded())
@@ -168,13 +161,6 @@ void VulkanCommandManager::Record(
 
     vkCmdEndRenderPass(primaryCommandBuffer);
     EndCommand(primaryCommandBuffer);
-
-    dataUpdated[imageIndex] = false;
-}
-
-void VulkanCommandManager::TriggerUpdate(uint32_t imageIndex)
-{
-    dataUpdated[imageIndex] = true;
 }
 
 VkCommandBuffer VulkanCommandManager::BeginPrimaryCommand(uint32_t imageIndex, VkFramebuffer frameBuffer)
