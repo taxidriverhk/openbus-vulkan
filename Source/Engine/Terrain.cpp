@@ -40,10 +40,10 @@ bool TerrainLoader::LoadFromHeightMap(const std::string filename, Terrain &terra
         for (uint32_t j = 0; j < grids; j++)
         {
             uint32_t imageColumn = static_cast<uint32_t>(j * hFactor);
-            uint32_t imageBaseOffset = 3 * (imageRow * image.GetWidth() + imageColumn);
+            uint32_t imageBaseOffset = imageColumn * image.GetWidth() + imageRow;
 
             float vertexPositionY = static_cast<float>(j * gridSize);
-            float height = CalculateHeight(pixels, imageBaseOffset);
+            float height = CalculateHeight(pixels + imageBaseOffset);
 
             Vertex vertex{};
             vertex.position = { vertexPositionX, vertexPositionY, height };
@@ -74,11 +74,14 @@ bool TerrainLoader::LoadFromHeightMap(const std::string filename, Terrain &terra
     return true;
 }
 
-float TerrainLoader::CalculateHeight(const uint8_t *pixels, uint32_t offset)
+float TerrainLoader::CalculateHeight(const uint8_t *basePixel)
 {
-    uint32_t combinedPixelValue = pixels[offset] + UCHAR_MAX * pixels[offset + 1] + UCHAR_MAX * UCHAR_MAX * pixels[offset + 2];
-    uint32_t halfMaxPixelValue = MAX_PIXEL_VALUE / 2;
-    float scale = static_cast<float>(combinedPixelValue - halfMaxPixelValue) / halfMaxPixelValue;
+    uint8_t pixelValue = *basePixel;
+    uint32_t combinedPixelValue = (pixelValue & 0xFF)
+        + UCHAR_MAX * (pixelValue >> 2 & 0xFF)
+        + UCHAR_MAX * UCHAR_MAX * (pixelValue >> 3 & 0xFF);
+    float halfMaxPixelValue = static_cast<float>(MAX_PIXEL_VALUE / 2);
+    float height = ((combinedPixelValue - halfMaxPixelValue) * heightRange) / halfMaxPixelValue;
     // Round to two decimal places
-    return roundf(scale * heightRange * 100) / 100;
+    return roundf(height * 100) / 100;
 }

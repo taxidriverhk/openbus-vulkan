@@ -8,6 +8,7 @@ struct Vertex;
 
 struct Terrain
 {
+    uint32_t id;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     std::shared_ptr<Image> texture;
@@ -24,7 +25,7 @@ public:
 private:
     static constexpr uint32_t MAX_PIXEL_VALUE = UCHAR_MAX * UCHAR_MAX * UCHAR_MAX;
 
-    float CalculateHeight(const uint8_t *pixels, uint32_t offset);
+    float CalculateHeight(const uint8_t *basePixel);
 
     int size;
     int gridSize;

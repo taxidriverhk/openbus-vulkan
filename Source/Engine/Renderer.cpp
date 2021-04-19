@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <execution>
+#include <future>
 #include <numeric>
 
 #include "Common/Logger.h"
@@ -46,8 +47,14 @@ void Renderer::CreateContext(Screen *screen)
 
 void Renderer::LoadScene()
 {
-    Terrain terrain;
-    terrainLoader.LoadFromHeightMap("heightmap.png", terrain);
+    std::future<Terrain> terrainFuture = std::async(
+        std::launch::async,
+        [&]()
+        {
+            Terrain terrain;
+            terrainLoader.LoadFromHeightMap("heightmap.png", terrain);
+            return terrain;
+        });
 
     uint32_t numberOfMeshes = 10;
     Logger::Log(LogLevel::Info, "Loading models and images from files");
@@ -128,4 +135,9 @@ void Renderer::LoadScene()
     }
     drawEngine->LoadCubeMap(cubeMap);
     Logger::Log(LogLevel::Info, "Finished loading skybox into buffer");
+
+    Logger::Log(LogLevel::Info, "Loading terrain into buffer");
+    Terrain loadedTerrain = terrainFuture.get();
+    drawEngine->LoadTerrain(loadedTerrain);
+    Logger::Log(LogLevel::Info, "Finished loading terrain into buffer");
 }

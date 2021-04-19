@@ -169,12 +169,11 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
     return bufferId;
 }
 
-void VulkanBufferManager::LoadTerrainIntoBuffer(uint32_t terrainId, Terrain &terrain)
+void VulkanBufferManager::LoadTerrainIntoBuffer(
+    uint32_t terrainId,
+    std::vector<Vertex> &vertices,
+    std::vector<uint32_t> &indices)
 {
-    uint32_t bufferId = GenerateBufferId();
-    std::vector<Vertex> &vertices = terrain.vertices;
-    std::vector<uint32_t> &indices = terrain.indices;
-
     if (terrainVertexBuffers.count(terrainId) == 0)
     {
         std::shared_ptr<VulkanBuffer> vertexBuffer = std::make_shared<VulkanBuffer>(

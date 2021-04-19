@@ -145,6 +145,13 @@ void VulkanDrawEngine::ClearDrawingBuffers()
         bufferManager->UnloadBuffer(bufferId);
     }
     bufferIds.clear();
+
+    for (uint32_t terrainId : terrainBufferIds)
+    {
+        bufferManager->UnloadTerrain(terrainId);
+    }
+    terrainBufferIds.clear();
+
     bufferManager->Destroy();
 }
 
@@ -330,7 +337,7 @@ void VulkanDrawEngine::LoadEntity(Entity &entity)
     glm::vec3 translation = ConvertToVulkanCoordinates(entity.translation);
     glm::vec3 scale = ConvertToVulkanCoordinates(entity.scale);
 
-    std::vector<Vertex> vertices = mesh->vertices;
+    std::vector<Vertex> &vertices = mesh->vertices;
     std::vector<Vertex> transformedVertices(vertices.size());
     std::transform(
         std::execution::par,
@@ -363,7 +370,24 @@ void VulkanDrawEngine::LoadEntity(Entity &entity)
 
 void VulkanDrawEngine::LoadTerrain(Terrain &terrain)
 {
+    uint32_t terrainId = terrain.id;
+    std::vector<Vertex> &vertices = terrain.vertices;
+    std::vector<Vertex> transformedVertices(vertices.size());
+    std::transform(
+        std::execution::par,
+        vertices.begin(),
+        vertices.end(),
+        transformedVertices.begin(),
+        [&](Vertex &vertex)
+        {
+            return ConvertToVulkanVertex(vertex);
+        });
 
+    bufferManager->LoadTerrainIntoBuffer(
+        terrainId,
+        transformedVertices,
+        terrain.indices);
+    terrainBufferIds.insert(terrainId);
 }
 
 void VulkanDrawEngine::RecreateSwapChain()

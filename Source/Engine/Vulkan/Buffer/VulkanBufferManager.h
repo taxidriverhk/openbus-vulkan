@@ -37,7 +37,10 @@ public:
     void UpdateCubeMapImage(std::vector<Image *> &images);
 
     // Terrain Buffering
-    void LoadTerrainIntoBuffer(uint32_t terrainId, Terrain &terrain);
+    void LoadTerrainIntoBuffer(
+        uint32_t terrainId,
+        std::vector<Vertex> &vertices,
+        std::vector<uint32_t> &indices);
     void UnloadTerrain(uint32_t terrainId);
 
     // Vertex/Texture Buffering

@@ -81,6 +81,7 @@ private:
     std::unique_ptr<VulkanPipeline> terrainPipeline;
 
     std::unordered_set<uint32_t> bufferIds;
+    std::unordered_set<uint32_t> terrainBufferIds;
     std::unique_ptr<VulkanBufferManager> bufferManager;
 
     // Based on number of swap chain images (which is usually 3)
