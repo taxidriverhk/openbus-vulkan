@@ -39,15 +39,15 @@ private:
     {
         return
         {
-            { -input.position.x, input.position.z, input.position.y },
-            { -input.normal.x, input.normal.z, input.normal.y },
+            { input.position.x, input.position.z, input.position.y },
+            { input.normal.x, input.normal.z, input.normal.y },
             { input.uv.x, 1.0f - input.uv.y }
         };
     }
 
     inline static glm::vec3 ConvertToVulkanCoordinates(const glm::vec3 &input)
     {
-        return { input.x, input.z, input.y };
+        return { input.x, input.z, -input.y };
     }
 
     void CreateCommandBuffers();
