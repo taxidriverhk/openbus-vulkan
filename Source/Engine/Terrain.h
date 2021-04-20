@@ -20,7 +20,10 @@ public:
     TerrainLoader(int size, int gridSize, float textureSize, float heightRange);
     ~TerrainLoader();
 
-    bool LoadFromHeightMap(const std::string filename, Terrain &terrain);
+    bool LoadFromHeightMap(
+        const std::string filename,
+        const glm::vec3 offset,
+        Terrain &terrain);
 
 private:
     static constexpr uint32_t MAX_PIXEL_VALUE = UCHAR_MAX * UCHAR_MAX * UCHAR_MAX;

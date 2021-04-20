@@ -117,11 +117,10 @@ void VulkanCommandManager::Record(
             EndCommand(secondaryCommandBuffer);
         });
 
-    std::future<void> cubeMapFuture = std::async(std::launch::async, [&]()
+    std::future<void> cubeMapCommandFuture = std::async(std::launch::async, [&]()
         {
             VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
 
-            VulkanPipeline *staticPipeline = pipelines.staticPipeline;
             VulkanPipeline *cubeMapPipeline = pipelines.cubeMapPipeline;
 
             VulkanCubeMapBuffer cubeMapBuffer = drawingBuffer.cubeMapBuffer;
@@ -136,7 +135,7 @@ void VulkanCommandManager::Record(
                 vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, cubeMapVertexBuffers, offsets);
                 vkCmdBindIndexBuffer(secondaryCommandBuffer, cubeMapIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
                 // Bind uniform descriptor set
-                uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, staticPipeline->GetPipelineLayout());
+                uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, cubeMapPipeline->GetPipelineLayout());
                 // Bind cubemap descriptor set
                 cubeMapBuffer.imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
                 // Draw the cube map
@@ -151,8 +150,43 @@ void VulkanCommandManager::Record(
             EndCommand(secondaryCommandBuffer);
         });
 
+    std::future<void> terrainCommandFuture = std::async(std::launch::async, [&]()
+        {
+            VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+
+            VulkanPipeline *terrainPipeline = pipelines.terrainPipeline;
+
+            for (const auto &terrainBuffer : drawingBuffer.terrainBuffers)
+            {
+                BindPipeline(secondaryCommandBuffer, terrainPipeline);
+
+                VulkanBuffer *vertexBuffer = terrainBuffer.vertexBuffer;
+                VulkanBuffer *indexBuffer = terrainBuffer.indexBuffer;
+                VulkanImage *imageBuffer = terrainBuffer.imageBuffer;
+
+                // Bind vertex buffer
+                VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, vertexBuffers, offsets);
+                // Bind index buffer
+                vkCmdBindIndexBuffer(secondaryCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+                // Bind uniform descriptor set
+                uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, terrainPipeline->GetPipelineLayout());
+
+                uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
+                vkCmdDrawIndexed(secondaryCommandBuffer, indexCount, 1, 0, 0, 0);
+            }
+
+            secondaryCommandMutex.lock();
+            secondaryCommandBuffers.push_back(secondaryCommandBuffer);
+            secondaryCommandMutex.unlock();
+
+            EndCommand(secondaryCommandBuffer);
+        });
+
     staticCommandFuture.get();
-    cubeMapFuture.get();
+    cubeMapCommandFuture.get();
+    terrainCommandFuture.get();
 
     vkCmdExecuteCommands(
         primaryCommandBuffer,

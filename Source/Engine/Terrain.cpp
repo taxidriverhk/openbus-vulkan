@@ -16,10 +16,13 @@ TerrainLoader::~TerrainLoader()
 {
 }
 
-bool TerrainLoader::LoadFromHeightMap(const std::string filename, Terrain &terrain)
+bool TerrainLoader::LoadFromHeightMap(
+    const std::string filename,
+    const glm::vec3 offset,
+    Terrain &terrain)
 {
     Image image;
-    if (!image.Load(filename, ImageColor::Grayscale))
+    if (!image.Load(filename, ImageColor::ColorWithAlpha))
     {
         return false;
     }
@@ -39,15 +42,18 @@ bool TerrainLoader::LoadFromHeightMap(const std::string filename, Terrain &terra
         float vertexPositionX = static_cast<float>(i * gridSize);
         for (uint32_t j = 0; j < grids; j++)
         {
-            uint32_t imageColumn = static_cast<uint32_t>(j * hFactor);
-            uint32_t imageBaseOffset = imageColumn * image.GetWidth() + imageRow;
+            uint32_t imageColumn = image.GetHeight() - static_cast<uint32_t>(j * hFactor) - 1;
+            uint32_t imageBaseOffset = 4 * (imageColumn * image.GetWidth() + imageRow);
 
             float vertexPositionY = static_cast<float>(j * gridSize);
             float height = CalculateHeight(pixels + imageBaseOffset);
 
             Vertex vertex{};
-            vertex.position = { vertexPositionX, vertexPositionY, height };
+            vertex.position = { vertexPositionX, -vertexPositionY, height };
+            vertex.position += offset;
+
             vertex.normal = { 0.0f, 0.0f, 1.0f };
+
             vertex.uv = { j * uvStep, i * uvStep };
 
             vertices.push_back(vertex);
@@ -76,10 +82,9 @@ bool TerrainLoader::LoadFromHeightMap(const std::string filename, Terrain &terra
 
 float TerrainLoader::CalculateHeight(const uint8_t *basePixel)
 {
-    uint8_t pixelValue = *basePixel;
-    uint32_t combinedPixelValue = (pixelValue & 0xFF)
-        + UCHAR_MAX * (pixelValue >> 2 & 0xFF)
-        + UCHAR_MAX * UCHAR_MAX * (pixelValue >> 3 & 0xFF);
+    uint32_t combinedPixelValue = basePixel[0]
+        + UCHAR_MAX * basePixel[1]
+        + UCHAR_MAX * UCHAR_MAX * basePixel[2];
     float halfMaxPixelValue = static_cast<float>(MAX_PIXEL_VALUE / 2);
     float height = ((combinedPixelValue - halfMaxPixelValue) * heightRange) / halfMaxPixelValue;
     // Round to two decimal places
