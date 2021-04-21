@@ -61,6 +61,7 @@ void Game::StartGameLoop()
     // (ideally a separate class like MapBlockManager)
     Logger::Log(LogLevel::Info, "Loading map");
     renderer->LoadScene();
+    camera->MoveTo(50, 50, 10);
     std::chrono::steady_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
     Logger::Log(LogLevel::Info, "Entering the game loop");
@@ -69,12 +70,10 @@ void Game::StartGameLoop()
     {
         float deltaTime = Util::DeltaTime();
 
-        // TODO: test code to show that the camera works
+        // TODO: test code to verify that the camera works
         std::chrono::steady_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-        float cameraX = 15 * glm::cos(time);
-        float cameraY = 15 * glm::sin(time);
-        camera->MoveTo(cameraX, cameraY, 10.0f);
+        camera->Rotate(0, 20 * time, 0);
 
         screen->Refresh();
         renderer->DrawScene();

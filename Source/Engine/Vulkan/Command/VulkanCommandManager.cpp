@@ -172,6 +172,8 @@ void VulkanCommandManager::Record(
                 vkCmdBindIndexBuffer(secondaryCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
                 // Bind uniform descriptor set
                 uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, terrainPipeline->GetPipelineLayout());
+                // Bind image sampler descriptor set
+                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, terrainPipeline->GetPipelineLayout());
 
                 uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
                 vkCmdDrawIndexed(secondaryCommandBuffer, indexCount, 1, 0, 0, 0);
@@ -184,9 +186,9 @@ void VulkanCommandManager::Record(
             EndCommand(secondaryCommandBuffer);
         });
 
+    terrainCommandFuture.get();
     staticCommandFuture.get();
     cubeMapCommandFuture.get();
-    terrainCommandFuture.get();
 
     vkCmdExecuteCommands(
         primaryCommandBuffer,

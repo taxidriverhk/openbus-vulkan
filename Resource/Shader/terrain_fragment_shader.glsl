@@ -12,8 +12,7 @@ layout(location = 4) in vec4 fLightPosition;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    // vec4 objectColor = texture(inSampler, fUV);
-    vec4 objectColor = vec4(0.2, 1.0, 0.2, 1.0);
+    vec4 objectColor = texture(inSampler, fUV);
 
     float ambientStrength = 0.35;
     vec4 lightColor = vec4(vec3(0.5), 1.0);
@@ -27,4 +26,5 @@ void main() {
     vec4 diffuse = NdotL * lightColor * diffuseColor;
 
     outColor = (ambient + diffuse) * objectColor;
+    outColor.a = 1.0;
 }

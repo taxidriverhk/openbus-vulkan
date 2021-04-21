@@ -172,7 +172,8 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
 void VulkanBufferManager::LoadTerrainIntoBuffer(
     uint32_t terrainId,
     std::vector<Vertex> &vertices,
-    std::vector<uint32_t> &indices)
+    std::vector<uint32_t> &indices,
+    Image *texture)
 {
     if (terrainVertexBuffers.count(terrainId) == 0)
     {
@@ -193,6 +194,17 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
             indices.data(),
             static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
         terrainIndexBuffers.insert(std::make_pair(terrainId, std::move(indexBuffer)));
+
+        std::shared_ptr<VulkanImage> terrainImage = std::make_shared<VulkanImage>(
+            context, commandPool, imageVmaAllocator, VulkanImageType::Texture);
+        terrainImage->Load(
+            std::vector<uint8_t *>({ texture->GetPixels() }),
+            texture->GetWidth(),
+            texture->GetHeight(),
+            descriptorPool,
+            pipelines.staticPipeline->GetImageDescriptorSetLayout());
+        imageBuffers.insert(std::make_pair(terrainId, std::move(terrainImage)));
+        imageBufferCount[terrainId] = 1;
     }
     else
     {
@@ -206,6 +218,7 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
     VulkanTerrainBuffer terrainBuffer{};
     terrainBuffer.vertexBuffer = terrainVertexBuffers[terrainId].get();
     terrainBuffer.indexBuffer = terrainIndexBuffers[terrainId].get();
+    terrainBuffer.imageBuffer = imageBuffers[terrainId].get();
     terrainBufferCache.insert(std::make_pair(terrainId, terrainBuffer));
 }
 
@@ -260,6 +273,10 @@ void VulkanBufferManager::UnloadTerrain(uint32_t terrainId)
         terrainIndexBuffers.erase(terrainId);
 
         terrainBufferCache.erase(terrainId);
+
+        std::shared_ptr<VulkanImage> imageBuffer = imageBuffers[terrainId];
+        imageBuffer->Unload();
+        imageBuffers.erase(terrainId);
     }
 }
 

@@ -13,7 +13,7 @@ Renderer::Renderer(Camera *camera)
       drawEngine(),
       meshLoader(),
       // TODO: read from configuration
-      terrainLoader(1000, 10, 100, 50)
+      terrainLoader(1000, 10, 50, 50)
 {
 }
 
@@ -52,7 +52,11 @@ void Renderer::LoadScene()
         [&]()
         {
             Terrain terrain;
+
+            terrain.id = 555;
             terrainLoader.LoadFromHeightMap("heightmap.png", glm::vec3(0.0f, 0.0f, 0.0f), terrain);
+            terrain.texture = std::make_shared<Image>("grass.bmp");
+            
             return terrain;
         });
 
@@ -96,13 +100,13 @@ void Renderer::LoadScene()
         Entity entity1{};
         entity1.id = index;
         entity1.mesh = std::make_shared<Mesh>(formula1);
-        entity1.translation = { index * 2.0f , 5.0f, 0.5f };
-        entity1.scale = { 0.1f, 0.1f, 0.1f };
+        entity1.translation = { index * 25.0f , 5.0f, 0.5f };
+        entity1.scale = { 1.0f, 1.0f, 1.0f };
 
         Entity entity2{};
         entity2.id = index * 2;
         entity2.mesh = std::make_shared<Mesh>(wallpaper);
-        entity2.translation = { index * 2.5f , 0.0f, 0.0f };
+        entity2.translation = { index * 2.0f , 0.0f, 0.0f };
         entity2.scale = { 1.0f, 1.0f, 1.0f };
 
         addMeshMutex.lock();

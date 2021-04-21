@@ -51,12 +51,18 @@ bool TerrainLoader::LoadFromHeightMap(
             Vertex vertex{};
             vertex.position = { vertexPositionX, -vertexPositionY, height };
             vertex.position += offset;
-
-            vertex.normal = { 0.0f, 0.0f, 1.0f };
-
             vertex.uv = { j * uvStep, i * uvStep };
 
             vertices.push_back(vertex);
+        }
+    }
+
+    for (uint32_t i = 0; i < grids; i++)
+    {
+        for (uint32_t j = 0; j < grids; j++)
+        {
+            uint32_t baseOffset = i * grids + j;
+            vertices[baseOffset].normal = CalculateNormal(vertices, grids, i, j);
         }
     }
 
@@ -89,4 +95,16 @@ float TerrainLoader::CalculateHeight(const uint8_t *basePixel)
     float height = ((combinedPixelValue - halfMaxPixelValue) * heightRange) / halfMaxPixelValue;
     // Round to two decimal places
     return roundf(height * 100) / 100;
+}
+
+glm::vec3 TerrainLoader::CalculateNormal(std::vector<Vertex> &vertices, uint32_t grids, uint32_t x, uint32_t y)
+{
+    uint32_t baseRowOffset = y * grids + x;
+    float leftHeight = x == 0 ? 0 : vertices[baseRowOffset - 1].position.z;
+    float rightHeight = x == grids - 1 ? 0 : vertices[baseRowOffset + 1].position.z;
+    float upHeight = y == 0 ? 0 : vertices[baseRowOffset - grids].position.z;
+    float downHeight = y == grids - 1 ? 0 : vertices[baseRowOffset + grids].position.z;
+
+    glm::vec3 normal = { leftHeight - rightHeight, downHeight - upHeight, 2.0f };
+    return glm::normalize(normal);
 }

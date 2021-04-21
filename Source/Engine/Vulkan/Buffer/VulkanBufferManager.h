@@ -8,6 +8,7 @@
 
 #include "vk_mem_alloc.hpp"
 
+#include "Engine/Image.h"
 #include "Engine/Mesh.h"
 #include "Engine/Terrain.h"
 #include "Engine/Vulkan/VulkanCommon.h"
@@ -40,7 +41,8 @@ public:
     void LoadTerrainIntoBuffer(
         uint32_t terrainId,
         std::vector<Vertex> &vertices,
-        std::vector<uint32_t> &indices);
+        std::vector<uint32_t> &indices,
+        Image *texture);
     void UnloadTerrain(uint32_t terrainId);
 
     // Vertex/Texture Buffering
