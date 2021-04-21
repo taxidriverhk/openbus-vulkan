@@ -10,7 +10,7 @@ public:
     ~Camera();
 
     glm::vec3 GetPosition() const { return position; }
-    glm::vec3 GetTarget() const { return target; }
+    glm::vec3 GetFront() const { return front; }
     glm::vec3 GetUp() const { return up; }
 
     float GetZNear() const { return zNear; }
@@ -31,6 +31,7 @@ private:
     float zoomFactor;
 
     glm::vec3 position;
-    glm::vec3 target;
+    glm::vec3 front;
+    glm::vec3 right;
     glm::vec3 up;
 };

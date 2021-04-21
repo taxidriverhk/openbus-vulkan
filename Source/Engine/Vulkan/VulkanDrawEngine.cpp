@@ -410,7 +410,8 @@ void VulkanDrawEngine::LoadTerrain(Terrain &terrain)
     bufferManager->LoadTerrainIntoBuffer(
         terrainId,
         transformedVertices,
-        terrain.indices);
+        terrain.indices,
+        terrain.texture.get());
     terrainBufferIds.insert(terrainId);
 
     MarkDataAsUpdated();
@@ -472,7 +473,7 @@ void VulkanDrawEngine::Submit(uint32_t &imageIndex)
 void VulkanDrawEngine::UpdateCamera(Camera *camera)
 {
     glm::vec3 position = ConvertToVulkanCoordinates(camera->GetPosition());
-    glm::vec3 target = ConvertToVulkanCoordinates(camera->GetTarget());
+    glm::vec3 front = ConvertToVulkanCoordinates(camera->GetFront());
     glm::vec3 up = ConvertToVulkanCoordinates(camera->GetUp());
 
     VulkanUniformBufferInput input{};
@@ -483,7 +484,7 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
         camera->GetZFar());
     // Conversion required for Vulkan depth range
     input.projection[1][1] *= -1;
-    input.view = glm::lookAt(position, target, up);
+    input.view = glm::lookAt(position, position + front, up);
     input.lightPosition = { 10.0f, 10.0f, 10.0f };
     input.eyePosition = position;
 
