@@ -9,9 +9,12 @@
 #include "Common/Logger.h"
 #include "Engine/Camera.h"
 #include "Engine/Entity.h"
+#include "Engine/Material.h"
+#include "Engine/Mesh.h"
 #include "Engine/Terrain.h"
 #include "VulkanCommon.h"
 #include "VulkanDrawEngine.h"
+#include "Buffer/VulkanBuffer.h"
 #include "Buffer/VulkanBufferManager.h"
 #include "Command/VulkanCommandManager.h"
 

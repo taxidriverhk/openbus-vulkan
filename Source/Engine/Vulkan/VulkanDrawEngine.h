@@ -6,6 +6,7 @@
 
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
+#include "Engine/Vertex.h"
 
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"

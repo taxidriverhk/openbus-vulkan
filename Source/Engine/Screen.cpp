@@ -28,7 +28,7 @@ void Screen::Create()
     window->setVisible(false);
 }
 
-void Screen::Refresh()
+void Screen::PollEvent()
 {
     while (window->pollEvent(lastEvent))
     {

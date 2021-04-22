@@ -1,4 +1,12 @@
-#include "Mesh.h"
+#pragma once
+
+class Image;
+struct Mesh;
+
+struct CubeMap
+{
+    std::vector<Image *> images;
+};
 
 struct Entity
 {

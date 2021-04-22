@@ -8,16 +8,16 @@
 
 #include "vk_mem_alloc.hpp"
 
-#include "Engine/Image.h"
-#include "Engine/Mesh.h"
-#include "Engine/Terrain.h"
 #include "Engine/Vulkan/VulkanCommon.h"
-#include "Engine/Vulkan/VulkanContext.h"
-#include "Engine/Vulkan/VulkanRenderPass.h"
-#include "Engine/Vulkan/VulkanPipeline.h"
-#include "Engine/Vulkan/Command/VulkanCommand.h"
-#include "Engine/Vulkan/Image/VulkanImage.h"
-#include "VulkanBuffer.h"
+
+class Image;
+struct Material;
+struct Vertex;
+
+class VulkanBuffer;
+class VulkanContext;
+class VulkanImage;
+class VulkanRenderPass;
 
 class VulkanBufferManager
 {

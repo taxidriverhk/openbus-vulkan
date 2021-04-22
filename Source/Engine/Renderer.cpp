@@ -5,7 +5,13 @@
 #include <numeric>
 
 #include "Common/Logger.h"
+#include "Camera.h"
+#include "DrawEngine.h"
+#include "Entity.h"
+#include "Image.h"
+#include "Material.h"
 #include "Renderer.h"
+#include "Screen.h"
 #include "Vulkan/VulkanDrawEngine.h"
 
 Renderer::Renderer(Camera *camera)

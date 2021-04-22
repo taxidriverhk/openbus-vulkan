@@ -3,6 +3,7 @@
 #include "Image.h"
 #include "Mesh.h"
 #include "Terrain.h"
+#include "Vertex.h"
 
 TerrainLoader::TerrainLoader(int size, int gridSize, float textureSize, float heightRange)
     : size(size),

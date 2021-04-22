@@ -5,6 +5,7 @@
 
 #include "Common/Logger.h"
 #include "Mesh.h"
+#include "Vertex.h"
 
 MeshLoader::MeshLoader()
 {

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "Image.h"
+class Image;
 
 struct Material
 {

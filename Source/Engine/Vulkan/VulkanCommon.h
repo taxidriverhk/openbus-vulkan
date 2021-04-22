@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Engine/Mesh.h"
+#include "Engine/Vertex.h"
 
 #define ASSERT_VK_RESULT_SUCCESS(result, error)                                                   \
     if (result != VK_SUCCESS)                                                                     \

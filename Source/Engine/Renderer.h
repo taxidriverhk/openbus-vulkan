@@ -2,11 +2,12 @@
 
 #include <memory>
 
-#include "Camera.h"
-#include "DrawEngine.h"
-#include "Entity.h"
-#include "Screen.h"
+#include "Mesh.h"
 #include "Terrain.h"
+
+class Camera;
+class DrawEngine;
+class Screen;
 
 class Renderer
 {

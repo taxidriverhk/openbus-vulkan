@@ -7,10 +7,11 @@
 
 #include <vulkan/vulkan.h>
 
+#include "VulkanCommand.h"
+
 struct VulkanCubeMapBuffer;
 struct VulkanTerrainBuffer;
 struct VulkanDrawingPipelines;
-class VulkanCommand;
 class VulkanContext;
 class VulkanRenderPass;
 

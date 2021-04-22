@@ -19,7 +19,7 @@ public:
 
     void Close();
     void Create();
-    void Refresh();
+    void PollEvent();
     bool ShouldClose();
     void Show();
     void Wait();
