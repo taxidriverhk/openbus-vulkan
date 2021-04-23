@@ -6,6 +6,7 @@ Camera::Camera(int screenWidth, int screenHeight)
     : zNear(0.1f),
       zFar(1000.0f),
       zoomFactor(1.0f),
+      angles(0.0f, 0.0f, 0.0f),
       position(0.0f, 0.0f, 0.0f),
       front(0.0f, 1.0f, 0.0f),
       right(1.0f, 0.0f, 0.0f),
@@ -23,13 +24,24 @@ Camera::~Camera()
 
 void Camera::MoveTo(float x, float y, float z)
 {
+    position.x = x;
+    position.y = y;
+    position.z = z;
+}
+
+void Camera::MoveBy(float x, float y, float z)
+{
     position += right * x;
     position += front * y;
     position.z += z;
 }
 
-void Camera::Rotate(float pitch, float yaw, float roll)
+void Camera::RotateTo(float pitch, float yaw, float roll)
 {
+    angles.x = pitch;
+    angles.y = yaw;
+    angles.z = roll;
+
     float pitchRadians = glm::radians<float>(pitch);
     float yawRadians = glm::radians<float>(yaw);
 
@@ -48,6 +60,32 @@ void Camera::Rotate(float pitch, float yaw, float roll)
     up = glm::normalize(glm::cross(right, front));
 }
 
+void Camera::RotateBy(float pitch, float yaw, float roll)
+{
+    angles.x += pitch;
+    angles.y += yaw;
+    angles.z += roll;
+
+    ClampAngles(angles.x, angles.y, angles.z);
+    RotateTo(angles.x, angles.y, angles.z);
+}
+
 void Camera::Zoom(float factor)
 {
+}
+
+void Camera::ClampAngles(float &pitch, float &yaw, float &roll)
+{
+    if (pitch >= MAX_ROTATION_ANGLE_DEGREES)
+    {
+        pitch -= MAX_ROTATION_ANGLE_DEGREES;
+    }
+    if (yaw >= MAX_ROTATION_ANGLE_DEGREES)
+    {
+        yaw -= MAX_ROTATION_ANGLE_DEGREES;
+    }
+    if (roll >= MAX_ROTATION_ANGLE_DEGREES)
+    {
+        roll -= MAX_ROTATION_ANGLE_DEGREES;
+    }
 }

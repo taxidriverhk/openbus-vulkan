@@ -8,7 +8,7 @@ Screen::Screen(const int &width, const int &height, const std::string &title)
         height(height),
         title(title)
 {
-    assert("Screen width and height must be greater than zero", width > 0 && height > 0);
+    assert(("Screen width and height must be greater than zero", width > 0 && height > 0));
 
     lastEvent.type = sf::Event::Count;
 }
@@ -28,18 +28,28 @@ void Screen::Create()
     window->setVisible(false);
 }
 
-void Screen::PollEvent()
+std::list<sf::Event> Screen::PollEvent()
 {
+    std::list<sf::Event> events;
     while (window->pollEvent(lastEvent))
     {
-        if (lastEvent.type == sf::Event::Resized)
+        switch (lastEvent.type)
+        {
+        case sf::Event::Resized:
         {
             sf::Vector2u newSize = window->getSize();
             width = newSize.x;
             height = newSize.y;
             resized = true;
         }
+            break;
+        case sf::Event::KeyPressed:
+        case sf::Event::KeyReleased:
+            events.push_back(lastEvent);
+        }
     }
+
+    return events;
 }
 
 bool Screen::ShouldClose()

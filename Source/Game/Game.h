@@ -1,11 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <thread>
 
-#include "Common/Util.h"
-#include "Engine/Camera.h"
-#include "Engine/Screen.h"
-#include "Engine/Renderer.h"
+class ControlManager;
+class Camera;
+class Screen;
+class Renderer;
 
 class Game
 {
@@ -26,11 +27,24 @@ private:
     void Cleanup();
     void InitializeComponents();
     void InitializeState();
+
     bool ShouldQuit();
-    void StartGameLoop();
+
+    void RunMainLoop();
+    void RenderScene();
+
+    void RunGameLoop();
+    void HandleInputCommands(float deltaTime);
+    void UpdateState(float deltaTime);
 
     bool gameStarted;
     bool shouldEndGame;
+
+    std::atomic<int> number;
+    std::atomic<bool> readyToRender;
+
+    std::unique_ptr<ControlManager> controlManager;
+
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Screen> screen;
     std::unique_ptr<Renderer> renderer;

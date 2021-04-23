@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <string>
 
 #include <SFML/Window.hpp>
@@ -19,7 +20,7 @@ public:
 
     void Close();
     void Create();
-    void PollEvent();
+    std::list<sf::Event> PollEvent();
     bool ShouldClose();
     void Show();
     void Wait();
