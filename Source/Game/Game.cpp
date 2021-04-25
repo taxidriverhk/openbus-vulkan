@@ -6,6 +6,7 @@
 #include "Engine/Renderer.h"
 #include "Control.h"
 #include "Game.h"
+#include "Map.h"
 
 Game::Game()
     : gameStarted(false),
@@ -15,11 +16,11 @@ Game::Game()
     std::string screenTitle = Util::FormatWindowTitle("Game Screen");
 
     controlManager = std::make_unique<ControlManager>();
+    mapLoader = std::make_unique<MapLoader>();
+
     camera = std::make_unique<Camera>(SCREEN_WIDTH, SCREEN_HEIGHT);
     screen = std::make_unique<Screen>(SCREEN_WIDTH, SCREEN_HEIGHT, screenTitle);
     renderer = std::make_unique<Renderer>(camera.get());
-
-    number = 0;
 }
 
 Game::~Game()
@@ -28,6 +29,7 @@ Game::~Game()
 
 void Game::Cleanup()
 {
+    mapLoader->TerminateLoadBlocksThread();
     renderer->Cleanup();
     screen->Close();
 }
@@ -73,21 +75,36 @@ void Game::RunMainLoop()
     Logger::Log(LogLevel::Info, "Initializing game state");
     InitializeState();
 
-    // TODO: this code should be moved to a separate thread
-    // (ideally a separate class like MapBlockManager)
-    Logger::Log(LogLevel::Info, "Loading map");
-    renderer->LoadScene();
-
-    screen->Show();
-
     Logger::Log(LogLevel::Info, "Creating a separate thread for game logic loop");
     std::thread gameLoopThread(&Game::RunGameLoop, this);
+
+    Logger::Log(LogLevel::Info, "Creating a separate thread for loading resources");
+    mapLoader->StartLoadBlocksThread();
+
+    bool loadedScene = false;
+    renderer->LoadBackground();
+    screen->Show();
+
+    // TODO: test code to make sure the async resource loading is working
+    MapBlock mapBlock{};
+    mapBlock.id = 1;
+    mapLoader->AddBlockToLoad(mapBlock);
 
     Logger::Log(LogLevel::Info, "Entering the rendering loop");
     while (!ShouldQuit())
     {
+        // Read any input events from the SFML screen and then queue them
+        // so that the game thread can process them
         controlManager->QueueEvents(screen->PollEvent());
 
+        // Load the resources into buffer if found
+        if (mapLoader->IsReadyToBuffer())
+        {
+            MapBlockResources mapBlockResource = mapLoader->PollLoadedResources();
+            renderer->LoadBlock(mapBlockResource.terrain, mapBlockResource.entities);
+        }
+
+        // Redraw the scene only if the game thread has completed its updates
         if (readyToRender)
         {
             RenderScene();
@@ -101,6 +118,7 @@ void Game::RunMainLoop()
 
 void Game::RunGameLoop()
 {
+    // TODO: could be read from configuration, this is not the drawing framerate
     int targetFrameRate = 120;
     float timePerFrame = 1 / static_cast<float>(targetFrameRate);
 
@@ -109,7 +127,7 @@ void Game::RunGameLoop()
     while (!ShouldQuit())
     {
         timeSinceLastUpdate += timer.DeltaTime();
-        // This is to accommodate a fixed time step for updating the physics
+        // This is to accommodate a fixed time step for updating the physics accurately
         // without affecting the framerate for drawing
         while (timeSinceLastUpdate > timePerFrame)
         {
@@ -123,6 +141,7 @@ void Game::RunGameLoop()
     }
 }
 
+// TODO: could be moved into a separate class for handling?
 void Game::HandleInputCommands(float deltaTime)
 {
     float movementSpeed = 20;
@@ -155,7 +174,6 @@ void Game::HandleInputCommands(float deltaTime)
             camera->RotateBy(0.0f, movementSpeed * deltaTime, 0.0f);
             break;
         case ControlCommandOperation::ToggleFrameRateDisplay:
-            number++;
             break;
         }
     }

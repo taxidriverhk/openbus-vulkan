@@ -4,8 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "Vertex.h"
+
 struct Material;
-struct Vertex;
 
 struct Mesh
 {

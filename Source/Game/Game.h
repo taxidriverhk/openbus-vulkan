@@ -4,6 +4,7 @@
 #include <thread>
 
 class ControlManager;
+class MapLoader;
 class Camera;
 class Screen;
 class Renderer;
@@ -40,10 +41,10 @@ private:
     bool gameStarted;
     bool shouldEndGame;
 
-    std::atomic<int> number;
     std::atomic<bool> readyToRender;
 
     std::unique_ptr<ControlManager> controlManager;
+    std::unique_ptr<MapLoader> mapLoader;
 
     std::unique_ptr<Camera> camera;
     std::unique_ptr<Screen> screen;

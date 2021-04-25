@@ -15,6 +15,8 @@ std::list<ControlCommand> ControlManager::PollCommands()
     std::list<ControlCommand> unhandledCommands;
     for (const ControlCommand &command : commandSequence)
     {
+        // Do not handle the command if the command is already handled,
+        // and the user has not released the control (ex. toggle FPS display)
         if (command.type == ControlCommandType::Discrete && handledCommands.count(command) != 0)
         {
             continue;
@@ -50,6 +52,8 @@ void ControlManager::QueueEvents(std::list<sf::Event> &events)
                 modifier |= KeyModifier::Shift;
             }
 
+            // Convert the SFML event into a generic command, and then
+            // look to see if the event is registered to any command
             Control control{};
             control.key = keyCode;
             control.modifier = modifier;
@@ -60,6 +64,7 @@ void ControlManager::QueueEvents(std::list<sf::Event> &events)
                 continue;
             }
 
+            // Put the command into the queue for the game thread to process
             ControlCommand command = registeredControls[control];
             commandMutex.lock();
             if (eventType == sf::Event::KeyPressed)
@@ -78,6 +83,7 @@ void ControlManager::QueueEvents(std::list<sf::Event> &events)
 
 void ControlManager::RegisterControls()
 {
+    // TODO: should read from configuration, hard-coding the registered keys for now
     registeredControls.insert(
         {
             {

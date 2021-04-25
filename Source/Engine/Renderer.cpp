@@ -51,91 +51,10 @@ void Renderer::CreateContext(Screen *screen)
     drawEngine->Initialize();
 }
 
-void Renderer::LoadScene()
+void Renderer::LoadBackground()
 {
-    std::future<Terrain> terrainFuture = std::async(
-        std::launch::async,
-        [&]()
-        {
-            Terrain terrain;
-
-            terrain.id = 555;
-            terrainLoader.LoadFromHeightMap("heightmap.png", glm::vec3(0.0f, 0.0f, 0.0f), terrain);
-            terrain.texture = std::make_shared<Image>("grass.bmp");
-            
-            return terrain;
-        });
-
-    uint32_t numberOfMeshes = 10;
-    Logger::Log(LogLevel::Info, "Loading models and images from files");
-
-    Material materials[] =
-    {
-        {
-            1,
-            std::make_shared<Image>("formula1.png"),
-            nullptr,
-            nullptr
-        },
-        {
-            4,
-            std::make_shared<Image>("wallpaper.bmp"),
-            nullptr,
-            nullptr
-        }
-    };
-
-    std::mutex addMeshMutex;
-    std::vector<Entity> entitiesLoaded;
-    auto asyncLoadMeshInfoBuffer = [&](const int &index)
-    {
-        Mesh formula1{}, wallpaper;
-
-        if (!meshLoader.LoadFromFile("formula1.obj", formula1)
-            || !meshLoader.LoadFromFile("wallpaper.obj", wallpaper))
-        {
-            throw std::runtime_error("Failed to load models from files");
-        }
-
-        formula1.id = 1;
-        formula1.material = std::make_shared<Material>(materials[0]);
-
-        wallpaper.id = 2;
-        wallpaper.material = std::make_shared<Material>(materials[1]);
-
-        Entity entity1{};
-        entity1.id = index;
-        entity1.mesh = std::make_shared<Mesh>(formula1);
-        entity1.translation = { index * 25.0f , 5.0f, 0.5f };
-        entity1.scale = { 1.0f, 1.0f, 1.0f };
-
-        Entity entity2{};
-        entity2.id = index * 2;
-        entity2.mesh = std::make_shared<Mesh>(wallpaper);
-        entity2.translation = { index * 2.0f , 0.0f, 0.0f };
-        entity2.scale = { 1.0f, 1.0f, 1.0f };
-
-        addMeshMutex.lock();
-        entitiesLoaded.push_back(entity1);
-        entitiesLoaded.push_back(entity2);
-        addMeshMutex.unlock();
-    };
-
-    std::vector<uint32_t> meshIndices(numberOfMeshes);
-    std::iota(meshIndices.begin(), meshIndices.end(), 0);
-
-    std::for_each(
-        std::execution::par,
-        meshIndices.begin(),
-        meshIndices.end(),
-        asyncLoadMeshInfoBuffer);
-    Logger::Log(LogLevel::Info, "Loading %d objects into buffer", numberOfMeshes);
-    for (Entity &entityLoaded : entitiesLoaded)
-    {
-        drawEngine->LoadEntity(entityLoaded);
-    }
-    Logger::Log(LogLevel::Info, "Finished loading %d objects", numberOfMeshes);
-
+    // Load any resources that need to be loaded regardless of the game state
+    // (ex. sky, sun, etc.)
     Logger::Log(LogLevel::Info, "Loading skybox into buffer");
     Image skyBoxImage("sky.bmp");
     CubeMap cubeMap{};
@@ -145,9 +64,23 @@ void Renderer::LoadScene()
     }
     drawEngine->LoadCubeMap(cubeMap);
     Logger::Log(LogLevel::Info, "Finished loading skybox into buffer");
+}
+
+void Renderer::LoadBlock(Terrain &terrain, std::vector<Entity> &entities)
+{
+    Logger::Log(LogLevel::Info, "Loading %d objects into buffer", entities.size());
+    for (Entity &entityLoaded : entities)
+    {
+        drawEngine->LoadEntity(entityLoaded);
+    }
+    Logger::Log(LogLevel::Info, "Finished loading %d objects", entities.size());
 
     Logger::Log(LogLevel::Info, "Loading terrain into buffer");
-    Terrain loadedTerrain = terrainFuture.get();
-    drawEngine->LoadTerrain(loadedTerrain);
+    drawEngine->LoadTerrain(terrain);
     Logger::Log(LogLevel::Info, "Finished loading terrain into buffer");
+}
+
+void Renderer::UnloadEntities(uint32_t blockId)
+{
+
 }
