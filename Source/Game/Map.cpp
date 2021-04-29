@@ -1,5 +1,6 @@
 #include <optional>
 
+#include "Common/HandledThread.h"
 #include "Config/ConfigReader.h"
 #include "Config/MapConfig.h"
 #include "Engine/Image.h"
@@ -35,7 +36,7 @@ MapLoader::~MapLoader()
 {
     if (loadBlockThread != nullptr)
     {
-        loadBlockThread->join();
+        loadBlockThread->Join();
     }
 }
 
@@ -60,7 +61,7 @@ MapBlockResources MapLoader::PollLoadedResources()
 
 void MapLoader::StartLoadBlocksThread()
 {
-    loadBlockThread = std::make_unique<std::thread>([&]()
+    loadBlockThread = std::make_unique<HandledThread>([&]()
         {
             while (!shouldTerminate)
             {
@@ -144,6 +145,10 @@ void MapLoader::StartLoadBlocksThread()
                     readyToBuffer = true;
                 }
             }
+        },
+        [&]()
+        {
+            TerminateLoadBlocksThread();
         });
 }
 

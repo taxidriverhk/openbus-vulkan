@@ -98,6 +98,8 @@ private:
     std::unordered_set<MapBlock> loadedBlocks;
 };
 
+class HandledThread;
+
 class MapLoader
 {
 public:
@@ -126,6 +128,6 @@ private:
 
     bool shouldTerminate;
     std::mutex loadQueueMutex;
-    std::unique_ptr<std::thread> loadBlockThread;
+    std::unique_ptr<HandledThread> loadBlockThread;
     std::queue<MapBlockPosition> mapBlockLoadQueue;
 };

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <thread>
-
 #include <QMainWindow>
 #include <QtWidgets>
 
@@ -9,6 +7,7 @@
 #include "Common/Util.h"
 
 struct GameSessionConfig;
+class HandledThread;
 class MapList;
 class LogViewer;
 
@@ -21,6 +20,9 @@ public:
     ~MainWindow();
 
     void Open();
+
+Q_SIGNALS:
+    void GameThreadError();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -37,7 +39,7 @@ private:
     void StartButtonClicked();
 
     GameSessionConfig startConfig;
-    std::unique_ptr<std::thread> gameThread;
+    std::unique_ptr<HandledThread> gameThread;
     std::unique_ptr<Game> game;
 
     std::unique_ptr<QWidget> mainLayout;

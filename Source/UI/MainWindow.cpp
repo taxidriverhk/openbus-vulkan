@@ -1,3 +1,4 @@
+#include "Common/HandledThread.h"
 #include "Config/GameConfig.h"
 #include "MapList.h"
 #include "MessageDialog.h"
@@ -47,6 +48,7 @@ MainWindow::MainWindow()
     connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
     connect(startAction.get(), &QAction::triggered, this, &MainWindow::StartButtonClicked);
     connect(shutdownAction.get(), &QAction::triggered, this, &MainWindow::ShutdownButtonClicked);
+    connect(this, &MainWindow::GameThreadError, this, &MainWindow::EndGame);
 }
 
 MainWindow::~MainWindow()
@@ -69,16 +71,16 @@ void MainWindow::EndGame()
     if (game != nullptr)
     {
         game->SetShouldEndGame(true);
-        gameThread->join();
+        gameThread->Join();
     }
 
-    startAction->setDisabled(false);
-    shutdownAction->setDisabled(true);
+    EnableStartButton();
 }
 
 void MainWindow::EnableStartButton()
 {
     startAction->setDisabled(false);
+    shutdownAction->setDisabled(true);
 }
 
 void MainWindow::ExitButtonClicked()
@@ -100,10 +102,14 @@ void MainWindow::StartButtonClicked()
     if (mapList->GetSelectedMapFile(mapPath))
     {
         startConfig.mapConfigPath = mapPath;
-        gameThread = std::make_unique<std::thread>([&]
+        gameThread = std::make_unique<HandledThread>([&]()
             {
                 game = std::make_unique<Game>();
                 game->Start(startConfig);
+            },
+            [&]()
+            {
+                GameThreadError();
             });
     }
     else
