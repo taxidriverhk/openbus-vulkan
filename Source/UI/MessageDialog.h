@@ -22,7 +22,10 @@ class MessageDialog
 {
 public:
     MessageDialog();
-    MessageDialogResult ShowMessage(MessageDialogType type, std::string message);
+    MessageDialogResult ShowMessage(
+        MessageDialogType type,
+        const std::string &message,
+        const std::string &details = "");
 
 private:
     static constexpr int DIALOG_MIN_WIDTH = 500;

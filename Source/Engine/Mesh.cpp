@@ -29,7 +29,7 @@ bool MeshLoader::LoadFromFile(const std::string filename, Mesh &mesh)
     if (scene == nullptr)
     {
         const char *importError = importer.GetErrorString();
-        Logger::Log(LogLevel::Error, "Failed to load mesh from file %s: %s", filename.c_str(), importError);
+        Logger::Log(LogLevel::Error, "Failed to load mesh from file {}: {}", filename.c_str(), importError);
         return false;
     }
 

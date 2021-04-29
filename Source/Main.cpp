@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 
 #include "Common/Logger.h"
+#include "UI/MessageDialog.h"
 #include "UI/MainWindow.h"
 
 int main(int argc, char *argv[])
@@ -17,6 +18,11 @@ int main(int argc, char *argv[])
     catch (const std::exception& ex)
     {
         Logger::Log(LogLevel::Error, ex.what());
+        MessageDialog errorMessageBox;
+        errorMessageBox.ShowMessage(
+            MessageDialogType::Fatal,
+            "The program encounters a fatal error and must exit, check the error below for details.",
+            ex.what());
         return EXIT_FAILURE;
     }
 }

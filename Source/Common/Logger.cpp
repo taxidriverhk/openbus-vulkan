@@ -1,6 +1,5 @@
 #include <cstring>
 
-#include <plog/Log.h>
 #include <plog/Init.h>
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Initializers/RollingFileInitializer.h>
@@ -44,59 +43,6 @@ namespace plog
 static plog::InMemoryAppender<plog::TxtFormatterUtcTime> inMemoryAppender;
 
 bool Logger::isInitialized = false;
-
-void Logger::Log(const LogLevel level, const char *format, ...)
-{
-    if (!isInitialized)
-    {
-        Initialize();
-        isInitialized = true;
-    }
-
-    va_list args;
-    va_start(args, format);
-
-    size_t bufferSize = snprintf(NULL, 0, format, args);
-    char *buffer = new char[bufferSize + 1];
-
-    vsprintf_s(buffer, bufferSize + 1, format, args);
-    std::string formatted(buffer);
-
-    if (level == LogLevel::Fatal)
-    {
-        PLOG_FATAL << formatted;
-    }
-    else if (level == LogLevel::Error)
-    {
-        PLOG_ERROR << formatted;
-    }
-    else if (level == LogLevel::Warning)
-    {
-        PLOG_WARNING << formatted;
-    }
-    else if (level == LogLevel::Info)
-    {
-        PLOG_INFO << formatted;
-    }
-    else if (level == LogLevel::Debug)
-    {
-        PLOG_DEBUG << formatted;
-    }
-
-    delete[] buffer;
-    va_end(args);
-}
-
-void Logger::Log(const LogLevel level, std::string message, ...)
-{
-    const char *format = message.c_str();
-    va_list args;
-    va_start(args, format);
-
-    Log(level, format, args);
-
-    va_end(args);
-}
 
 std::wstring Logger::GetJoinedMessage()
 {

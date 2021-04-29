@@ -1,3 +1,5 @@
+#include <fmt/core.h>
+
 #include "Util.h"
 
 std::string Util::FormatWindowTitle(const std::string &subTitle)

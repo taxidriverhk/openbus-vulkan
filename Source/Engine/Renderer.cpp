@@ -65,12 +65,12 @@ void Renderer::LoadBackground()
 
 void Renderer::LoadBlock(Terrain &terrain, std::vector<Entity> &entities)
 {
-    Logger::Log(LogLevel::Info, "Loading %d objects into buffer", entities.size());
+    Logger::Log(LogLevel::Info, "Loading {} objects into buffer", entities.size());
     for (Entity &entityLoaded : entities)
     {
         drawEngine->LoadEntity(entityLoaded);
     }
-    Logger::Log(LogLevel::Info, "Finished loading %d objects", entities.size());
+    Logger::Log(LogLevel::Info, "Finished loading {} objects", entities.size());
 
     Logger::Log(LogLevel::Info, "Loading terrain into buffer");
     drawEngine->LoadTerrain(terrain);

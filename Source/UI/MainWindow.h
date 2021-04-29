@@ -36,7 +36,7 @@ private:
     void ShutdownButtonClicked();
     void StartButtonClicked();
 
-    std::unique_ptr<GameSessionConfig> startConfig;
+    GameSessionConfig startConfig;
     std::unique_ptr<std::thread> gameThread;
     std::unique_ptr<Game> game;
 

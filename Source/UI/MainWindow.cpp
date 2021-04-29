@@ -99,12 +99,11 @@ void MainWindow::StartButtonClicked()
     std::string mapPath;
     if (mapList->GetSelectedMapFile(mapPath))
     {
-        startConfig = std::make_unique<GameSessionConfig>();
-        startConfig->mapConfigPath = mapPath;
+        startConfig.mapConfigPath = mapPath;
         gameThread = std::make_unique<std::thread>([&]
             {
                 game = std::make_unique<Game>();
-                game->Start(*startConfig);
+                game->Start(startConfig);
             });
     }
     else
