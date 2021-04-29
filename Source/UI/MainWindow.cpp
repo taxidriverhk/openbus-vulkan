@@ -1,3 +1,6 @@
+#include "Config/GameConfig.h"
+#include "MapList.h"
+#include "MessageDialog.h"
 #include "LogViewer.h"
 #include "MainWindow.h"
 
@@ -6,9 +9,13 @@ MainWindow::MainWindow()
     resize(WINDOW_WIDTH, WINDOW_HEIGHT);
     setWindowTitle(Util::FormatWindowTitle("Main Window").c_str());
 
-    mainLayout = std::make_unique<QMainWindow>();
+    mainLayout = std::make_unique<QWidget>();
+    gridLayout = std::make_unique<QGridLayout>(this);
+
+    mainLayout->setLayout(gridLayout.get());
 
     startAction = std::make_unique<QAction>("Start", this);
+    startAction->setEnabled(false);
     shutdownAction = std::make_unique<QAction>("Shutdown", this);
     shutdownAction->setEnabled(false);
     exitAction = std::make_unique<QAction>("Exit", this);
@@ -23,12 +30,20 @@ MainWindow::MainWindow()
 
     gameScreen = std::make_unique<QDockWidget>();
     gameScreen->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
-    mainLayout->addDockWidget(Qt::TopDockWidgetArea, gameScreen.get());
+    gridLayout->setRowStretch(0, 15);
+    gridLayout->addWidget(gameScreen.get(), 0, 0);
+
+    mapList = std::make_unique<MapList>();
+    mapList->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
+    gridLayout->setRowStretch(1, 50);
+    gridLayout->addWidget(mapList.get(), 1, 0);
 
     logViewer = std::make_unique<LogViewer>();
     logViewer->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
-    mainLayout->addDockWidget(Qt::BottomDockWidgetArea, logViewer.get());
+    gridLayout->setRowStretch(2, 35);
+    gridLayout->addWidget(logViewer.get(), 2, 0);
 
+    connect(mapList.get(), &MapList::MapListItemSelected, this, &MainWindow::EnableStartButton);
     connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
     connect(startAction.get(), &QAction::triggered, this, &MainWindow::StartButtonClicked);
     connect(shutdownAction.get(), &QAction::triggered, this, &MainWindow::ShutdownButtonClicked);
@@ -61,6 +76,11 @@ void MainWindow::EndGame()
     shutdownAction->setDisabled(true);
 }
 
+void MainWindow::EnableStartButton()
+{
+    startAction->setDisabled(false);
+}
+
 void MainWindow::ExitButtonClicked()
 {
     close();
@@ -76,9 +96,21 @@ void MainWindow::StartButtonClicked()
     startAction->setDisabled(true);
     shutdownAction->setDisabled(false);
     
-    gameThread = std::make_unique<std::thread>([&]
-        {
-            game = std::make_unique<Game>();
-            game->Start();
-        });
+    std::string mapPath;
+    if (mapList->GetSelectedMapFile(mapPath))
+    {
+        startConfig = std::make_unique<GameSessionConfig>();
+        startConfig->mapConfigPath = mapPath;
+        gameThread = std::make_unique<std::thread>([&]
+            {
+                game = std::make_unique<Game>();
+                game->Start(*startConfig);
+            });
+    }
+    else
+    {
+        MessageDialog mapNotFoundDialog;
+        mapNotFoundDialog.ShowMessage(MessageDialogType::Alert, "Unable to find the map file");
+        EndGame();
+    }
 }

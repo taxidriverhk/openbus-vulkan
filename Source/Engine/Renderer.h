@@ -27,8 +27,6 @@ public:
 
 private:
     Camera *camera;
-    MeshLoader meshLoader;
-    TerrainLoader terrainLoader;
     std::unique_ptr<DrawEngine> drawEngine;
 
     // Need to track the entities loaded, so that they can be unloaded from the buffer

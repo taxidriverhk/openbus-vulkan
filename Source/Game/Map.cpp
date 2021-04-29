@@ -1,10 +1,13 @@
 #include <optional>
 
+#include "Config/ConfigReader.h"
+#include "Config/MapConfig.h"
 #include "Engine/Image.h"
 #include "Engine/Material.h"
 #include "Map.h"
 
 Map::Map()
+    : currentBlock(nullptr)
 {
 }
 
@@ -12,12 +15,19 @@ Map::~Map()
 {
 }
 
-MapLoader::MapLoader()
+void Map::Load(const std::string &configFile)
+{
+    MapInfoConfig mapConfig;
+    ConfigReader::ReadConfig(configFile, mapConfig);
+}
+
+MapLoader::MapLoader(const MapInfoConfig &mapConfig)
     : meshLoader(),
       terrainLoader(1000, 10, 50, 50),
       loadProgress(0),
       readyToBuffer(false),
-      shouldTerminate(false)
+      shouldTerminate(false),
+      mapConfig(mapConfig)
 {
 }
 
@@ -29,10 +39,10 @@ MapLoader::~MapLoader()
     }
 }
 
-void MapLoader::AddBlockToLoad(MapBlock &mapBlock)
+void MapLoader::AddBlockToLoad(const MapBlockPosition &mapBlockPosition)
 {
     loadQueueMutex.lock();
-    mapBlockLoadQueue.push(mapBlock);
+    mapBlockLoadQueue.push(mapBlockPosition);
     loadQueueMutex.unlock();
 }
 
@@ -61,16 +71,16 @@ void MapLoader::StartLoadBlocksThread()
                 }
 
                 // Poll one map block load request from the queue at a time, and load the resources
-                std::optional<MapBlock> mapBlockToLoad = {};
+                std::optional<MapBlockPosition> mapBlockPosition = {};
                 loadQueueMutex.lock();
                 if (!mapBlockLoadQueue.empty())
                 {
-                    mapBlockToLoad = mapBlockLoadQueue.front();
+                    mapBlockPosition = mapBlockLoadQueue.front();
                     mapBlockLoadQueue.pop();
                 }
                 loadQueueMutex.unlock();
 
-                if (mapBlockToLoad.has_value())
+                if (mapBlockPosition.has_value())
                 {
                     // TODO: hard-coded the things to load for now
                     MapBlockResources mapBlockResource;

@@ -1,6 +1,7 @@
 #include "Common/Util.h"
 #include "Common/Logger.h"
 #include "Common/Timer.h"
+#include "Config/ConfigReader.h"
 #include "Engine/Camera.h"
 #include "Engine/Screen.h"
 #include "Engine/Renderer.h"
@@ -16,7 +17,6 @@ Game::Game()
     std::string screenTitle = Util::FormatWindowTitle("Game Screen");
 
     controlManager = std::make_unique<ControlManager>();
-    mapLoader = std::make_unique<MapLoader>();
 
     camera = std::make_unique<Camera>(SCREEN_WIDTH, SCREEN_HEIGHT);
     screen = std::make_unique<Screen>(SCREEN_WIDTH, SCREEN_HEIGHT, screenTitle);
@@ -54,10 +54,16 @@ bool Game::ShouldQuit()
     return shouldEndGame || screen->ShouldClose();
 }
 
-void Game::Start()
+void Game::Start(const GameSessionConfig &startConfig)
 {
+    gameStartConfig = startConfig;
     gameStarted = true;
     shouldEndGame = false;
+
+    MapInfoConfig mapInfoConfig;
+    ConfigReader::ReadConfig(startConfig.mapConfigPath, mapInfoConfig);
+    mapLoader = std::make_unique<MapLoader>(mapInfoConfig);
+
     RunMainLoop();
 }
 
@@ -86,9 +92,8 @@ void Game::RunMainLoop()
     screen->Show();
 
     // TODO: test code to make sure the async resource loading is working
-    MapBlock mapBlock{};
-    mapBlock.id = 1;
-    mapLoader->AddBlockToLoad(mapBlock);
+    MapBlockPosition mapBlockPosition{};
+    mapLoader->AddBlockToLoad(mapBlockPosition);
 
     Logger::Log(LogLevel::Info, "Entering the rendering loop");
     while (!ShouldQuit())

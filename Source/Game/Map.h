@@ -9,6 +9,7 @@
 #include <vector>
 #include <unordered_set>
 
+#include "Config/MapConfig.h"
 #include "Engine/Entity.h"
 #include "Engine/Mesh.h"
 #include "Engine/Terrain.h"
@@ -89,6 +90,8 @@ public:
     Map();
     ~Map();
 
+    void Load(const std::string &configFile);
+
 private:
     std::string name;
     MapBlock *currentBlock;
@@ -98,19 +101,21 @@ private:
 class MapLoader
 {
 public:
-    MapLoader();
+    MapLoader(const MapInfoConfig &mapConfig);
     ~MapLoader();
 
     int GetProgress() const { return loadProgress; }
     bool IsReadyToBuffer() const { return readyToBuffer; }
 
-    void AddBlockToLoad(MapBlock &mapBlock);
+    void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
     MapBlockResources PollLoadedResources();
     void StartLoadBlocksThread();
     void TerminateLoadBlocksThread();
 
 private:
     static constexpr uint32_t WAIT_TIME_SECONDS = 10;
+
+    MapInfoConfig mapConfig;
 
     MeshLoader meshLoader;
     TerrainLoader terrainLoader;
@@ -122,5 +127,5 @@ private:
     bool shouldTerminate;
     std::mutex loadQueueMutex;
     std::unique_ptr<std::thread> loadBlockThread;
-    std::queue<MapBlock> mapBlockLoadQueue;
+    std::queue<MapBlockPosition> mapBlockLoadQueue;
 };

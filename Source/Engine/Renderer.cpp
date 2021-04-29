@@ -16,10 +16,7 @@
 
 Renderer::Renderer(Camera *camera)
     : camera(camera),
-      drawEngine(),
-      meshLoader(),
-      // TODO: read from configuration
-      terrainLoader(1000, 10, 50, 50)
+      drawEngine()
 {
 }
 

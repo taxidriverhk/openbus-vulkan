@@ -13,6 +13,7 @@ public:
     ~LogViewer();
 
 private:
+    static constexpr char *TITLE = "Log Viewer";
     static constexpr int MAX_LINE_COUNT = 500;
     static constexpr int UPDATE_INTERVAL_MILLIS = 1 * 1000;
 

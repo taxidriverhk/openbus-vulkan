@@ -13,6 +13,7 @@ LogViewer::LogViewer()
     updateTimer->start(UPDATE_INTERVAL_MILLIS);
     connect(updateTimer.get(), &QTimer::timeout, this, &LogViewer::Update);
 
+    setWindowTitle(TITLE);
     setWidget(logTextBox.get());
 }
 

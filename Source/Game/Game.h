@@ -3,6 +3,8 @@
 #include <memory>
 #include <thread>
 
+#include "Config/GameConfig.h"
+
 class ControlManager;
 class MapLoader;
 class Camera;
@@ -19,7 +21,7 @@ public:
     bool GetGameStarted() const { return gameStarted; }
 
     void SetShouldEndGame(const bool &shouldEndGame);
-    void Start();
+    void Start(const GameSessionConfig &startConfig);
 
 private:
     static constexpr int SCREEN_WIDTH = 1280;
@@ -37,6 +39,8 @@ private:
     void RunGameLoop();
     void HandleInputCommands(float deltaTime);
     void UpdateState(float deltaTime);
+
+    GameSessionConfig gameStartConfig;
 
     bool gameStarted;
     bool shouldEndGame;

@@ -8,6 +8,8 @@
 #include "Game/Game.h"
 #include "Common/Util.h"
 
+struct GameSessionConfig;
+class MapList;
 class LogViewer;
 
 class MainWindow : public QMainWindow
@@ -28,14 +30,18 @@ private:
     static constexpr int WINDOW_HEIGHT = 768;
 
     void EndGame();
+
+    void EnableStartButton();
     void ExitButtonClicked();
     void ShutdownButtonClicked();
     void StartButtonClicked();
 
+    std::unique_ptr<GameSessionConfig> startConfig;
     std::unique_ptr<std::thread> gameThread;
     std::unique_ptr<Game> game;
 
-    std::unique_ptr<QMainWindow> mainLayout;
+    std::unique_ptr<QWidget> mainLayout;
+    std::unique_ptr<QGridLayout> gridLayout;
 
     QMenu *gameMenu;
     std::unique_ptr<QAction> startAction;
@@ -44,4 +50,5 @@ private:
 
     std::unique_ptr<QDockWidget> gameScreen;
     std::unique_ptr<LogViewer> logViewer;
+    std::unique_ptr<MapList> mapList;
 };
