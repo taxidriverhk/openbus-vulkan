@@ -1,5 +1,6 @@
 #include "Common/HandledThread.h"
 #include "Config/GameConfig.h"
+#include "GameScreen.h"
 #include "MapList.h"
 #include "MessageDialog.h"
 #include "LogViewer.h"
@@ -15,21 +16,15 @@ MainWindow::MainWindow()
 
     mainLayout->setLayout(gridLayout.get());
 
-    startAction = std::make_unique<QAction>("Start", this);
-    startAction->setEnabled(false);
-    shutdownAction = std::make_unique<QAction>("Shutdown", this);
-    shutdownAction->setEnabled(false);
     exitAction = std::make_unique<QAction>("Exit", this);
 
     gameMenu = menuBar()->addMenu("Game");
-    gameMenu->addAction(startAction.get());
-    gameMenu->addAction(shutdownAction.get());
     gameMenu->addSeparator();
     gameMenu->addAction(exitAction.get());
 
     setCentralWidget(mainLayout.get());
 
-    gameScreen = std::make_unique<QDockWidget>();
+    gameScreen = std::make_unique<GameScreen>();
     gameScreen->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
     gridLayout->setRowStretch(0, 15);
     gridLayout->addWidget(gameScreen.get(), 0, 0);
@@ -44,10 +39,10 @@ MainWindow::MainWindow()
     gridLayout->setRowStretch(2, 35);
     gridLayout->addWidget(logViewer.get(), 2, 0);
 
+    connect(gameScreen.get(), &GameScreen::StartButtonClicked, this, &MainWindow::StartButtonClicked);
+    connect(gameScreen.get(), &GameScreen::StopButtonClicked, this, &MainWindow::ShutdownButtonClicked);
     connect(mapList.get(), &MapList::MapListItemSelected, this, &MainWindow::EnableStartButton);
     connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
-    connect(startAction.get(), &QAction::triggered, this, &MainWindow::StartButtonClicked);
-    connect(shutdownAction.get(), &QAction::triggered, this, &MainWindow::ShutdownButtonClicked);
     connect(this, &MainWindow::GameThreadError, this, &MainWindow::EndGame);
 }
 
@@ -79,8 +74,8 @@ void MainWindow::EndGame()
 
 void MainWindow::EnableStartButton()
 {
-    startAction->setDisabled(false);
-    shutdownAction->setDisabled(true);
+    gameScreen->SetStartButtonEnabled(true);
+    gameScreen->SetStopButtonEnabled(false);
 }
 
 void MainWindow::ExitButtonClicked()
@@ -95,8 +90,8 @@ void MainWindow::ShutdownButtonClicked()
 
 void MainWindow::StartButtonClicked()
 {
-    startAction->setDisabled(true);
-    shutdownAction->setDisabled(false);
+    gameScreen->SetStartButtonEnabled(false);
+    gameScreen->SetStopButtonEnabled(true);
     
     std::string mapPath;
     if (mapList->GetSelectedMapFile(mapPath))

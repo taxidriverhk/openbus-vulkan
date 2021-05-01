@@ -8,6 +8,8 @@
 
 struct GameSessionConfig;
 class HandledThread;
+
+class GameScreen;
 class MapList;
 class LogViewer;
 
@@ -46,11 +48,9 @@ private:
     std::unique_ptr<QGridLayout> gridLayout;
 
     QMenu *gameMenu;
-    std::unique_ptr<QAction> startAction;
-    std::unique_ptr<QAction> shutdownAction;
     std::unique_ptr<QAction> exitAction;
 
-    std::unique_ptr<QDockWidget> gameScreen;
+    std::unique_ptr<GameScreen> gameScreen;
     std::unique_ptr<LogViewer> logViewer;
     std::unique_ptr<MapList> mapList;
 };
