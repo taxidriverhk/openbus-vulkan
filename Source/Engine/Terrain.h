@@ -20,12 +20,14 @@ struct Terrain
 class TerrainLoader
 {
 public:
-    TerrainLoader(int size, int gridSize, float textureSize, float heightRange);
+    TerrainLoader(int size, int gridSize, float heightRange);
     ~TerrainLoader();
 
     bool LoadFromHeightMap(
-        const std::string filename,
+        const std::string &filename,
         const glm::vec3 offset,
+        float textureSize,
+        const std::string &textureFilename,
         Terrain &terrain);
 
 private:
@@ -36,6 +38,5 @@ private:
 
     int size;
     int gridSize;
-    float textureSize;
     float heightRange;
 };

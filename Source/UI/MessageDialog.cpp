@@ -10,7 +10,6 @@ MessageDialogResult MessageDialog::ShowMessage(
     const std::string &message,
     const std::string &details)
 {
-    // TODO: support more types of messages
     if (type == MessageDialogType::Alert)
     {
         messageBox.setIcon(QMessageBox::Icon::Warning);

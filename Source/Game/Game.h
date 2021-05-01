@@ -4,8 +4,10 @@
 #include <thread>
 
 #include "Config/GameConfig.h"
+#include "Config/SettingsConfig.h"
 
 class ControlManager;
+class Map;
 class MapLoader;
 class Camera;
 class Screen;
@@ -29,7 +31,8 @@ private:
 
     void Cleanup();
     void InitializeComponents();
-    void InitializeState();
+    void InitializeSettings(const GameSessionConfig &startConfig);
+    void InitializeState(const GameSessionConfig &startConfig);
 
     bool ShouldQuit();
 
@@ -40,6 +43,7 @@ private:
     void HandleInputCommands(float deltaTime);
     void UpdateState(float deltaTime);
 
+    GameSettings gameSettings;
     GameSessionConfig gameStartConfig;
 
     bool gameStarted;
@@ -48,6 +52,7 @@ private:
     std::atomic<bool> readyToRender;
 
     std::unique_ptr<ControlManager> controlManager;
+    std::unique_ptr<Map> map;
     std::unique_ptr<MapLoader> mapLoader;
 
     std::unique_ptr<Camera> camera;

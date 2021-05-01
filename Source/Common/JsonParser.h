@@ -11,7 +11,14 @@ public:
     template<typename T>
     static bool DeserializeJsonString(std::istringstream &jsonStringStream, T &parsedObject)
     {
-        struct_mapping::map_json_to_struct(parsedObject, jsonStringStream);
+        try
+        {
+            struct_mapping::map_json_to_struct(parsedObject, jsonStringStream);
+        }
+        catch (const std::exception)
+        {
+            return false;
+        }
         return true;
     }
     
@@ -19,7 +26,14 @@ public:
     static bool SerializeJsonString(const T &jsonObject, std::string &serializedString)
     {
         std::ostringstream jsonStringStream;
-        struct_mapping::map_struct_to_json(jsonObject, jsonStringStream);
+        try
+        {
+            struct_mapping::map_struct_to_json(jsonObject, jsonStringStream);
+        }
+        catch (const std::exception)
+        {
+            return false;
+        }
         serializedString = jsonStringStream.str();
         return true;
     }

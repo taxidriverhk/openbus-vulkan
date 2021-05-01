@@ -1,3 +1,4 @@
+#include "Common/HandledThread.h"
 #include "Common/Util.h"
 #include "Common/Logger.h"
 #include "Common/Timer.h"
@@ -40,8 +41,18 @@ void Game::InitializeComponents()
     renderer->CreateContext(screen.get());
 }
 
-void Game::InitializeState()
+void Game::InitializeSettings(const GameSessionConfig &startConfig)
 {
+}
+
+void Game::InitializeState(const GameSessionConfig &startConfig)
+{
+    // TODO: hard-coded game settings here for now
+    gameSettings.mapLoadSettings.maxAdjacentBlocks = 1;
+    // Load the map and its block loader
+    MapLoadSettings &mapLoadSettings = gameSettings.mapLoadSettings;
+    map = std::make_unique<Map>(startConfig.mapConfigPath);
+    mapLoader = std::make_unique<MapLoader>(map.get(), mapLoadSettings);
 }
 
 void Game::SetShouldEndGame(const bool &shouldEndGame)
@@ -60,9 +71,14 @@ void Game::Start(const GameSessionConfig &startConfig)
     gameStarted = true;
     shouldEndGame = false;
 
-    MapInfoConfig mapInfoConfig;
-    ConfigReader::ReadConfig(startConfig.mapConfigPath, mapInfoConfig);
-    mapLoader = std::make_unique<MapLoader>(mapInfoConfig);
+    Logger::Log(LogLevel::Info, "Initializing game settings");
+    InitializeSettings(startConfig);
+
+    Logger::Log(LogLevel::Info, "Initializing game state");
+    InitializeState(startConfig);
+
+    Logger::Log(LogLevel::Info, "Initializing graphics context");
+    InitializeComponents();
 
     RunMainLoop();
 }
@@ -75,25 +91,23 @@ void Game::RenderScene()
 
 void Game::RunMainLoop()
 {
-    Logger::Log(LogLevel::Info, "Initializing graphics context");
-    InitializeComponents();
-
-    Logger::Log(LogLevel::Info, "Initializing game state");
-    InitializeState();
-
     Logger::Log(LogLevel::Info, "Creating a separate thread for game logic loop");
-    std::thread gameLoopThread(&Game::RunGameLoop, this);
+    HandledThread gameLoopThread(
+        [&]()
+        {
+            RunGameLoop();
+        },
+        [&]() 
+        {
+            SetShouldEndGame(true);
+        });
 
     Logger::Log(LogLevel::Info, "Creating a separate thread for loading resources");
     mapLoader->StartLoadBlocksThread();
 
-    bool loadedScene = false;
+    Logger::Log(LogLevel::Info, "Loading uniform background");
     renderer->LoadBackground();
     screen->Show();
-
-    // TODO: test code to make sure the async resource loading is working
-    MapBlockPosition mapBlockPosition{};
-    mapLoader->AddBlockToLoad(mapBlockPosition);
 
     Logger::Log(LogLevel::Info, "Entering the rendering loop");
     while (!ShouldQuit())
@@ -101,12 +115,19 @@ void Game::RunMainLoop()
         // Read any input events from the SFML screen and then queue them
         // so that the game thread can process them
         controlManager->QueueEvents(screen->PollEvent());
+        // Update the block position based on the camera position
+        // so that it knows if blocks should be added/removed
+        map->UpdateBlockPosition(camera->GetPosition());
 
         // Load the resources into buffer if found
         if (mapLoader->IsReadyToBuffer())
         {
             MapBlockResources mapBlockResource = mapLoader->PollLoadedResources();
             renderer->LoadBlock(mapBlockResource.terrain, mapBlockResource.entities);
+        }
+        else
+        {
+            mapLoader->AddBlocksToLoad();
         }
 
         // Redraw the scene only if the game thread has completed its updates
@@ -116,7 +137,7 @@ void Game::RunMainLoop()
         }
     }
 
-    gameLoopThread.join();
+    gameLoopThread.Join();
     Cleanup();
     gameStarted = false;
 }
@@ -124,6 +145,7 @@ void Game::RunMainLoop()
 void Game::RunGameLoop()
 {
     // TODO: could be read from configuration, this is not the drawing framerate
+    // but the framerate for updating physics, game state, etc.
     int targetFrameRate = 120;
     float timePerFrame = 1 / static_cast<float>(targetFrameRate);
 

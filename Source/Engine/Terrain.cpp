@@ -5,10 +5,9 @@
 #include "Terrain.h"
 #include "Vertex.h"
 
-TerrainLoader::TerrainLoader(int size, int gridSize, float textureSize, float heightRange)
+TerrainLoader::TerrainLoader(int size, int gridSize, float heightRange)
     : size(size),
       gridSize(gridSize),
-      textureSize(textureSize),
       heightRange(heightRange)
 {
 }
@@ -18,8 +17,10 @@ TerrainLoader::~TerrainLoader()
 }
 
 bool TerrainLoader::LoadFromHeightMap(
-    const std::string filename,
+    const std::string &filename,
     const glm::vec3 offset,
+    float textureSize,
+    const std::string &textureFilename,
     Terrain &terrain)
 {
     Image image;
@@ -84,6 +85,13 @@ bool TerrainLoader::LoadFromHeightMap(
         }
     }
 
+    std::shared_ptr<Image> textureImage = std::make_shared<Image>();
+    if (!textureImage->Load(textureFilename, ImageColor::ColorWithAlpha))
+    {
+        return false;
+    }
+    terrain.texture = textureImage;
+
     return true;
 }
 
@@ -102,9 +110,9 @@ glm::vec3 TerrainLoader::CalculateNormal(std::vector<Vertex> &vertices, uint32_t
 {
     uint32_t baseRowOffset = y * grids + x;
     float leftHeight = x == 0 ? 0 : vertices[baseRowOffset - 1].position.z;
-    float rightHeight = x == grids - 1 ? 0 : vertices[baseRowOffset + 1].position.z;
+    float rightHeight = x == grids - 1 ? 0 : vertices[static_cast<size_t>(baseRowOffset) + 1].position.z;
     float upHeight = y == 0 ? 0 : vertices[baseRowOffset - grids].position.z;
-    float downHeight = y == grids - 1 ? 0 : vertices[baseRowOffset + grids].position.z;
+    float downHeight = y == grids - 1 ? 0 : vertices[static_cast<size_t>(baseRowOffset) + grids].position.z;
 
     glm::vec3 normal = { leftHeight - rightHeight, downHeight - upHeight, 2.0f };
     return glm::normalize(normal);

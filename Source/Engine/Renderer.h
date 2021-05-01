@@ -29,6 +29,6 @@ private:
     Camera *camera;
     std::unique_ptr<DrawEngine> drawEngine;
 
-    // Need to track the entities loaded, so that they can be unloaded from the buffer
+    // Used to track the entities loaded, so that they can be unloaded from the buffer
     std::unordered_map<uint32_t, std::list<uint32_t>> blockIdEntityIdsMap;
 };

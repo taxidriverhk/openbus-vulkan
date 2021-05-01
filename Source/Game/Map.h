@@ -9,11 +9,13 @@
 #include <vector>
 #include <unordered_set>
 
+#include "Config/SettingsConfig.h"
 #include "Config/MapConfig.h"
 #include "Engine/Entity.h"
 #include "Engine/Mesh.h"
 #include "Engine/Terrain.h"
 
+// Dimension of a map block in meters, this should never be changed
 static constexpr int MAP_BLOCK_SIZE = 1000;
 
 struct MapBlockPosition
@@ -87,15 +89,25 @@ struct MapBlockResources
 class Map
 {
 public:
-    Map();
+    Map(const std::string &configFile);
     ~Map();
 
-    void Load(const std::string &configFile);
+    std::string GetConfigFilePath() const { return configFilePath; }
+    MapBlock *GetCurrentBlock() const { return currentBlock; }
+    MapBlock *GetPreviousBlock() const { return previousBlock; }
+
+    void AddLoadedBlock(const MapBlock &mapBlock);
+    bool GetMapBlockFile(const MapBlockPosition &mapBlockPosition, MapBlockFileConfig &mapBlockFile);
+    bool IsBlockLoaded(const MapBlockPosition &mapBlockPosition);
+    void Load();
+    void UpdateBlockPosition(const glm::vec3 &cameraPosition);
 
 private:
-    std::string name;
+    MapBlock *previousBlock;
     MapBlock *currentBlock;
-    std::unordered_set<MapBlock> loadedBlocks;
+    MapInfoConfig mapInfoConfig;
+    std::string configFilePath;
+    std::unordered_map<MapBlockPosition, MapBlock> loadedBlocks;
 };
 
 class HandledThread;
@@ -103,13 +115,13 @@ class HandledThread;
 class MapLoader
 {
 public:
-    MapLoader(const MapInfoConfig &mapConfig);
+    MapLoader(Map *map, const MapLoadSettings &mapLoadSettings);
     ~MapLoader();
 
     int GetProgress() const { return loadProgress; }
     bool IsReadyToBuffer() const { return readyToBuffer; }
 
-    void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
+    void AddBlocksToLoad();
     MapBlockResources PollLoadedResources();
     void StartLoadBlocksThread();
     void TerminateLoadBlocksThread();
@@ -117,7 +129,10 @@ public:
 private:
     static constexpr uint32_t WAIT_TIME_SECONDS = 10;
 
-    MapInfoConfig mapConfig;
+    void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
+
+    Map *map;
+    MapLoadSettings mapLoadSettings;
 
     MeshLoader meshLoader;
     TerrainLoader terrainLoader;

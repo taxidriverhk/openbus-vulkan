@@ -1,5 +1,6 @@
 #include <optional>
 
+#include "Common/FileSystem.h"
 #include "Common/HandledThread.h"
 #include "Config/ConfigReader.h"
 #include "Config/MapConfig.h"
@@ -7,28 +8,67 @@
 #include "Engine/Material.h"
 #include "Map.h"
 
-Map::Map()
-    : currentBlock(nullptr)
+Map::Map(const std::string &configFile)
+    : configFilePath(configFile),
+      currentBlock(nullptr),
+      previousBlock(nullptr)
 {
+    ConfigReader::ReadConfig(configFile, mapInfoConfig);
 }
 
 Map::~Map()
 {
 }
 
-void Map::Load(const std::string &configFile)
+void Map::AddLoadedBlock(const MapBlock &mapBlock)
 {
-    MapInfoConfig mapConfig;
-    ConfigReader::ReadConfig(configFile, mapConfig);
+    loadedBlocks.insert(std::make_pair(mapBlock.position, mapBlock));
 }
 
-MapLoader::MapLoader(const MapInfoConfig &mapConfig)
+bool Map::GetMapBlockFile(const MapBlockPosition &mapBlockPosition, MapBlockFileConfig &mapBlockFile)
+{
+    for (const auto &fileInfo : mapInfoConfig.blockFiles)
+    {
+        if (fileInfo.position.x == mapBlockPosition.x
+            && fileInfo.position.y == mapBlockPosition.y)
+        {
+            mapBlockFile = fileInfo;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Map::IsBlockLoaded(const MapBlockPosition &mapBlockPosition)
+{
+    return false;
+}
+
+void Map::Load()
+{
+}
+
+void Map::UpdateBlockPosition(const glm::vec3 &cameraPosition)
+{
+    // TODO: determine the current block position based on the camera position
+    MapBlockPosition currentBlockPosition{ 0, 0 };
+    // Update the current block, if blocks are different from each other
+    // Then this would trigger blocks addition/removal
+    previousBlock = currentBlock;
+    if (loadedBlocks.count(currentBlockPosition) > 0)
+    {
+        currentBlock = &loadedBlocks[currentBlockPosition];
+    }
+}
+
+MapLoader::MapLoader(Map *map, const MapLoadSettings &mapLoadSettings)
     : meshLoader(),
-      terrainLoader(1000, 10, 50, 50),
+      terrainLoader(MAP_BLOCK_SIZE, 10, 50),
       loadProgress(0),
       readyToBuffer(false),
       shouldTerminate(false),
-      mapConfig(mapConfig)
+      map(map),
+      mapLoadSettings(mapLoadSettings)
 {
 }
 
@@ -37,6 +77,43 @@ MapLoader::~MapLoader()
     if (loadBlockThread != nullptr)
     {
         loadBlockThread->Join();
+    }
+}
+
+void MapLoader::AddBlocksToLoad()
+{
+    int maxAdjacentBlocks = mapLoadSettings.maxAdjacentBlocks;
+    // Treat it as in origin if no block has been loaded yet
+    // (which should only happen in the very beginning)
+    MapBlock *currentBlock = map->GetCurrentBlock();
+    MapBlock *previousBlock = map->GetPreviousBlock();
+    MapBlockPosition currentBlockPosition = currentBlock != nullptr
+        ? currentBlock->position
+        : MapBlockPosition{ 0, 0 };
+    // Perform add block action only if the current block position
+    // is changed
+    if (currentBlock != previousBlock)
+    {
+        // Add all adjacent blocks to load regardless of block loaded/exists
+        // or not, the load block load will be able to determine
+        for (int i = -maxAdjacentBlocks; i <= maxAdjacentBlocks; i++)
+        {
+            for (int j = -maxAdjacentBlocks; j <= maxAdjacentBlocks; j++)
+            {
+                if (i == 0 && j == 0 && currentBlock != nullptr)
+                {
+                    continue;
+                }
+
+                MapBlockPosition positionToAdd{ currentBlockPosition.x + i, currentBlockPosition.y + j };
+                AddBlockToLoad(positionToAdd);
+            }
+        }
+    }
+    // No block has been loaded, so load from origin position
+    else if (currentBlock == nullptr)
+    {
+        AddBlockToLoad(currentBlockPosition);
     }
 }
 
@@ -69,6 +146,7 @@ void MapLoader::StartLoadBlocksThread()
                 if (readyToBuffer)
                 {
                     std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME_SECONDS));
+                    continue;
                 }
 
                 // Poll one map block load request from the queue at a time, and load the resources
@@ -83,14 +161,45 @@ void MapLoader::StartLoadBlocksThread()
 
                 if (mapBlockPosition.has_value())
                 {
+                    // Attempt to load the map block file
+                    // Skip if no matching file is found
+                    MapBlockFileConfig mapBlockFileConfig;
+                    if (!map->GetMapBlockFile(mapBlockPosition.value(), mapBlockFileConfig))
+                    {
+                        continue;
+                    }
+
+                    std::string mapBaseDirectory = FileSystem::GetMapBaseDirectory(map->GetConfigFilePath());
+                    // Load the list of entity files from the map block config file
+                    std::string mapBlockFilePath = FileSystem::GetMapBlockFile(mapBaseDirectory, mapBlockFileConfig.filePath);
+                    MapBlockInfoConfig mapBlockInfoConfig;
+                    if (!ConfigReader::ReadConfig(mapBlockFilePath, mapBlockInfoConfig))
+                    {
+                        continue;
+                    }
+
+                    float mapBlockOffsetX = mapBlockInfoConfig.offset.x * MAP_BLOCK_SIZE,
+                          mapBlockOffsetY = mapBlockInfoConfig.offset.y * MAP_BLOCK_SIZE;
+
+                    const TerrainConfig &terrainConfig = mapBlockInfoConfig.terrain;
+                    std::string heightMapPath = FileSystem::GetHeightMapFile(mapBaseDirectory, terrainConfig.heightMapFilePath);
+                    std::string textureFilePath = FileSystem::GetTextureFile(mapBaseDirectory, terrainConfig.baseTextureFilePath);
+
                     // TODO: hard-coded the things to load for now
                     MapBlockResources mapBlockResource;
                     Terrain &terrain = mapBlockResource.terrain;
                     std::vector<Entity> &entities = mapBlockResource.entities;
 
                     terrain.id = 555;
-                    terrainLoader.LoadFromHeightMap("heightmap.png", glm::vec3(0.0f, 0.0f, 0.0f), terrain);
-                    terrain.texture = std::make_shared<Image>("grass.bmp");
+                    if (!terrainLoader.LoadFromHeightMap(
+                        heightMapPath,
+                        glm::vec3(mapBlockOffsetX, mapBlockOffsetY, 0.0f),
+                        terrainConfig.textureSize,
+                        textureFilePath,
+                        terrain))
+                    {
+                        continue;
+                    }
 
                     uint32_t numberOfMeshes = 10;
                     Material materials[] =
@@ -113,7 +222,7 @@ void MapLoader::StartLoadBlocksThread()
                     if (!meshLoader.LoadFromFile("formula1.obj", formula1)
                         || !meshLoader.LoadFromFile("wallpaper.obj", wallpaper))
                     {
-                        throw std::runtime_error("Failed to load models from files");
+                        continue;
                     }
 
                     for (uint32_t index = 0; index < numberOfMeshes; index++)
