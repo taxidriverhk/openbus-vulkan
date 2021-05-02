@@ -4,7 +4,7 @@
 
 struct TerrainConfig
 {
-    std::string heightMapFilePath;
-    std::string baseTextureFilePath;
+    std::string heightMap;
+    std::string baseTexture;
     float textureSize;
 };

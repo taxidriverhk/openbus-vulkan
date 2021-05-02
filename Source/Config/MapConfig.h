@@ -8,14 +8,14 @@
 struct MapBlockFileConfig
 {
     Vector2DConfig position;
-    std::string filePath;
+    std::string file;
 };
 
 struct MapInfoConfig
 {
     std::string name;
     std::string image;
-    std::vector<MapBlockFileConfig> blockFiles;
+    std::vector<MapBlockFileConfig> blocks;
 };
 
 struct MapBlockInfoConfig

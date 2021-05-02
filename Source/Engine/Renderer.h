@@ -22,7 +22,7 @@ public:
     void DrawScene();
     void CreateContext(Screen *screen);
     void LoadBackground();
-    void LoadBlock(Terrain &terrain, std::vector<Entity> &entities);
+    void LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity> &entities);
     void UnloadEntities(uint32_t blockId);
 
 private:

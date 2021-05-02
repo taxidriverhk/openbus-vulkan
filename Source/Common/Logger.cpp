@@ -1,4 +1,5 @@
 #include <cstring>
+#include <unordered_map>
 
 #include <plog/Init.h>
 #include <plog/Formatters/TxtFormatter.h>
@@ -13,15 +14,38 @@ namespace plog
     {
     public:
         InMemoryAppender()
-            : updated(false)
+            : enableHtml(true),
+              updated(false)
         {
+            severityColorMap.insert(
+                {
+                    { Severity::debug, L"purple" },
+                    { Severity::error, L"red" },
+                    { Severity::fatal, L"red" },
+                    { Severity::info, L"green" },
+                    { Severity::none, L"black" },
+                    { Severity::verbose, L"purple" },
+                    { Severity::warning, L"orange" }
+                });
         }
 
         virtual void write(const Record &record)
         {
             updated = true;
             util::nstring formatted = Formatter::format(record);
-            message.append(formatted);
+            if (enableHtml)
+            {
+                std::wstring htmlFormatted = L"<span style=\"color:"
+                    + severityColorMap[record.getSeverity()]
+                    + L";\">"
+                    + formatted
+                    + L"</span><br />";
+                message.append(htmlFormatted);
+            }
+            else
+            {
+                message.append(formatted);
+            }
         }
 
         std::wstring GetMessage()
@@ -35,6 +59,9 @@ namespace plog
         bool IsUpdated() const { return updated; }
 
     private:
+        bool enableHtml;
+        std::unordered_map<Severity, std::wstring> severityColorMap;
+
         bool updated;
         std::wstring message;
     };

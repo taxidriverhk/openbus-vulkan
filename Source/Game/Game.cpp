@@ -123,7 +123,10 @@ void Game::RunMainLoop()
         if (mapLoader->IsReadyToBuffer())
         {
             MapBlockResources mapBlockResource = mapLoader->PollLoadedResources();
-            renderer->LoadBlock(mapBlockResource.terrain, mapBlockResource.entities);
+            renderer->LoadBlock(
+                mapBlockResource.blockId,
+                mapBlockResource.terrain,
+                mapBlockResource.entities);
         }
         else
         {

@@ -1,9 +1,13 @@
 #include <optional>
+#include <unordered_map>
 
 #include "Common/FileSystem.h"
 #include "Common/HandledThread.h"
+#include "Common/Identifier.h"
+#include "Common/Logger.h"
 #include "Config/ConfigReader.h"
 #include "Config/MapConfig.h"
+#include "Config/ObjectConfig.h"
 #include "Engine/Image.h"
 #include "Engine/Material.h"
 #include "Map.h"
@@ -27,7 +31,7 @@ void Map::AddLoadedBlock(const MapBlock &mapBlock)
 
 bool Map::GetMapBlockFile(const MapBlockPosition &mapBlockPosition, MapBlockFileConfig &mapBlockFile)
 {
-    for (const auto &fileInfo : mapInfoConfig.blockFiles)
+    for (const auto &fileInfo : mapInfoConfig.blocks)
     {
         if (fileInfo.position.x == mapBlockPosition.x
             && fileInfo.position.y == mapBlockPosition.y)
@@ -67,6 +71,7 @@ MapLoader::MapLoader(Map *map, const MapLoadSettings &mapLoadSettings)
       loadProgress(0),
       readyToBuffer(false),
       shouldTerminate(false),
+      firstBlockLoaded(false),
       map(map),
       mapLoadSettings(mapLoadSettings)
 {
@@ -111,9 +116,10 @@ void MapLoader::AddBlocksToLoad()
         }
     }
     // No block has been loaded, so load from origin position
-    else if (currentBlock == nullptr)
+    else if (!firstBlockLoaded)
     {
         AddBlockToLoad(currentBlockPosition);
+        firstBlockLoaded = true;
     }
 }
 
@@ -161,36 +167,39 @@ void MapLoader::StartLoadBlocksThread()
 
                 if (mapBlockPosition.has_value())
                 {
+                    MapBlockPosition mapBlockPositionValue = mapBlockPosition.value();
+
                     // Attempt to load the map block file
                     // Skip if no matching file is found
                     MapBlockFileConfig mapBlockFileConfig;
-                    if (!map->GetMapBlockFile(mapBlockPosition.value(), mapBlockFileConfig))
+                    if (!map->GetMapBlockFile(mapBlockPositionValue, mapBlockFileConfig))
                     {
                         continue;
                     }
 
-                    std::string mapBaseDirectory = FileSystem::GetMapBaseDirectory(map->GetConfigFilePath());
+                    std::string mapBaseDirectory = FileSystem::GetParentDirectory(map->GetConfigFilePath());
                     // Load the list of entity files from the map block config file
-                    std::string mapBlockFilePath = FileSystem::GetMapBlockFile(mapBaseDirectory, mapBlockFileConfig.filePath);
+                    std::string mapBlockFilePath = FileSystem::GetMapBlockFile(mapBaseDirectory, mapBlockFileConfig.file);
                     MapBlockInfoConfig mapBlockInfoConfig;
                     if (!ConfigReader::ReadConfig(mapBlockFilePath, mapBlockInfoConfig))
                     {
+                        Logger::Log(LogLevel::Warning, "Failed to load map block file config from {}", mapBlockFilePath);
                         continue;
                     }
 
-                    float mapBlockOffsetX = mapBlockInfoConfig.offset.x * MAP_BLOCK_SIZE,
-                          mapBlockOffsetY = mapBlockInfoConfig.offset.y * MAP_BLOCK_SIZE;
+                    float mapBlockOffsetX = static_cast<float>(mapBlockPositionValue.x) * MAP_BLOCK_SIZE,
+                          mapBlockOffsetY = static_cast<float>(mapBlockPositionValue.y) * MAP_BLOCK_SIZE;
+                    uint32_t blockId = Identifier::GenerateIdentifier(mapBlockPositionValue.x, mapBlockPositionValue.y);
 
-                    const TerrainConfig &terrainConfig = mapBlockInfoConfig.terrain;
-                    std::string heightMapPath = FileSystem::GetHeightMapFile(mapBaseDirectory, terrainConfig.heightMapFilePath);
-                    std::string textureFilePath = FileSystem::GetTextureFile(mapBaseDirectory, terrainConfig.baseTextureFilePath);
-
-                    // TODO: hard-coded the things to load for now
                     MapBlockResources mapBlockResource;
-                    Terrain &terrain = mapBlockResource.terrain;
-                    std::vector<Entity> &entities = mapBlockResource.entities;
+                    mapBlockResource.blockId = blockId;
 
-                    terrain.id = 555;
+                    // Load the terrain from height map with texture
+                    Terrain &terrain = mapBlockResource.terrain;
+                    terrain.id = blockId;
+                    const TerrainConfig &terrainConfig = mapBlockInfoConfig.terrain;
+                    std::string heightMapPath = FileSystem::GetHeightMapFile(mapBaseDirectory, terrainConfig.heightMap);
+                    std::string textureFilePath = FileSystem::GetTextureFile(mapBaseDirectory, terrainConfig.baseTexture);
                     if (!terrainLoader.LoadFromHeightMap(
                         heightMapPath,
                         glm::vec3(mapBlockOffsetX, mapBlockOffsetY, 0.0f),
@@ -198,59 +207,90 @@ void MapLoader::StartLoadBlocksThread()
                         textureFilePath,
                         terrain))
                     {
+                        Logger::Log(LogLevel::Warning, "Failed to load terrain for block ({}, {})",
+                            mapBlockInfoConfig.offset.x, mapBlockInfoConfig.offset.y);
                         continue;
                     }
 
-                    uint32_t numberOfMeshes = 10;
-                    Material materials[] =
+                    // Load the entities grouped by object file to avoid loading the same object more than once
+                    std::vector<Entity> &entities = mapBlockResource.entities;
+                    std::vector<EntityConfig> &entityConfigs = mapBlockInfoConfig.entities;
+
+                    std::unordered_map<uint32_t, std::shared_ptr<Mesh>> objectIdMeshMap;
+                    std::unordered_map<uint32_t, std::shared_ptr<Material>> materialIdImageMap;
+                    for (const EntityConfig &entityConfig : entityConfigs)
                     {
+                        Entity entity;
+
+                        std::string objectFile = entityConfig.object;
+                        uint32_t objectId = Identifier::GenerateIdentifier(objectFile);
+                        if (objectIdMeshMap.count(objectId) == 0)
                         {
-                            1,
-                            std::make_shared<Image>("formula1.png"),
-                            nullptr,
-                            nullptr
-                        },
-                        {
-                            4,
-                            std::make_shared<Image>("wallpaper.bmp"),
-                            nullptr,
-                            nullptr
+                            Mesh mesh;
+                            mesh.id = objectId;
+
+                            std::string objectFilePath = FileSystem::GetObjectFile(objectFile);
+                            std::string objectBaseDirectory = FileSystem::GetParentDirectory(objectFilePath);
+
+                            StaticObjectConfig staticObjectConfig;
+                            if (!ConfigReader::ReadConfig(objectFilePath, staticObjectConfig))
+                            {
+                                Logger::Log(LogLevel::Warning, "Failed to load object config from file {}", objectFilePath);
+                                continue;
+                            }
+
+                            std::string modelFilePath = FileSystem::GetModelFile(objectBaseDirectory, staticObjectConfig.mesh);
+                            if (!meshLoader.LoadFromFile(modelFilePath, mesh))
+                            {
+                                Logger::Log(LogLevel::Warning, "Failed to load mesh from object {}", objectFile);
+                                continue;
+                            }
+
+                            std::string textureFilePath = FileSystem::GetTextureFile(objectBaseDirectory, staticObjectConfig.diffuseMaterial);
+                            uint32_t materialId = Identifier::GenerateIdentifier(textureFilePath);
+                            if (materialIdImageMap.count(materialId) == 0)
+                            {
+                                Material material;
+                                material.id = materialId;
+                                
+                                std::shared_ptr<Image> diffuseImage = std::make_shared<Image>();
+                                if (!diffuseImage->Load(textureFilePath, ImageColor::ColorWithAlpha))
+                                {
+                                    Logger::Log(LogLevel::Warning, "Failed to load texture from file {}", textureFilePath);
+                                    continue;
+                                }
+
+                                material.diffuseImage = diffuseImage;
+                                materialIdImageMap[materialId] = std::make_shared<Material>(material);
+                            }
+
+                            mesh.material = materialIdImageMap[materialId];
+                            objectIdMeshMap[objectId] = std::make_shared<Mesh>(mesh);
                         }
-                    };
 
-                    Mesh formula1{}, wallpaper;
-                    if (!meshLoader.LoadFromFile("formula1.obj", formula1)
-                        || !meshLoader.LoadFromFile("wallpaper.obj", wallpaper))
-                    {
-                        continue;
+                        entity.id = entityConfig.id;
+                        entity.translation =
+                        { 
+                            mapBlockOffsetX + entityConfig.position.x,
+                            mapBlockOffsetY + entityConfig.position.y,
+                            entityConfig.position.z
+                        };
+                        entity.rotation =
+                        {
+                            entityConfig.rotation.x,
+                            entityConfig.rotation.y,
+                            entityConfig.rotation.z
+                        };
+                        entity.scale = { 1.0f, 1.0f, 1.0f };
+                        entity.mesh = objectIdMeshMap[objectId];
+                        entities.push_back(entity);
                     }
 
-                    for (uint32_t index = 0; index < numberOfMeshes; index++)
-                    {
-                        formula1.id = 1;
-                        formula1.material = std::make_shared<Material>(materials[0]);
-
-                        wallpaper.id = 2;
-                        wallpaper.material = std::make_shared<Material>(materials[1]);
-
-                        Entity entity1{};
-                        entity1.id = index;
-                        entity1.mesh = std::make_shared<Mesh>(formula1);
-                        entity1.translation = { index * 25.0f , 5.0f, 0.5f };
-                        entity1.scale = { 1.0f, 1.0f, 1.0f };
-
-                        Entity entity2{};
-                        entity2.id = index * 2;
-                        entity2.mesh = std::make_shared<Mesh>(wallpaper);
-                        entity2.translation = { index * 2.0f , 0.0f, 0.0f };
-                        entity2.scale = { 1.0f, 1.0f, 1.0f };
-
-                        entities.push_back(entity1);
-                        entities.push_back(entity2);
-                    }
-
+                    MapBlock loadedMapBlock{};
+                    loadedMapBlock.id = blockId;
+                    loadedMapBlock.position = mapBlockPositionValue;
+                    map->AddLoadedBlock(loadedMapBlock);
                     loadedResources.push_back(mapBlockResource);
-
                     readyToBuffer = true;
                 }
             }

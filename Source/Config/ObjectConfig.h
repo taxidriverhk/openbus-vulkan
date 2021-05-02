@@ -5,9 +5,9 @@
 struct StaticObjectConfig
 {
     std::string name;
-    std::string meshFilePath;
+    std::string mesh;
 
-    std::string diffuseMaterialFilePath;
-    std::string specularMaterialFilePath;
-    std::string alphaMaterialFilePath;
+    std::string diffuseMaterial;
+    std::string specularMaterial;
+    std::string alphaMaterial;
 };

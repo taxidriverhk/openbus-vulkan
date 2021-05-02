@@ -63,12 +63,13 @@ void Renderer::LoadBackground()
     Logger::Log(LogLevel::Info, "Finished loading skybox into buffer");
 }
 
-void Renderer::LoadBlock(Terrain &terrain, std::vector<Entity> &entities)
+void Renderer::LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity> &entities)
 {
     Logger::Log(LogLevel::Info, "Loading {} objects into buffer", entities.size());
-    for (Entity &entityLoaded : entities)
+    for (Entity &entity : entities)
     {
-        drawEngine->LoadEntity(entityLoaded);
+        drawEngine->LoadEntity(entity);
+        blockIdEntityIdsMap[blockId].push_back(entity.id);
     }
     Logger::Log(LogLevel::Info, "Finished loading {} objects", entities.size());
 

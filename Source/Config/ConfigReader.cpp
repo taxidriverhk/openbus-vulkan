@@ -17,15 +17,16 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&Vector3DConfig::z, "z");
 
     JsonParser::RegisterMapper(&StaticObjectConfig::name, "name");
-    JsonParser::RegisterMapper(&StaticObjectConfig::meshFilePath, "meshFilePath");
-    JsonParser::RegisterMapper(&StaticObjectConfig::diffuseMaterialFilePath, "diffuseMaterialFilePath");
+    JsonParser::RegisterMapper(&StaticObjectConfig::mesh, "mesh");
+    JsonParser::RegisterMapper(&StaticObjectConfig::diffuseMaterial, "diffuseMaterial");
 
+    JsonParser::RegisterMapper(&EntityConfig::id, "id");
     JsonParser::RegisterMapper(&EntityConfig::position, "position");
     JsonParser::RegisterMapper(&EntityConfig::rotation, "rotation");
-    JsonParser::RegisterMapper(&EntityConfig::objectFilePath, "objectFilePath");
+    JsonParser::RegisterMapper(&EntityConfig::object, "object");
 
-    JsonParser::RegisterMapper(&TerrainConfig::heightMapFilePath, "heightMapFilePath");
-    JsonParser::RegisterMapper(&TerrainConfig::baseTextureFilePath, "baseTextureFilePath");
+    JsonParser::RegisterMapper(&TerrainConfig::heightMap, "heightMap");
+    JsonParser::RegisterMapper(&TerrainConfig::baseTexture, "baseTexture");
     JsonParser::RegisterMapper(&TerrainConfig::textureSize, "textureSize");
 
     JsonParser::RegisterMapper(&MapBlockInfoConfig::offset, "offset");
@@ -33,9 +34,9 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&MapBlockInfoConfig::entities, "entities");
 
     JsonParser::RegisterMapper(&MapBlockFileConfig::position, "position");
-    JsonParser::RegisterMapper(&MapBlockFileConfig::filePath, "filePath");
+    JsonParser::RegisterMapper(&MapBlockFileConfig::file, "file");
 
     JsonParser::RegisterMapper(&MapInfoConfig::name, "name");
     JsonParser::RegisterMapper(&MapInfoConfig::image, "image");
-    JsonParser::RegisterMapper(&MapInfoConfig::blockFiles, "blockFiles");
+    JsonParser::RegisterMapper(&MapInfoConfig::blocks, "blocks");
 }

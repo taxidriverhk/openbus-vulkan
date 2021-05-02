@@ -72,6 +72,7 @@ namespace std
 
 struct MapBlockResources
 {
+    uint32_t blockId;
     Terrain terrain;
     std::vector<Entity> entities;
 
@@ -131,6 +132,7 @@ private:
 
     void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
 
+    bool firstBlockLoaded;
     Map *map;
     MapLoadSettings mapLoadSettings;
 

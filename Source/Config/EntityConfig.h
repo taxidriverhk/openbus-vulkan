@@ -17,7 +17,8 @@ struct Vector3DConfig
 
 struct EntityConfig
 {
+    uint32_t id;
     Vector3DConfig position;
     Vector3DConfig rotation;
-    std::string objectFilePath;
+    std::string object;
 };
