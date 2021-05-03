@@ -31,6 +31,7 @@ public:
     void LoadTerrain(Terrain &terrain) override;
     void UpdateCamera(Camera *camera) override;
     void UnloadEntity(uint32_t entityId) override;
+    void UnloadTerrain(uint32_t terrainId) override;
 
 private:
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;

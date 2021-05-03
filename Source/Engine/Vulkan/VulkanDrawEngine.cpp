@@ -508,9 +508,27 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
 
 void VulkanDrawEngine::UnloadEntity(uint32_t entityId)
 {
+    // Ensure that the buffers are not in use by command buffers before destroying
+    context->WaitIdle();
+
     if (bufferIds.count(entityId) > 0)
     {
         bufferManager->UnloadBuffer(entityId);
         bufferIds.erase(entityId);
     }
+
+    MarkDataAsUpdated();
+}
+
+void VulkanDrawEngine::UnloadTerrain(uint32_t terrainId)
+{
+    context->WaitIdle();
+
+    if (terrainBufferIds.count(terrainId) > 0)
+    {
+        bufferManager->UnloadTerrain(terrainId);
+        terrainBufferIds.erase(terrainId);
+    }
+
+    MarkDataAsUpdated();
 }

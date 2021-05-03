@@ -127,8 +127,13 @@ void Game::RunMainLoop()
         bool blockPositionChanged = map->UpdateBlockPosition(camera->GetPosition());
         if (blockPositionChanged)
         {
-            std::list<MapBlockPosition> mapBlockPositionsToUnload = mapLoader->UnloadBlocks();
-            Logger::Log(LogLevel::Info, "Position updated, unloading {} blocks", mapBlockPositionsToUnload.size());
+            std::unordered_set<MapBlockPosition> mapBlockPositionsToKeep = mapLoader->GetAdjacentBlocks();
+            std::list<uint32_t> mapBlockIdsToUnload = map->UnloadBlocks(mapBlockPositionsToKeep);
+            Logger::Log(LogLevel::Info, "Position updated, unloading {} blocks", mapBlockIdsToUnload.size());
+            for (uint32_t blockId : mapBlockIdsToUnload)
+            {
+                renderer->UnloadEntities(blockId);
+            }
         }
 
         // Load the resources into buffer if found
@@ -186,7 +191,7 @@ void Game::RunGameLoop()
 // TODO: could be moved into a separate class for handling?
 void Game::HandleInputCommands(float deltaTime)
 {
-    float movementSpeed = 20;
+    float movementSpeed = 100;
     for (const ControlCommand &command : controlManager->PollCommands())
     {
         switch (command.operation)

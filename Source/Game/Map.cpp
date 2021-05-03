@@ -79,9 +79,24 @@ bool Map::UpdateBlockPosition(const glm::vec3 &cameraPosition)
         && previousBlock->position != currentBlock->position;
 }
 
-std::list<uint32_t> Map::UnloadBlocks(const std::list<MapBlockPosition> &mapBlockPositions)
+std::list<uint32_t> Map::UnloadBlocks(const std::unordered_set<MapBlockPosition> &mapBlocksToKeep)
 {
     std::list<uint32_t> mapBlockIdsToUnload;
+    std::list<MapBlockPosition> mapBlockPositionsToUnload;
+    for (const auto &[loadedPosition, loadedBlock] : loadedBlocks)
+    {
+        if (mapBlocksToKeep.count(loadedPosition) == 0)
+        {
+            mapBlockIdsToUnload.push_back(loadedBlock.id);
+            mapBlockPositionsToUnload.push_back(loadedPosition);
+        }
+    }
+
+    for (const auto &mapBlockPositionToUnload : mapBlockPositionsToUnload)
+    {
+        loadedBlocks.erase(mapBlockPositionToUnload);
+    }
+
     return mapBlockIdsToUnload;
 }
 
@@ -121,7 +136,7 @@ void MapLoader::AddBlocksToLoad()
     {
         // Add all adjacent blocks to load regardless of block loaded/exists
         // or not, the load block load will be able to determine
-        std::list<MapBlockPosition> positionsToAdd = GetAdjacentBlocks(currentBlockPosition);
+        std::unordered_set<MapBlockPosition> positionsToAdd = GetAdjacentBlocks(currentBlockPosition);
         for (const MapBlockPosition &positionToAdd : positionsToAdd)
         {
             AddBlockToLoad(positionToAdd);
@@ -137,15 +152,20 @@ void MapLoader::AddBlockToLoad(const MapBlockPosition &mapBlockPosition)
     loadQueueMutex.unlock();
 }
 
-std::list<MapBlockPosition> MapLoader::GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition)
+std::unordered_set<MapBlockPosition> MapLoader::GetAdjacentBlocks()
 {
-    std::list<MapBlockPosition> positions;
+    return GetAdjacentBlocks(map->GetCurrentBlock()->position);
+}
+
+std::unordered_set<MapBlockPosition> MapLoader::GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition)
+{
+    std::unordered_set<MapBlockPosition> positions;
     int maxAdjacentBlocks = mapLoadSettings.maxAdjacentBlocks;
     for (int i = -maxAdjacentBlocks; i <= maxAdjacentBlocks; i++)
     {
         for (int j = -maxAdjacentBlocks; j <= maxAdjacentBlocks; j++)
         {
-            positions.push_back({ mapBlockPosition.x + i, mapBlockPosition.y + j });
+            positions.insert({ mapBlockPosition.x + i, mapBlockPosition.y + j });
         }
     }
     return positions;
@@ -326,16 +346,6 @@ void MapLoader::StartLoadBlocksThread()
         {
             TerminateLoadBlocksThread();
         });
-}
-
-
-std::list<MapBlockPosition> MapLoader::UnloadBlocks()
-{
-    // TODO: implement me
-    // Return the list of block IDs to unload,
-    // so that the renderer knows which entities to remove from graphic buffers
-    std::list<MapBlockPosition> result;
-    return result;
 }
 
 void MapLoader::TerminateLoadBlocksThread()

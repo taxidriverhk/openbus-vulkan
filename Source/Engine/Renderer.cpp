@@ -80,5 +80,22 @@ void Renderer::LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity>
 
 void Renderer::UnloadEntities(uint32_t blockId)
 {
+    if (blockIdEntityIdsMap.count(blockId) == 0)
+    {
+        return;
+    }
 
+    std::list<uint32_t> &entityIds = blockIdEntityIdsMap[blockId];
+    Logger::Log(LogLevel::Info, "Unloading {} objects from buffer", entityIds.size());
+    for (uint32_t entityId : entityIds)
+    {
+        drawEngine->UnloadEntity(entityId);
+    }
+    Logger::Log(LogLevel::Info, "Finished unloading {} objects", entityIds.size());
+
+    Logger::Log(LogLevel::Info, "Unloading terrain from buffer");
+    drawEngine->UnloadTerrain(blockId);
+    Logger::Log(LogLevel::Info, "Finished unloading terrain from buffer");
+
+    blockIdEntityIdsMap.erase(blockId);
 }

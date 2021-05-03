@@ -109,7 +109,7 @@ public:
     bool IsBlockLoaded(const MapBlockPosition &mapBlockPosition);
     void Load();
     bool UpdateBlockPosition(const glm::vec3 &cameraPosition);
-    std::list<uint32_t> UnloadBlocks(const std::list<MapBlockPosition> &mapBlockPositions);
+    std::list<uint32_t> UnloadBlocks(const std::unordered_set<MapBlockPosition> &mapBlocksToKeep);
 
 private:
     MapBlock *previousBlock;
@@ -131,16 +131,16 @@ public:
     bool IsReadyToBuffer() const { return readyToBuffer; }
 
     void AddBlocksToLoad();
+    std::unordered_set<MapBlockPosition> GetAdjacentBlocks();
     MapBlockResources PollLoadedResources();
     void StartLoadBlocksThread();
     void TerminateLoadBlocksThread();
-    std::list<MapBlockPosition> UnloadBlocks();
 
 private:
     static constexpr uint32_t WAIT_TIME_SECONDS = 1;
 
     void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
-    std::list<MapBlockPosition> GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition);
+    std::unordered_set<MapBlockPosition> GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition);
 
     bool firstBlockLoaded;
     Map *map;
