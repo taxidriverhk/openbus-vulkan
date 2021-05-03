@@ -1,7 +1,5 @@
 #pragma once
 
-#include <random>
-#include <unordered_map>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -33,6 +31,7 @@ public:
     // Initialization
     void Create();
     void Destroy();
+    void ResetCommandPool(VkCommandPool commandPool);
 
     // Cubemap Buffering
     void UpdateCubeMapImage(std::vector<Image *> &images);
@@ -46,14 +45,15 @@ public:
     void UnloadTerrain(uint32_t terrainId);
 
     // Vertex/Texture Buffering
-    uint32_t LoadIntoBuffer(
+    void LoadIntoBuffer(
+        uint32_t instanceId,
         uint32_t meshId,
         uint32_t imageId,
         VulkanInstanceBufferInput &instanceBuffer,
         std::vector<Vertex> &vertices,
         std::vector<uint32_t> &indices,
         Material *material);
-    void UnloadBuffer(uint32_t bufferId);
+    void UnloadBuffer(uint32_t instanceId);
     void UpdateUniformBuffer(VulkanUniformBufferInput input);
 
     VulkanDrawingBuffer GetDrawingBuffer(uint32_t imageIndex);
@@ -70,8 +70,6 @@ private:
     void CreateUniformBuffers();
     void DestroyCubeMapBuffer();
     void DestroyUniformBuffers();
-
-    uint32_t GenerateBufferId();
 
     uint32_t frameBufferSize;
     VulkanContext *context;
@@ -112,7 +110,4 @@ private:
     bool uniformBufferUpdated;
     VulkanUniformBufferInput uniformBufferInput;
     std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers;
-
-    std::default_random_engine generator;
-    std::uniform_int_distribution<uint32_t> distribution;
 };

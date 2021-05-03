@@ -27,11 +27,17 @@ struct MapBlockPosition
     {
         return this->x == other.x && this->y == other.y;
     }
+
+    bool operator !=(const MapBlockPosition &other) const
+    {
+        return this->x != other.x || this->y != other.y;
+    }
 };
 
 struct MapBlock
 {
     // TODO: need to figure out what a map block has
+    // may need to keep the collision/surface meshes for physics
     uint32_t id;
     MapBlockPosition position;
     std::vector<std::string> meshFiles;
@@ -82,6 +88,7 @@ struct MapBlockResources
 
     MapBlockResources(const MapBlockResources &other)
     {
+        blockId = other.blockId;
         terrain = other.terrain;
         entities = other.entities;
     }
@@ -101,7 +108,8 @@ public:
     bool GetMapBlockFile(const MapBlockPosition &mapBlockPosition, MapBlockFileConfig &mapBlockFile);
     bool IsBlockLoaded(const MapBlockPosition &mapBlockPosition);
     void Load();
-    void UpdateBlockPosition(const glm::vec3 &cameraPosition);
+    bool UpdateBlockPosition(const glm::vec3 &cameraPosition);
+    std::list<uint32_t> UnloadBlocks(const std::list<MapBlockPosition> &mapBlockPositions);
 
 private:
     MapBlock *previousBlock;
@@ -126,11 +134,13 @@ public:
     MapBlockResources PollLoadedResources();
     void StartLoadBlocksThread();
     void TerminateLoadBlocksThread();
+    std::list<MapBlockPosition> UnloadBlocks();
 
 private:
-    static constexpr uint32_t WAIT_TIME_SECONDS = 10;
+    static constexpr uint32_t WAIT_TIME_SECONDS = 1;
 
     void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
+    std::list<MapBlockPosition> GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition);
 
     bool firstBlockLoaded;
     Map *map;

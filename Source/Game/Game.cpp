@@ -13,15 +13,9 @@
 Game::Game()
     : gameStarted(false),
       shouldEndGame(false),
-      readyToRender(false)
+      readyToRender(false),
+      gameSettings{}
 {
-    std::string screenTitle = Util::FormatWindowTitle("Game Screen");
-
-    controlManager = std::make_unique<ControlManager>();
-
-    camera = std::make_unique<Camera>(SCREEN_WIDTH, SCREEN_HEIGHT);
-    screen = std::make_unique<Screen>(SCREEN_WIDTH, SCREEN_HEIGHT, screenTitle);
-    renderer = std::make_unique<Renderer>(camera.get());
 }
 
 Game::~Game()
@@ -37,18 +31,31 @@ void Game::Cleanup()
 
 void Game::InitializeComponents()
 {
+    int screenWidth = gameSettings.graphicsSettings.screenWidth,
+        screenHeight = gameSettings.graphicsSettings.screenHeight;
+
+    controlManager = std::make_unique<ControlManager>();
+
+    std::string screenTitle = Util::FormatWindowTitle("Game Screen");
+    camera = std::make_unique<Camera>(screenWidth, screenHeight);
+    screen = std::make_unique<Screen>(screenWidth, screenHeight, screenTitle);
+
     screen->Create();
+
+    renderer = std::make_unique<Renderer>(camera.get());
     renderer->CreateContext(screen.get());
 }
 
 void Game::InitializeSettings(const GameSessionConfig &startConfig)
 {
+    gameSettings.mapLoadSettings.maxAdjacentBlocks = 1;
+    gameSettings.graphicsSettings.targetFrameRate = 120;
+    gameSettings.graphicsSettings.screenWidth = 1920;
+    gameSettings.graphicsSettings.screenHeight = 1080;
 }
 
 void Game::InitializeState(const GameSessionConfig &startConfig)
 {
-    // TODO: hard-coded game settings here for now
-    gameSettings.mapLoadSettings.maxAdjacentBlocks = 1;
     // Load the map and its block loader
     MapLoadSettings &mapLoadSettings = gameSettings.mapLoadSettings;
     map = std::make_unique<Map>(startConfig.mapConfigPath);
@@ -117,7 +124,12 @@ void Game::RunMainLoop()
         controlManager->QueueEvents(screen->PollEvent());
         // Update the block position based on the camera position
         // so that it knows if blocks should be added/removed
-        map->UpdateBlockPosition(camera->GetPosition());
+        bool blockPositionChanged = map->UpdateBlockPosition(camera->GetPosition());
+        if (blockPositionChanged)
+        {
+            std::list<MapBlockPosition> mapBlockPositionsToUnload = mapLoader->UnloadBlocks();
+            Logger::Log(LogLevel::Info, "Position updated, unloading {} blocks", mapBlockPositionsToUnload.size());
+        }
 
         // Load the resources into buffer if found
         if (mapLoader->IsReadyToBuffer())
@@ -147,9 +159,9 @@ void Game::RunMainLoop()
 
 void Game::RunGameLoop()
 {
-    // TODO: could be read from configuration, this is not the drawing framerate
+    // This is not the drawing framerate
     // but the framerate for updating physics, game state, etc.
-    int targetFrameRate = 120;
+    int targetFrameRate = gameSettings.graphicsSettings.targetFrameRate;
     float timePerFrame = 1 / static_cast<float>(targetFrameRate);
 
     float timeSinceLastUpdate = 0.0f;

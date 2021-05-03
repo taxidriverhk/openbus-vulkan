@@ -45,24 +45,44 @@ bool Map::GetMapBlockFile(const MapBlockPosition &mapBlockPosition, MapBlockFile
 
 bool Map::IsBlockLoaded(const MapBlockPosition &mapBlockPosition)
 {
-    return false;
+    return loadedBlocks.count(mapBlockPosition) > 0;
 }
 
 void Map::Load()
 {
 }
 
-void Map::UpdateBlockPosition(const glm::vec3 &cameraPosition)
+bool Map::UpdateBlockPosition(const glm::vec3 &cameraPosition)
 {
-    // TODO: determine the current block position based on the camera position
-    MapBlockPosition currentBlockPosition{ 0, 0 };
-    // Update the current block, if blocks are different from each other
+    int blockPositionX = static_cast<int>(cameraPosition.x) / MAP_BLOCK_SIZE,
+        blockPositionY = static_cast<int>(cameraPosition.y) / MAP_BLOCK_SIZE;
+    if (cameraPosition.x < 0.0f)
+    {
+        blockPositionX -= 1;
+    }
+    if (cameraPosition.y < 0.0f)
+    {
+        blockPositionY -= 1;
+    }
+
+    MapBlockPosition currentBlockPosition{ blockPositionX, blockPositionY };
+    // Update the current block, if blocks are different from the previous one
     // Then this would trigger blocks addition/removal
     previousBlock = currentBlock;
     if (loadedBlocks.count(currentBlockPosition) > 0)
     {
         currentBlock = &loadedBlocks[currentBlockPosition];
     }
+
+    return previousBlock != nullptr
+        && currentBlock != nullptr
+        && previousBlock->position != currentBlock->position;
+}
+
+std::list<uint32_t> Map::UnloadBlocks(const std::list<MapBlockPosition> &mapBlockPositions)
+{
+    std::list<uint32_t> mapBlockIdsToUnload;
+    return mapBlockIdsToUnload;
 }
 
 MapLoader::MapLoader(Map *map, const MapLoadSettings &mapLoadSettings)
@@ -97,28 +117,15 @@ void MapLoader::AddBlocksToLoad()
         : MapBlockPosition{ 0, 0 };
     // Perform add block action only if the current block position
     // is changed
-    if (currentBlock != previousBlock)
+    if (currentBlock != previousBlock || !firstBlockLoaded)
     {
         // Add all adjacent blocks to load regardless of block loaded/exists
         // or not, the load block load will be able to determine
-        for (int i = -maxAdjacentBlocks; i <= maxAdjacentBlocks; i++)
+        std::list<MapBlockPosition> positionsToAdd = GetAdjacentBlocks(currentBlockPosition);
+        for (const MapBlockPosition &positionToAdd : positionsToAdd)
         {
-            for (int j = -maxAdjacentBlocks; j <= maxAdjacentBlocks; j++)
-            {
-                if (i == 0 && j == 0 && currentBlock != nullptr)
-                {
-                    continue;
-                }
-
-                MapBlockPosition positionToAdd{ currentBlockPosition.x + i, currentBlockPosition.y + j };
-                AddBlockToLoad(positionToAdd);
-            }
+            AddBlockToLoad(positionToAdd);
         }
-    }
-    // No block has been loaded, so load from origin position
-    else if (!firstBlockLoaded)
-    {
-        AddBlockToLoad(currentBlockPosition);
         firstBlockLoaded = true;
     }
 }
@@ -128,6 +135,20 @@ void MapLoader::AddBlockToLoad(const MapBlockPosition &mapBlockPosition)
     loadQueueMutex.lock();
     mapBlockLoadQueue.push(mapBlockPosition);
     loadQueueMutex.unlock();
+}
+
+std::list<MapBlockPosition> MapLoader::GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition)
+{
+    std::list<MapBlockPosition> positions;
+    int maxAdjacentBlocks = mapLoadSettings.maxAdjacentBlocks;
+    for (int i = -maxAdjacentBlocks; i <= maxAdjacentBlocks; i++)
+    {
+        for (int j = -maxAdjacentBlocks; j <= maxAdjacentBlocks; j++)
+        {
+            positions.push_back({ mapBlockPosition.x + i, mapBlockPosition.y + j });
+        }
+    }
+    return positions;
 }
 
 MapBlockResources MapLoader::PollLoadedResources()
@@ -168,6 +189,10 @@ void MapLoader::StartLoadBlocksThread()
                 if (mapBlockPosition.has_value())
                 {
                     MapBlockPosition mapBlockPositionValue = mapBlockPosition.value();
+                    if (map->IsBlockLoaded(mapBlockPositionValue))
+                    {
+                        continue;
+                    }
 
                     // Attempt to load the map block file
                     // Skip if no matching file is found
@@ -177,6 +202,8 @@ void MapLoader::StartLoadBlocksThread()
                         continue;
                     }
 
+                    Logger::Log(LogLevel::Info, "Loading resources for block ({}, {})",
+                        mapBlockPositionValue.x, mapBlockPositionValue.y);
                     std::string mapBaseDirectory = FileSystem::GetParentDirectory(map->GetConfigFilePath());
                     // Load the list of entity files from the map block config file
                     std::string mapBlockFilePath = FileSystem::GetMapBlockFile(mapBaseDirectory, mapBlockFileConfig.file);
@@ -299,6 +326,16 @@ void MapLoader::StartLoadBlocksThread()
         {
             TerminateLoadBlocksThread();
         });
+}
+
+
+std::list<MapBlockPosition> MapLoader::UnloadBlocks()
+{
+    // TODO: implement me
+    // Return the list of block IDs to unload,
+    // so that the renderer knows which entities to remove from graphic buffers
+    std::list<MapBlockPosition> result;
+    return result;
 }
 
 void MapLoader::TerminateLoadBlocksThread()

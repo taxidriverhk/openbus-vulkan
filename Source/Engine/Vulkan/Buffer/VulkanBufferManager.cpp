@@ -25,19 +25,7 @@ VulkanBufferManager::VulkanBufferManager(
       pipelines(pipelines),
       frameBufferSize(frameBufferSize),
       commandPool(commandPool),
-      vmaAllocator(),
-      imageVmaAllocator(),
-      descriptorPool(),
-      indexBuffers(),
-      vertexBuffers(),
       uniformBufferUpdated(true),
-      uniformBuffers(),
-      uniformBufferInput(),
-      cubeMapImage(),
-      cubeMapIndexBuffer(),
-      cubeMapVertexBuffer(),
-      generator(),
-      distribution(1, MAX_VERTEX_BUFFERS),
       entityBufferCache{},
       terrainBufferCache{},
       cubeMapBufferCache{}
@@ -89,7 +77,8 @@ VulkanDrawingBuffer VulkanBufferManager::GetDrawingBuffer(uint32_t imageIndex)
     return result;
 }
 
-uint32_t VulkanBufferManager::LoadIntoBuffer(
+void VulkanBufferManager::LoadIntoBuffer(
+    uint32_t instanceId,
     uint32_t meshId,
     uint32_t imageId,
     VulkanInstanceBufferInput &instanceBufferInput,
@@ -97,8 +86,6 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
     std::vector<uint32_t> &indices,
     Material *material)
 {
-    uint32_t bufferId = GenerateBufferId();
-
     if (vertexBuffers.count(meshId) == 0)
     {
         std::shared_ptr<VulkanBuffer> vertexBuffer = std::make_shared<VulkanBuffer>(
@@ -159,23 +146,21 @@ uint32_t VulkanBufferManager::LoadIntoBuffer(
         pipelines.staticPipeline->GetInstanceDescriptorSetLayout(),
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         sizeof(VulkanInstanceBufferInput));
-    instanceBuffers.insert(std::make_pair(bufferId, std::move(instanceBuffer)));
+    instanceBuffers.insert(std::make_pair(instanceId, std::move(instanceBuffer)));
 
     VulkanEntityBufferIds bufferIds{};
-    bufferIds.instanceBufferId = bufferId;
+    bufferIds.instanceBufferId = instanceId;
     bufferIds.vertexBufferId = meshId;
     bufferIds.indexBufferId = meshId;
     bufferIds.imageBufferId = imageId;
-    bufferIdCache.insert(std::make_pair(bufferId, bufferIds));
+    bufferIdCache.insert(std::make_pair(instanceId, bufferIds));
 
     VulkanEntityBuffer entityBuffer{};
     entityBuffer.instanceBuffer = instanceBuffers[bufferIds.instanceBufferId].get();
     entityBuffer.vertexBuffer = vertexBuffers[bufferIds.vertexBufferId].get();
     entityBuffer.indexBuffer = indexBuffers[bufferIds.indexBufferId].get();
     entityBuffer.imageBuffer = imageBuffers[bufferIds.imageBufferId].get();
-    entityBufferCache.insert(std::make_pair(bufferId, entityBuffer));
-
-    return bufferId;
+    entityBufferCache.insert(std::make_pair(instanceId, entityBuffer));
 }
 
 void VulkanBufferManager::LoadTerrainIntoBuffer(
@@ -231,11 +216,16 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
     terrainBufferCache.insert(std::make_pair(terrainId, terrainBuffer));
 }
 
-void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
+void VulkanBufferManager::ResetCommandPool(VkCommandPool commandPool)
 {
-    if (bufferIdCache.count(bufferId) > 0)
+    this->commandPool = commandPool;
+}
+
+void VulkanBufferManager::UnloadBuffer(uint32_t instanceId)
+{
+    if (bufferIdCache.count(instanceId) > 0)
     {
-        VulkanEntityBufferIds bufferIds = bufferIdCache[bufferId];
+        VulkanEntityBufferIds bufferIds = bufferIdCache[instanceId];
         
         uint32_t instanceBufferId = bufferIds.instanceBufferId;
         std::shared_ptr<VulkanBuffer> instanceBuffer = instanceBuffers[instanceBufferId];
@@ -264,8 +254,8 @@ void VulkanBufferManager::UnloadBuffer(uint32_t bufferId)
             imageBuffers.erase(imageBufferId);
         }
 
-        bufferIdCache.erase(bufferId);
-        entityBufferCache.erase(bufferId);
+        bufferIdCache.erase(instanceId);
+        entityBufferCache.erase(instanceId);
     }
 }
 
@@ -444,14 +434,4 @@ void VulkanBufferManager::DestroyUniformBuffers()
         uniformBuffer->Unload();
     }
     uniformBuffers.clear();
-}
-
-uint32_t VulkanBufferManager::GenerateBufferId()
-{
-    uint32_t nextBufferId;
-    do
-    {
-        nextBufferId = distribution(generator);
-    } while (instanceBuffers.count(nextBufferId) != 0);
-    return nextBufferId;
 }

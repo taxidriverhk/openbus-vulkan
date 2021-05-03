@@ -3,6 +3,8 @@
 struct GraphicsSettings
 {
     int targetFrameRate;
+    int screenWidth;
+    int screenHeight;
 };
 
 struct MapLoadSettings

@@ -36,6 +36,7 @@ bool TerrainLoader::LoadFromHeightMap(
     float uvStep = gridSize / textureSize;
     uint8_t *pixels = image.GetPixels();
 
+    grids += 1;
     std::vector<Vertex> &vertices = terrain.vertices;
     vertices.reserve(static_cast<size_t>(grids) * grids);
     for (uint32_t i = 0; i < grids; i++)
@@ -48,7 +49,7 @@ bool TerrainLoader::LoadFromHeightMap(
             uint32_t imageBaseOffset = 4 * (imageColumn * image.GetWidth() + imageRow);
 
             float vertexPositionY = static_cast<float>(j * gridSize);
-            float height = CalculateHeight(pixels + imageBaseOffset);
+            float height = i == grids - 1 || j == grids - 1 ? 0.0f : CalculateHeight(pixels + imageBaseOffset);
 
             Vertex vertex{};
             vertex.position = { vertexPositionX, -vertexPositionY, height };

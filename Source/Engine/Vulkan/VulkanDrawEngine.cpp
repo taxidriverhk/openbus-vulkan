@@ -23,8 +23,7 @@ VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
       screen(screen),
       dataUpdated(),
       enableDebugging(enableDebugging),
-      currentInFlightFrame(0),
-      bufferIds()
+      currentInFlightFrame(0)
 {
 }
 
@@ -71,6 +70,11 @@ void VulkanDrawEngine::DrawFrame()
     BeginFrame(imageIndex);
     Submit(imageIndex);
     EndFrame(imageIndex);
+}
+
+void VulkanDrawEngine::DrawText(const std::string &text, int x, int y, float scale)
+{
+
 }
 
 void VulkanDrawEngine::Initialize()
@@ -143,6 +147,9 @@ void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
     }
 }
 
+// This method should only be used for cleaning up
+// any remaining buffers from the GPU when the game session ends
+// Do not rely on this method for unloading blocks in normal circumstances
 void VulkanDrawEngine::ClearDrawingBuffers()
 {
     for (uint32_t bufferId : bufferIds)
@@ -227,7 +234,7 @@ void VulkanDrawEngine::CreatePipelines()
     if (!cubeMapVertexShader.Compile(CUBEMAP_PIPELINE_VERTEX_SHADER)
         || !cubeMapFragmentShader.Compile(CUBEMAP_PIPELINE_FRAGMENT_SHADER))
     {
-        throw std::runtime_error("Failed to compile static scene shader code");
+        throw std::runtime_error("Failed to compile cube map shader code");
     }
     cubeMapVertexShader.Load();
     cubeMapFragmentShader.Load();
@@ -384,14 +391,16 @@ void VulkanDrawEngine::LoadEntity(Entity &entity)
     VulkanInstanceBufferInput instanceBufferInput{};
     instanceBufferInput.transformation = translatedMatrix;
 
-    uint32_t bufferId = bufferManager->LoadIntoBuffer(
+    uint32_t entityId = entity.id;
+    bufferManager->LoadIntoBuffer(
+        entityId,
         mesh->id,
         mesh->material->id,
         instanceBufferInput,
         transformedVertices,
         mesh->indices,
         mesh->material.get());
-    bufferIds.insert(bufferId);
+    bufferIds.insert(entityId);
 
     MarkDataAsUpdated();
 }
@@ -440,6 +449,8 @@ void VulkanDrawEngine::RecreateSwapChain()
     DestroyFrameBuffers();
 
     context->RecreateSwapChain();
+    VkCommandPool commandPool = commandManager->GetOrCreateCommandPool(std::this_thread::get_id());
+    bufferManager->ResetCommandPool(commandPool);
 
     CreateFrameBuffers();
     CreateCommandBuffers();
@@ -493,4 +504,13 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
     input.eyePosition = position;
 
     bufferManager->UpdateUniformBuffer(input);
+}
+
+void VulkanDrawEngine::UnloadEntity(uint32_t entityId)
+{
+    if (bufferIds.count(entityId) > 0)
+    {
+        bufferManager->UnloadBuffer(entityId);
+        bufferIds.erase(entityId);
+    }
 }

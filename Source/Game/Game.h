@@ -26,9 +26,6 @@ public:
     void Start(const GameSessionConfig &startConfig);
 
 private:
-    static constexpr int SCREEN_WIDTH = 1280;
-    static constexpr int SCREEN_HEIGHT = 720;
-
     void Cleanup();
     void InitializeComponents();
     void InitializeSettings(const GameSessionConfig &startConfig);
