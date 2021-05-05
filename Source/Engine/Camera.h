@@ -19,6 +19,8 @@ public:
     float GetAspect() const { return aspect; }
     float GetFieldOfView() const { return fieldOfView; }
 
+    void SetZFar(float zFarToSet) { zFar = zFarToSet; }
+
     void MoveTo(float x, float y, float z);
     void MoveBy(float x, float y, float z);
     void RotateTo(float pitch, float yaw, float roll);

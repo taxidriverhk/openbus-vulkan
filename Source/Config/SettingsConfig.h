@@ -3,6 +3,7 @@
 struct GraphicsSettings
 {
     int targetFrameRate;
+    int maxViewableDistance;
     int screenWidth;
     int screenHeight;
 };

@@ -12,7 +12,6 @@ public:
 
     virtual void Destroy() = 0;
     virtual void DrawFrame() = 0;
-    virtual void DrawText(const std::string &text, int x, int y, float scale) = 0;
     virtual void Initialize() = 0;
     virtual void LoadCubeMap(CubeMap &cubemap) = 0;
     virtual void LoadEntity(Entity &entity) = 0;

@@ -1,3 +1,4 @@
+#include "Common/FileSystem.h"
 #include "Common/HandledThread.h"
 #include "Common/Util.h"
 #include "Common/Logger.h"
@@ -32,14 +33,16 @@ void Game::Cleanup()
 void Game::InitializeComponents()
 {
     int screenWidth = gameSettings.graphicsSettings.screenWidth,
-        screenHeight = gameSettings.graphicsSettings.screenHeight;
+        screenHeight = gameSettings.graphicsSettings.screenHeight,
+        maxDistance = gameSettings.graphicsSettings.maxViewableDistance;
 
     controlManager = std::make_unique<ControlManager>();
 
-    std::string screenTitle = Util::FormatWindowTitle("Game Screen");
     camera = std::make_unique<Camera>(screenWidth, screenHeight);
-    screen = std::make_unique<Screen>(screenWidth, screenHeight, screenTitle);
+    camera->SetZFar(static_cast<float>(maxDistance));
 
+    std::string screenTitle = Util::FormatWindowTitle("Game Screen");
+    screen = std::make_unique<Screen>(screenWidth, screenHeight, screenTitle);
     screen->Create();
 
     renderer = std::make_unique<Renderer>(camera.get());
@@ -50,6 +53,7 @@ void Game::InitializeSettings(const GameSessionConfig &startConfig)
 {
     gameSettings.mapLoadSettings.maxAdjacentBlocks = 1;
     gameSettings.graphicsSettings.targetFrameRate = 120;
+    gameSettings.graphicsSettings.maxViewableDistance = 1200;
     gameSettings.graphicsSettings.screenWidth = 1920;
     gameSettings.graphicsSettings.screenHeight = 1080;
 }
@@ -113,7 +117,7 @@ void Game::RunMainLoop()
     mapLoader->StartLoadBlocksThread();
 
     Logger::Log(LogLevel::Info, "Loading uniform background");
-    renderer->LoadBackground();
+    renderer->LoadBackground(map->GetSkyBoxImageFilePath());
     screen->Show();
 
     Logger::Log(LogLevel::Info, "Entering the rendering loop");
