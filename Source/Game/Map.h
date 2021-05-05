@@ -101,6 +101,7 @@ public:
     ~Map();
 
     std::string GetConfigFilePath() const { return configFilePath; }
+    std::string GetSkyBoxImageFilePath() const;
     MapBlock *GetCurrentBlock() const { return currentBlock; }
     MapBlock *GetPreviousBlock() const { return previousBlock; }
 

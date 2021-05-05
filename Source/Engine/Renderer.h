@@ -2,6 +2,7 @@
 
 #include <list>
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #include "Entity.h"
@@ -21,7 +22,7 @@ public:
     void Cleanup();
     void DrawScene();
     void CreateContext(Screen *screen);
-    void LoadBackground();
+    void LoadBackground(const std::string &skyBoxImageFilePath);
     void LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity> &entities);
     void UnloadEntities(uint32_t blockId);
 

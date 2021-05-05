@@ -3,12 +3,16 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include "Vertex.h"
+
 class Image;
 struct Mesh;
 
 struct CubeMap
 {
     std::vector<Image *> images;
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
 };
 
 struct Entity

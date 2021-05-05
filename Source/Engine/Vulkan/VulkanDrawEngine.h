@@ -24,7 +24,6 @@ public:
 
     void Destroy() override;
     void DrawFrame() override;
-    void DrawText(const std::string &text, int x, int y, float scale) override;
     void Initialize() override;
     void LoadCubeMap(CubeMap &cubeMap) override;
     void LoadEntity(Entity &entity) override;

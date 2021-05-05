@@ -73,6 +73,11 @@ void VulkanBuffer::Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properti
         return;
     }
 
+    Update(data, size);
+}
+
+void VulkanBuffer::Update(void *data, uint32_t size)
+{
     VkBuffer stagingBuffer;
     VmaAllocation stagingAllocation;
     VulkanBuffer::CreateBuffer(
@@ -91,17 +96,6 @@ void VulkanBuffer::Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properti
     CopyBuffer(stagingBuffer, buffer, size);
 
     vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
-
-    this->size = size;
-    this->loaded = true;
-}
-
-void VulkanBuffer::Update(void *data, uint32_t size)
-{
-    void *mappedData;
-    vmaMapMemory(allocator, allocation, &mappedData);
-    memcpy(mappedData, data, size);
-    vmaUnmapMemory(allocator, allocation);
 
     this->size = size;
     this->loaded = true;

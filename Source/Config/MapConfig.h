@@ -15,6 +15,7 @@ struct MapInfoConfig
 {
     std::string name;
     std::string image;
+    std::string skyBoxImage;
     std::vector<MapBlockFileConfig> blocks;
 };
 

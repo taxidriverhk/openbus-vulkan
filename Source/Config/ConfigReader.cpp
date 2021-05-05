@@ -38,5 +38,6 @@ void ConfigReader::RegisterConfigMapping()
 
     JsonParser::RegisterMapper(&MapInfoConfig::name, "name");
     JsonParser::RegisterMapper(&MapInfoConfig::image, "image");
+    JsonParser::RegisterMapper(&MapInfoConfig::skyBoxImage, "skyBoxImage");
     JsonParser::RegisterMapper(&MapInfoConfig::blocks, "blocks");
 }

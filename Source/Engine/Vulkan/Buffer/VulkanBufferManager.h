@@ -34,7 +34,10 @@ public:
     void ResetCommandPool(VkCommandPool commandPool);
 
     // Cubemap Buffering
-    void UpdateCubeMapImage(std::vector<Image *> &images);
+    void LoadCubeMapBuffer(
+        std::vector<Vertex> &vertices,
+        std::vector<uint32_t> &indices,
+        std::vector<Image *> &images);
 
     // Terrain Buffering
     void LoadTerrainIntoBuffer(
@@ -64,7 +67,6 @@ private:
     // Only used for buffer ID generation, not a real limit
     static constexpr uint32_t MAX_VERTEX_BUFFERS = 20000;
 
-    void CreateCubeMapBuffer();
     void CreateDescriptorPool();
     void CreateMemoryAllocator();
     void CreateUniformBuffers();

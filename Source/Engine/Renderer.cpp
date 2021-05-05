@@ -48,17 +48,50 @@ void Renderer::CreateContext(Screen *screen)
     drawEngine->Initialize();
 }
 
-void Renderer::LoadBackground()
+void Renderer::LoadBackground(const std::string &skyBoxImageFilePath)
 {
     // Load any resources that need to be loaded regardless of the game state
     // (ex. sky, sun, etc.)
     Logger::Log(LogLevel::Info, "Loading skybox into buffer");
-    Image skyBoxImage("sky.bmp");
+
+    Image skyBoxImage(skyBoxImageFilePath);
     CubeMap cubeMap{};
+    cubeMap.vertices.resize(8);
+    cubeMap.vertices[0].position = { 1.0f, 1.0f, -1.0f };
+    cubeMap.vertices[1].position = { 1.0f, -1.0f, -1.0f };
+    cubeMap.vertices[2].position = { 1.0f, 1.0f, 1.0f };
+    cubeMap.vertices[3].position = { 1.0f, -1.0f, 1.0f };
+    cubeMap.vertices[4].position = { -1.0f, 1.0f, -1.0f };
+    cubeMap.vertices[5].position = { -1.0f, -1.0f, -1.0f };
+    cubeMap.vertices[6].position = { -1.0f, 1.0f, 1.0f };
+    cubeMap.vertices[7].position = { -1.0f, -1.0f, 1.0f };
+
+    float sizeMultiplier = camera->GetZFar();
+    for (uint32_t i = 0; i < cubeMap.vertices.size(); i++)
+    {
+        cubeMap.vertices[i].position *= sizeMultiplier * 0.9f;
+    }
+
+    cubeMap.indices =
+    {
+        4, 2, 0,
+        2, 7, 3,
+        6, 5, 7,
+        1, 7, 5,
+        0, 3, 1,
+        4, 1, 5,
+        4, 6, 2,
+        2, 6, 7,
+        6, 4, 5,
+        1, 3, 7,
+        0, 2, 3,
+        4, 0, 1
+    };
     for (int i = 0; i < 6; i++)
     {
         cubeMap.images.push_back(&skyBoxImage);
     }
+
     drawEngine->LoadCubeMap(cubeMap);
     Logger::Log(LogLevel::Info, "Finished loading skybox into buffer");
 }

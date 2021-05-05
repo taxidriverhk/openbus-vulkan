@@ -72,11 +72,6 @@ void VulkanDrawEngine::DrawFrame()
     EndFrame(imageIndex);
 }
 
-void VulkanDrawEngine::DrawText(const std::string &text, int x, int y, float scale)
-{
-
-}
-
 void VulkanDrawEngine::Initialize()
 {
     context = std::make_unique<VulkanContext>(screen, enableDebugging);
@@ -361,7 +356,20 @@ void VulkanDrawEngine::MarkDataAsUpdated()
 
 void VulkanDrawEngine::LoadCubeMap(CubeMap &cubeMap)
 {
-    bufferManager->UpdateCubeMapImage(cubeMap.images);
+    std::vector<Vertex> transformedVertices(cubeMap.vertices);
+    std::transform(
+        std::execution::par,
+        cubeMap.vertices.begin(),
+        cubeMap.vertices.end(),
+        transformedVertices.begin(),
+        [&](Vertex &vertex)
+        {
+            return ConvertToVulkanVertex(vertex);
+        });
+    bufferManager->LoadCubeMapBuffer(
+        transformedVertices,
+        cubeMap.indices,
+        cubeMap.images);
 }
 
 void VulkanDrawEngine::LoadEntity(Entity &entity)
@@ -500,7 +508,7 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
     // Conversion required for Vulkan depth range
     input.projection[1][1] *= -1;
     input.view = glm::lookAt(position, position + front, up);
-    input.lightPosition = { 10.0f, 10.0f, 10.0f };
+    input.lightPosition = { 100.0f, 100.0f, 100.0f };
     input.eyePosition = position;
 
     bufferManager->UpdateUniformBuffer(input);

@@ -43,6 +43,13 @@ bool Map::GetMapBlockFile(const MapBlockPosition &mapBlockPosition, MapBlockFile
     return false;
 }
 
+std::string Map::GetSkyBoxImageFilePath() const
+{
+    std::string mapBaseDirectory = FileSystem::GetParentDirectory(configFilePath);
+    std::string textureFilePath = FileSystem::GetTextureFile(mapBaseDirectory, mapInfoConfig.skyBoxImage);
+    return textureFilePath;
+}
+
 bool Map::IsBlockLoaded(const MapBlockPosition &mapBlockPosition)
 {
     return loadedBlocks.count(mapBlockPosition) > 0;

@@ -41,7 +41,6 @@ void VulkanBufferManager::Create()
     CreateDescriptorPool();
     CreateMemoryAllocator();
     CreateUniformBuffers();
-    CreateCubeMapBuffer();
 }
 
 void VulkanBufferManager::Destroy()
@@ -279,19 +278,44 @@ void VulkanBufferManager::UnloadTerrain(uint32_t terrainId)
     }
 }
 
-void VulkanBufferManager::UpdateCubeMapImage(std::vector<Image *> &images)
+void VulkanBufferManager::LoadCubeMapBuffer(
+    std::vector<Vertex> &vertices,
+    std::vector<uint32_t> &indices,
+    std::vector<Image *> &images)
 {
     assert(images.size() > 0);
+
+    cubeMapVertexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+    cubeMapVertexBuffer->Load(
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        vertices.data(),
+        static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
+
+    cubeMapIndexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+    cubeMapIndexBuffer->Load(
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        indices.data(),
+        static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
 
     std::vector<uint8_t *> imagePixels;
     for (Image *image : images)
     {
         imagePixels.push_back(image->GetPixels());
     }
-    cubeMapImage->UpdateImagePixels(
+    cubeMapImage = std::make_unique<VulkanImage>(
+        context, commandPool, imageVmaAllocator, VulkanImageType::CubeMap);
+    cubeMapImage->Load(
         imagePixels,
         images[0]->GetWidth(),
-        images[0]->GetHeight());
+        images[0]->GetHeight(),
+        descriptorPool,
+        pipelines.cubeMapPipeline->GetImageDescriptorSetLayout());
+
+    cubeMapBufferCache.imageBuffer = cubeMapImage.get();
+    cubeMapBufferCache.vertexBuffer = cubeMapVertexBuffer.get();
+    cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
 }
 
 void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
@@ -304,72 +328,6 @@ void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
     }
 
     uniformBufferUpdated = true;
-}
-
-void VulkanBufferManager::CreateCubeMapBuffer()
-{
-    // TODO: may consider loading the cube from a model file with configurable size multiplier
-    const uint32_t cubeMapVertexCount = 8;
-    std::array<Vertex, cubeMapVertexCount> cubeMapVertices;
-    cubeMapVertices[0].position = { 1.0f, 1.0f, -1.0f };
-    cubeMapVertices[1].position = { 1.0f, -1.0f, -1.0f };
-    cubeMapVertices[2].position = { 1.0f, 1.0f, 1.0f };
-    cubeMapVertices[3].position = { 1.0f, -1.0f, 1.0f };
-    cubeMapVertices[4].position = { -1.0f, 1.0f, -1.0f };
-    cubeMapVertices[5].position = { -1.0f, -1.0f, -1.0f };
-    cubeMapVertices[6].position = { -1.0f, 1.0f, 1.0f };
-    cubeMapVertices[7].position = { -1.0f, -1.0f, 1.0f };
-
-    const float sizeMultiplier = 500.0f;
-    for (uint32_t i = 0; i < cubeMapVertexCount; i++)
-    {
-        cubeMapVertices[i].position *= sizeMultiplier;
-    }
-
-    const uint32_t cubeMapIndexCount = 36;
-    std::array<uint32_t, cubeMapIndexCount> cubeMapIndices =
-    {
-        4, 2, 0,
-        2, 7, 3,
-        6, 5, 7,
-        1, 7, 5,
-        0, 3, 1,
-        4, 1, 5,
-        4, 6, 2,
-        2, 6, 7,
-        6, 4, 5,
-        1, 3, 7,
-        0, 2, 3,
-        4, 0, 1
-    };
-
-    cubeMapVertexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
-    cubeMapVertexBuffer->Load(
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        cubeMapVertices.data(),
-        static_cast<uint32_t>(sizeof(Vertex) * cubeMapVertexCount));
-
-    cubeMapIndexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
-    cubeMapIndexBuffer->Load(
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        cubeMapIndices.data(),
-        static_cast<uint32_t>(sizeof(uint32_t) * cubeMapIndexCount));
-
-    // TODO: need to determine the image size more wisely
-    cubeMapImage = std::make_unique<VulkanImage>(
-        context, commandPool, imageVmaAllocator, VulkanImageType::CubeMap);
-    cubeMapImage->Load(
-        std::vector<uint8_t *>(),
-        512,
-        512,
-        descriptorPool,
-        pipelines.cubeMapPipeline->GetImageDescriptorSetLayout());
-
-    cubeMapBufferCache.imageBuffer = cubeMapImage.get();
-    cubeMapBufferCache.vertexBuffer = cubeMapVertexBuffer.get();
-    cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
 }
 
 void VulkanBufferManager::CreateDescriptorPool()
