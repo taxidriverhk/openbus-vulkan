@@ -318,6 +318,15 @@ void VulkanBufferManager::LoadCubeMapBuffer(
     cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
 }
 
+void VulkanBufferManager::UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput input)
+{
+    if (instanceBuffers.count(instanceId) == 0)
+    {
+        return;
+    }
+    instanceBuffers[instanceId]->Update(&input, sizeof(VulkanInstanceBufferInput));
+}
+
 void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
 {
     uniformBufferInput = input;

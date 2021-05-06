@@ -145,6 +145,7 @@ struct VulkanDrawingPipelines
     VulkanPipeline *staticPipeline;
     VulkanPipeline *cubeMapPipeline;
     VulkanPipeline *terrainPipeline;
+    VulkanPipeline *screenPipeline;
 };
 
 struct VulkanDrawingBuffer

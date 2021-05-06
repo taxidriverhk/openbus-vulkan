@@ -27,9 +27,11 @@ public:
     void Initialize() override;
     void LoadCubeMap(CubeMap &cubeMap) override;
     void LoadEntity(Entity &entity) override;
+    void LoadScreenObject(ScreenMesh &screenMesh) override;
     void LoadTerrain(Terrain &terrain) override;
     void UpdateCamera(Camera *camera) override;
     void UnloadEntity(uint32_t entityId) override;
+    void UnloadScreenObject(uint32_t screenMeshId) override;
     void UnloadTerrain(uint32_t terrainId) override;
 
 private:

@@ -46,7 +46,7 @@ void Game::InitializeComponents()
     screen->Create();
 
     renderer = std::make_unique<Renderer>(camera.get());
-    renderer->CreateContext(screen.get());
+    renderer->Initialize(screen.get());
 }
 
 void Game::InitializeSettings(const GameSessionConfig &startConfig)

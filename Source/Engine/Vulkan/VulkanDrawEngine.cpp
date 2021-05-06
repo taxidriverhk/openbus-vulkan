@@ -413,6 +413,11 @@ void VulkanDrawEngine::LoadEntity(Entity &entity)
     MarkDataAsUpdated();
 }
 
+void VulkanDrawEngine::LoadScreenObject(ScreenMesh &screenMesh)
+{
+
+}
+
 void VulkanDrawEngine::LoadTerrain(Terrain &terrain)
 {
     uint32_t terrainId = terrain.id;
@@ -526,6 +531,11 @@ void VulkanDrawEngine::UnloadEntity(uint32_t entityId)
     }
 
     MarkDataAsUpdated();
+}
+
+void VulkanDrawEngine::UnloadScreenObject(uint32_t screenMeshId)
+{
+
 }
 
 void VulkanDrawEngine::UnloadTerrain(uint32_t terrainId)

@@ -12,6 +12,17 @@ std::string FileSystem::MapDirectory()
     return (baseDirectory / MAP_DIRECTORY_NAME).string();
 }
 
+std::list<std::string> FileSystem::GetFontFiles()
+{
+    std::list<std::string> fontFiles;
+    std::filesystem::path fontDirectory = (baseDirectory / FONT_DIRECTORY_NAME);
+    for (const auto &fontEntry : std::filesystem::directory_iterator(fontDirectory))
+    {
+        fontFiles.push_back(fontEntry.path().string());
+    }
+    return fontFiles;
+}
+
 std::string FileSystem::GetParentDirectory(const std::string &mapFilePath)
 {
     std::filesystem::path mapFile = mapFilePath;

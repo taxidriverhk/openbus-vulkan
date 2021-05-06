@@ -4,6 +4,7 @@
 #include <future>
 #include <numeric>
 
+#include "Common/FileSystem.h"
 #include "Common/Logger.h"
 #include "Camera.h"
 #include "DrawEngine.h"
@@ -35,10 +36,11 @@ void Renderer::DrawScene()
     drawEngine->DrawFrame();
 }
 
-void Renderer::CreateContext(Screen *screen)
+void Renderer::Initialize(Screen *screen)
 {
     assert(("Screen must be defined for the renderer", screen != nullptr));
 
+    Logger::Log(LogLevel::Info, "Initializing graphics context");
 #if _DEBUG
     bool enableDebugging = true;
 #else
@@ -46,6 +48,17 @@ void Renderer::CreateContext(Screen *screen)
 #endif
     drawEngine = std::make_unique<VulkanDrawEngine>(screen, enableDebugging);
     drawEngine->Initialize();
+
+    Logger::Log(LogLevel::Info, "Loading fonts");
+    for (std::string fontFilePath : FileSystem::GetFontFiles())
+    {
+        fontManager.LoadFont(fontFilePath);
+    }
+}
+
+void Renderer::AddText(const Text &text)
+{
+    
 }
 
 void Renderer::LoadBackground(const std::string &skyBoxImageFilePath)
@@ -109,6 +122,11 @@ void Renderer::LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity>
     Logger::Log(LogLevel::Info, "Loading terrain into buffer");
     drawEngine->LoadTerrain(terrain);
     Logger::Log(LogLevel::Info, "Finished loading terrain into buffer");
+}
+
+void Renderer::RemoveText(uint32_t textMeshId)
+{
+
 }
 
 void Renderer::UnloadEntities(uint32_t blockId)

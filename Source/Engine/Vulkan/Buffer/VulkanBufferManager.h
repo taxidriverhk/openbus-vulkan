@@ -57,6 +57,7 @@ public:
         std::vector<uint32_t> &indices,
         Material *material);
     void UnloadBuffer(uint32_t instanceId);
+    void UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput input);
     void UpdateUniformBuffer(VulkanUniformBufferInput input);
 
     VulkanDrawingBuffer GetDrawingBuffer(uint32_t imageIndex);
@@ -103,6 +104,9 @@ private:
 
     std::unordered_map<uint32_t, VulkanEntityBufferIds> bufferIdCache;
     std::unordered_map<uint32_t, VulkanEntityBuffer> entityBufferCache;
+
+    // Screen object buffers
+    std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> screenObjectBuffers;
 
     // Terrain buffers
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainVertexBuffers;

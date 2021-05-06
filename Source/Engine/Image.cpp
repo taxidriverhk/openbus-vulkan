@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdexcept>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -13,12 +14,25 @@ Image::Image()
 {
 }
 
-Image::Image(std::string path, ImageColor color)
+Image::Image(const std::string &path, ImageColor color)
     : Image()
 {
     if (!Load(path, color))
     {
         throw std::runtime_error("Failed to load image from " + path);
+    }
+}
+
+Image::Image(const uint8_t *srcPixels, int width, int height)
+    : width(width),
+      height(height),
+      channels(4)
+{
+    uint32_t pixelSize = channels * width * height;
+    pixels = (uint8_t *) malloc(pixelSize);
+    if (pixels)
+    {
+        memcpy(pixels, srcPixels, pixelSize);
     }
 }
 
@@ -35,7 +49,7 @@ void Image::Destroy()
     }
 }
 
-bool Image::Load(std::string path, ImageColor color)
+bool Image::Load(const std::string &path, ImageColor color)
 {
     Destroy();
 

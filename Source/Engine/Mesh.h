@@ -6,6 +6,7 @@
 
 #include "Vertex.h"
 
+class Image;
 struct Material;
 
 struct Mesh
@@ -14,6 +15,14 @@ struct Mesh
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     std::shared_ptr<Material> material;
+};
+
+struct ScreenMesh
+{
+    uint32_t id;
+    std::vector<glm::vec2> vertices;
+    std::vector<uint32_t> indices;
+    std::shared_ptr<Image> image;
 };
 
 class MeshLoader

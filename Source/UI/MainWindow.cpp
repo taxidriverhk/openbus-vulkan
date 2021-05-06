@@ -104,7 +104,7 @@ void MainWindow::StartButtonClicked()
             },
             [&]()
             {
-                GameThreadError();
+                game->SetShouldEndGame(true);
             });
     }
     else

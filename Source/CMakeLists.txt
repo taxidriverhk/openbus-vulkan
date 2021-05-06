@@ -7,7 +7,7 @@ find_package (Vulkan REQUIRED FATAL_ERROR)
 find_package (Qt5Core REQUIRED)
 find_package (Qt5Gui REQUIRED)
 find_package (Qt5Widgets REQUIRED)
-find_package (SFML 2.5 COMPONENTS window REQUIRED)
+find_package (SFML 2.5 COMPONENTS window graphics REQUIRED)
 
 file (GLOB_RECURSE HEADER_FILES *.h)
 file (GLOB_RECURSE SOURCE_FILES *.cpp)
@@ -34,6 +34,7 @@ target_link_libraries (OpenBus fmt::fmt)
 target_link_libraries (OpenBus plog)
 target_link_libraries (OpenBus shaderc)
 target_link_libraries (OpenBus assimp)
+target_link_libraries (OpenBus sfml-graphics)
 target_link_libraries (OpenBus sfml-window)
 
 # Qt configurations
