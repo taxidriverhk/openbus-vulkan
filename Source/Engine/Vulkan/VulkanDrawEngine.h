@@ -7,14 +7,13 @@
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
 #include "Engine/Vertex.h"
-
 #include "VulkanContext.h"
-#include "VulkanPipeline.h"
-#include "VulkanShader.h"
 
 class VulkanPipeline;
 class VulkanBufferManager;
 class VulkanCommandManager;
+class VulkanPipelineManager;
+class VulkanRenderPass;
 
 class VulkanDrawEngine : public DrawEngine
 {
@@ -50,6 +49,16 @@ private:
         };
     }
 
+    inline static ScreenObjectVertex ConvertToVulkanVertex(const ScreenObjectVertex &input)
+    {
+        return
+        {
+            { input.color.x, input.color.y, input.color.z },
+            { input.position.x, input.position.y },
+            { input.uv.x, 1.0f - input.uv.y }
+        };
+    }
+
     inline static glm::vec3 ConvertToVulkanCoordinates(const glm::vec3 &input)
     {
         return { input.x, input.z, -input.y };
@@ -57,12 +66,10 @@ private:
 
     void CreateCommandBuffers();
     void CreateFrameBuffers();
-    void CreatePipelines();
     void CreateSynchronizationObjects();
     void ClearDrawingBuffers();
     void DestroyCommandBuffers();
     void DestroyFrameBuffers();
-    void DestroyPipelines();
     void DestroySynchronizationObjects();
 
     void BeginFrame(uint32_t &imageIndex);
@@ -80,13 +87,11 @@ private:
     std::unique_ptr<VulkanRenderPass> renderPass;
 
     std::unique_ptr<VulkanCommandManager> commandManager;
-
-    std::unique_ptr<VulkanPipeline> staticPipeline;
-    std::unique_ptr<VulkanPipeline> cubeMapPipeline;
-    std::unique_ptr<VulkanPipeline> terrainPipeline;
+    std::unique_ptr<VulkanPipelineManager> pipelineManager;
 
     std::unordered_set<uint32_t> bufferIds;
     std::unordered_set<uint32_t> terrainBufferIds;
+    std::unordered_set<uint32_t> screenObjectIds;
     std::unique_ptr<VulkanBufferManager> bufferManager;
 
     // Based on number of swap chain images (which is usually 3)

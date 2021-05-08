@@ -10,6 +10,11 @@ struct VulkanInstanceBufferInput
     glm::mat4 transformation;
 };
 
+struct VulkanScreenBufferInput
+{
+    glm::mat4 projection;
+};
+
 struct VulkanUniformBufferInput
 {
     glm::mat4 view;
@@ -54,6 +59,9 @@ private:
 
     uint32_t size;
     bool loaded;
+
+    VkBufferUsageFlags usage;
+    VkMemoryPropertyFlags properties;
 
     VmaAllocator &allocator;
     VmaAllocation allocation;

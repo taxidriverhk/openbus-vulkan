@@ -4,16 +4,38 @@
 
 #include <vulkan/vulkan.h>
 
-#include "VulkanContext.h"
-#include "VulkanRenderPass.h"
-#include "VulkanShader.h"
+#include "Engine/Vulkan/VulkanContext.h"
+#include "Engine/Vulkan/VulkanRenderPass.h"
+#include "Engine/Vulkan/VulkanShader.h"
+
+enum class VulkanDescriptorLayoutType
+{
+    Image,
+    Instance,
+    Uniform
+};
+
+struct VulkanDescriptorLayoutConfig
+{
+    VulkanDescriptorLayoutType type;
+    uint32_t bindingCount;
+    const VkDescriptorSetLayoutBinding *bindings;
+};
+
+struct VulkanVertexLayoutConfig
+{
+    uint32_t vertexSize;
+    uint32_t descriptionCount;
+    const VkVertexInputAttributeDescription *descriptions;
+};
 
 struct VulkanPipelineConfig
 {
     VulkanShader *vertexShader;
     VulkanShader *fragmentShader;
 
-
+    VulkanVertexLayoutConfig vertexLayoutConfig;
+    std::vector<VulkanDescriptorLayoutConfig> descriptorLayoutConfigs;
 
     VkCullModeFlags cullMode;
     VkFrontFace frontFace;
@@ -35,7 +57,7 @@ public:
     void Destroy();
 
 private:
-    void CreateDescriptorLayouts();
+    void CreateDescriptorLayouts(const std::vector<VulkanDescriptorLayoutConfig> &descriptorLayoutConfigs);
     void DestroyDescriptorLayouts();
 
     VulkanContext *context;

@@ -66,6 +66,8 @@ void VulkanBuffer::Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properti
     }
 
     VulkanBuffer::CreateBuffer(allocator, usage, properties, size, buffer, allocation);
+    this->usage = usage;
+    this->properties = properties;
 
     // No data to load, only buffer allocation is done
     if (!data)
@@ -78,6 +80,17 @@ void VulkanBuffer::Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properti
 
 void VulkanBuffer::Update(void *data, uint32_t size)
 {
+    // If the new size is greater than the old size, then the
+    // buffer must be destroyed and created again
+    if (this->size != 0 && size > this->size)
+    {
+        Unload();
+        Load(usage, properties, data, size);
+        return;
+    }
+
+    // Create another buffer for staging, and will be destroyed right after the
+    // data is copied into the actual buffer
     VkBuffer stagingBuffer;
     VmaAllocation stagingAllocation;
     VulkanBuffer::CreateBuffer(

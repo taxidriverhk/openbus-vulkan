@@ -8,9 +8,9 @@
 #include "Engine/Terrain.h"
 #include "Engine/Vulkan/VulkanContext.h"
 #include "Engine/Vulkan/VulkanRenderPass.h"
-#include "Engine/Vulkan/VulkanPipeline.h"
 #include "Engine/Vulkan/Command/VulkanCommand.h"
 #include "Engine/Vulkan/Image/VulkanImage.h"
+#include "Engine/Vulkan/Pipeline/VulkanPipeline.h"
 #include "VulkanBuffer.h"
 #include "VulkanBufferManager.h"
 
@@ -58,22 +58,62 @@ void VulkanBufferManager::Destroy()
 
 VulkanDrawingBuffer VulkanBufferManager::GetDrawingBuffer(uint32_t imageIndex)
 {
-    VulkanDrawingBuffer result{};
-
-    result.cubeMapBuffer = cubeMapBufferCache;
-    result.uniformBuffer = uniformBuffers[imageIndex].get();
-    result.entityBuffers = std::vector<VulkanEntityBuffer>();
-    result.terrainBuffers = std::vector<VulkanTerrainBuffer>();
+    VulkanDrawingBuffer drawingBuffer{};
+    drawingBuffer.cubeMapBuffer = cubeMapBufferCache;
+    drawingBuffer.uniformBuffer = uniformBuffers[imageIndex].get();
     for (auto &entry : entityBufferCache)
     {
-        result.entityBuffers.push_back(entry.second);
+        drawingBuffer.entityBuffers.push_back(entry.second);
     }
     for (auto &entry : terrainBufferCache)
     {
-        result.terrainBuffers.push_back(entry.second);
+        drawingBuffer.terrainBuffers.push_back(entry.second);
     }
+    for (auto &entry : screenObjectBufferCache)
+    {
+        drawingBuffer.screenObjectBuffers.push_back(entry.second);
+    }
+    return drawingBuffer;
+}
 
-    return result;
+void VulkanBufferManager::LoadCubeMapBuffer(
+    std::vector<Vertex> &vertices,
+    std::vector<uint32_t> &indices,
+    std::vector<Image *> &images)
+{
+    assert(images.size() > 0);
+
+    cubeMapVertexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+    cubeMapVertexBuffer->Load(
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        vertices.data(),
+        static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
+
+    cubeMapIndexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+    cubeMapIndexBuffer->Load(
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        indices.data(),
+        static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
+
+    std::vector<uint8_t *> imagePixels;
+    for (Image *image : images)
+    {
+        imagePixels.push_back(image->GetPixels());
+    }
+    cubeMapImage = std::make_unique<VulkanImage>(
+        context, commandPool, imageVmaAllocator, VulkanImageType::CubeMap);
+    cubeMapImage->Load(
+        imagePixels,
+        images[0]->GetWidth(),
+        images[0]->GetHeight(),
+        descriptorPool,
+        pipelines.cubeMapPipeline->GetImageDescriptorSetLayout());
+
+    cubeMapBufferCache.imageBuffer = cubeMapImage.get();
+    cubeMapBufferCache.vertexBuffer = cubeMapVertexBuffer.get();
+    cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
 }
 
 void VulkanBufferManager::LoadIntoBuffer(
@@ -162,6 +202,46 @@ void VulkanBufferManager::LoadIntoBuffer(
     entityBufferCache.insert(std::make_pair(instanceId, entityBuffer));
 }
 
+void VulkanBufferManager::LoadScreenObjectBuffer(
+    uint32_t screenObjectId,
+    std::vector<ScreenObjectVertex> &vertices,
+    Image *image)
+{
+    if (screenObjectBuffers.count(screenObjectId) == 0)
+    {
+        std::shared_ptr<VulkanBuffer> vertexBuffer = std::make_shared<VulkanBuffer>(
+            context, commandPool, vmaAllocator);
+        vertexBuffer->Load(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            vertices.data(),
+            static_cast<uint32_t>(sizeof(ScreenObjectVertex) * vertices.size()));
+        screenObjectBuffers.insert(std::make_pair(screenObjectId, std::move(vertexBuffer)));
+
+        std::shared_ptr<VulkanImage> screenImage = std::make_shared<VulkanImage>(
+            context, commandPool, imageVmaAllocator, VulkanImageType::Texture);
+        screenImage->Load(
+            std::vector<uint8_t *>({ image->GetPixels() }),
+            image->GetWidth(),
+            image->GetHeight(),
+            descriptorPool,
+            pipelines.screenPipeline->GetImageDescriptorSetLayout());
+        imageBuffers.insert(std::make_pair(screenObjectId, std::move(screenImage)));
+    }
+    else
+    {
+        std::shared_ptr<VulkanBuffer> vertexBuffer = screenObjectBuffers[screenObjectId];
+        vertexBuffer->Update(
+            vertices.data(),
+            static_cast<uint32_t>(sizeof(ScreenObjectVertex) * vertices.size()));
+    }
+
+    VulkanScreenObjectBuffer screenObjectBuffer{};
+    screenObjectBuffer.vertexBuffer = screenObjectBuffers[screenObjectId].get();
+    screenObjectBuffer.imageBuffer = imageBuffers[screenObjectId].get();
+    screenObjectBufferCache.insert(std::make_pair(screenObjectId, screenObjectBuffer));
+}
+
 void VulkanBufferManager::LoadTerrainIntoBuffer(
     uint32_t terrainId,
     std::vector<Vertex> &vertices,
@@ -220,6 +300,18 @@ void VulkanBufferManager::ResetCommandPool(VkCommandPool commandPool)
     this->commandPool = commandPool;
 }
 
+void VulkanBufferManager::ResetScreenBuffers()
+{
+    int width = context->GetScreen()->GetWidth(),
+        height = context->GetScreen()->GetHeight();
+    glm::mat4 projection = glm::ortho(0, width, 0, height);
+    screenBufferInput.projection = projection;
+    for (uint32_t i = 0; i < frameBufferSize; i++)
+    {
+        screenBuffers[i]->Update(&screenBufferInput, sizeof(VulkanScreenBufferInput));
+    }
+}
+
 void VulkanBufferManager::UnloadBuffer(uint32_t instanceId)
 {
     if (bufferIdCache.count(instanceId) > 0)
@@ -258,7 +350,23 @@ void VulkanBufferManager::UnloadBuffer(uint32_t instanceId)
     }
 }
 
-void VulkanBufferManager::UnloadTerrain(uint32_t terrainId)
+void VulkanBufferManager::UnloadScreenObjectBuffer(uint32_t screenObjectId)
+{
+    if (screenObjectBuffers.count(screenObjectId) > 0)
+    {
+        std::shared_ptr<VulkanBuffer> vertexBuffer = screenObjectBuffers[screenObjectId];
+        vertexBuffer->Unload();
+        screenObjectBuffers.erase(screenObjectId);
+
+        std::shared_ptr<VulkanImage> imageBuffer = imageBuffers[screenObjectId];
+        imageBuffer->Unload();
+        imageBuffers.erase(screenObjectId);
+
+        screenObjectBufferCache.erase(screenObjectId);
+    }
+}
+
+void VulkanBufferManager::UnloadTerrainBuffer(uint32_t terrainId)
 {
     if (terrainVertexBuffers.count(terrainId) > 0)
     {
@@ -270,52 +378,12 @@ void VulkanBufferManager::UnloadTerrain(uint32_t terrainId)
         indexBuffer->Unload();
         terrainIndexBuffers.erase(terrainId);
 
-        terrainBufferCache.erase(terrainId);
-
         std::shared_ptr<VulkanImage> imageBuffer = imageBuffers[terrainId];
         imageBuffer->Unload();
         imageBuffers.erase(terrainId);
+
+        terrainBufferCache.erase(terrainId);
     }
-}
-
-void VulkanBufferManager::LoadCubeMapBuffer(
-    std::vector<Vertex> &vertices,
-    std::vector<uint32_t> &indices,
-    std::vector<Image *> &images)
-{
-    assert(images.size() > 0);
-
-    cubeMapVertexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
-    cubeMapVertexBuffer->Load(
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        vertices.data(),
-        static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
-
-    cubeMapIndexBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
-    cubeMapIndexBuffer->Load(
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        indices.data(),
-        static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
-
-    std::vector<uint8_t *> imagePixels;
-    for (Image *image : images)
-    {
-        imagePixels.push_back(image->GetPixels());
-    }
-    cubeMapImage = std::make_unique<VulkanImage>(
-        context, commandPool, imageVmaAllocator, VulkanImageType::CubeMap);
-    cubeMapImage->Load(
-        imagePixels,
-        images[0]->GetWidth(),
-        images[0]->GetHeight(),
-        descriptorPool,
-        pipelines.cubeMapPipeline->GetImageDescriptorSetLayout());
-
-    cubeMapBufferCache.imageBuffer = cubeMapImage.get();
-    cubeMapBufferCache.vertexBuffer = cubeMapVertexBuffer.get();
-    cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
 }
 
 void VulkanBufferManager::UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput input)
@@ -365,6 +433,30 @@ void VulkanBufferManager::CreateMemoryAllocator()
     ASSERT_VK_RESULT_SUCCESS(
         vmaCreateAllocator(&createInfo, &imageVmaAllocator),
         "Failed to create image VMA allocator");
+}
+
+void VulkanBufferManager::CreateScreenBuffers()
+{
+    int width = context->GetScreen()->GetWidth(),
+        height = context->GetScreen()->GetHeight();
+    glm::mat4 projection = glm::ortho(0, width, 0, height);
+    screenBufferInput.projection = projection;
+
+    for (uint32_t i = 0; i < frameBufferSize; i++)
+    {
+        std::unique_ptr<VulkanBuffer> screenBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
+        screenBuffer->Load(
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            &screenBufferInput,
+            sizeof(VulkanScreenBufferInput));
+        screenBuffer->CreateDescriptorSet(
+            descriptorPool,
+            pipelines.screenPipeline->GetUniformDescriptorSetLayout(),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            sizeof(VulkanScreenBufferInput));
+        screenBuffers.push_back(std::move(screenBuffer));
+    }
 }
 
 void VulkanBufferManager::CreateUniformBuffers()

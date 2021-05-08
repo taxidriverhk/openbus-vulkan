@@ -37,11 +37,10 @@ struct Text
 {
     uint32_t id;
     float fontSize;
-    float lineWidth;
     glm::vec2 position;
     glm::vec3 color;
     std::string fontName;
-    std::string text;
+    std::vector<std::string> lines;
 };
 
 class FontManager
@@ -50,15 +49,18 @@ public:
     FontManager();
     ~FontManager();
 
-    bool FindFont(const std::string &fontName);
+    bool FontExists(const std::string &fontName);
     Font *GetFont(const std::string &fontName);
-    bool LoadFont(const std::string &fontFilePath);
     bool GenerateTextMesh(const Text &text, ScreenMesh &screenMesh);
 
 private:
     static constexpr std::wstring_view NEHE_CHAR_SET
         = L" \t\r\nABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*";
+    static constexpr wchar_t DEFAULT_CHAR = '_';
     static constexpr int MAX_FONT_SIZE = 72;
+
+    void LoadFonts();
+    bool LoadFont(const std::string &fontFilePath);
 
     std::unordered_map<std::string, std::unique_ptr<Font>> fontCache;
 };

@@ -22,6 +22,8 @@ static constexpr char *CUBEMAP_PIPELINE_VERTEX_SHADER = "shaders/cubemap_vertex_
 static constexpr char *CUBEMAP_PIPELINE_FRAGMENT_SHADER = "shaders/cubemap_fragment_shader.glsl";
 static constexpr char *TERRAIN_PIPELINE_VERTEX_SHADER = "shaders/terrain_vertex_shader.glsl";
 static constexpr char *TERRAIN_PIPELINE_FRAGMENT_SHADER = "shaders/terrain_fragment_shader.glsl";
+static constexpr char *SCREEN_PIPELINE_VERTEX_SHADER = "shaders/screen_vertex_shader.glsl";
+static constexpr char *SCREEN_PIPELINE_FRAGMENT_SHADER = "shaders/screen_fragment_shader.glsl";
 
 static constexpr int STATIC_PIPELINE_DESCRIPTOR_POOL_SIZE_COUNT = 2;
 static constexpr VkDescriptorPoolSize STATIC_PIPELINE_DESCRIPTOR_POOL_SIZES[] =
@@ -99,6 +101,29 @@ static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRI
     }
 };
 
+static constexpr int SCREEN_OBJECT_INPUT_ATTRIBUTE_DESCRIPTION_COUNT = 3;
+static constexpr VkVertexInputAttributeDescription SCREEN_OBJECT_INPUT_ATTRIBUTE_DESCRIPTIONS[] =
+{
+    {
+        0,
+        0,
+        VK_FORMAT_R32G32B32_SFLOAT,
+        offsetof(ScreenObjectVertex, color)
+    },
+    {
+        1,
+        0,
+        VK_FORMAT_R32G32_SFLOAT,
+        offsetof(ScreenObjectVertex, position)
+    },
+    {
+        2,
+        0,
+        VK_FORMAT_R32G32_SFLOAT,
+        offsetof(ScreenObjectVertex, uv)
+    }
+};
+
 static constexpr VkFormat DEPTH_IMAGE_FORMATS[] =
 {
     VK_FORMAT_D32_SFLOAT,
@@ -121,6 +146,12 @@ struct VulkanTerrainBuffer
 {
     VulkanBuffer *vertexBuffer;
     VulkanBuffer *indexBuffer;
+    VulkanImage *imageBuffer;
+};
+
+struct VulkanScreenObjectBuffer
+{
+    VulkanBuffer *vertexBuffer;
     VulkanImage *imageBuffer;
 };
 
@@ -154,4 +185,5 @@ struct VulkanDrawingBuffer
     VulkanCubeMapBuffer cubeMapBuffer;
     std::vector<VulkanTerrainBuffer> terrainBuffers;
     std::vector<VulkanEntityBuffer> entityBuffers;
+    std::vector<VulkanScreenObjectBuffer> screenObjectBuffers;
 };

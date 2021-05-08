@@ -1,5 +1,5 @@
 #include "Engine/Mesh.h"
-#include "VulkanCommon.h"
+#include "Engine/Vulkan/VulkanCommon.h"
 #include "VulkanPipeline.h"
 
 VulkanPipeline::VulkanPipeline(VulkanContext *context, VulkanRenderPass *renderPass)
@@ -19,7 +19,9 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::Create(VulkanPipelineConfig config)
 {
-    CreateDescriptorLayouts();
+    CreateDescriptorLayouts(config.descriptorLayoutConfigs);
+
+    const VulkanVertexLayoutConfig &vertexLayoutConfig = config.vertexLayoutConfig;
 
     VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
     vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -35,15 +37,15 @@ void VulkanPipeline::Create(VulkanPipelineConfig config)
 
     VkVertexInputBindingDescription bindingDescription{};
     bindingDescription.binding = 0;
-    bindingDescription.stride = sizeof(Vertex);
+    bindingDescription.stride = vertexLayoutConfig.vertexSize;
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.vertexAttributeDescriptionCount = VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT;
-    vertexInputInfo.pVertexAttributeDescriptions = VERTEX_INPUT_ATTRIBUTE_DESCRIPTIONS;
+    vertexInputInfo.vertexAttributeDescriptionCount = vertexLayoutConfig.descriptionCount;
+    vertexInputInfo.pVertexAttributeDescriptions = vertexLayoutConfig.descriptions;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -131,38 +133,42 @@ void VulkanPipeline::Create(VulkanPipelineConfig config)
         "Failed to create pipeline");
 }
 
-void VulkanPipeline::CreateDescriptorLayouts()
+void VulkanPipeline::CreateDescriptorLayouts(const std::vector<VulkanDescriptorLayoutConfig> &descriptorLayoutConfigs)
 {
-    VkDescriptorSetLayoutCreateInfo uniformDescriptorSetLayoutInfo{};
-    uniformDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    uniformDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    uniformDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDINGS;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &uniformDescriptorSetLayoutInfo, nullptr, &uniformDescriptorSetLayout),
-        "Failed to create uniform descriptor set layout");
+    std::vector<VkDescriptorSetLayout> resultingLayouts;
+    for (auto const &descriptorLayoutConfig : descriptorLayoutConfigs)
+    {
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+        descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutInfo.bindingCount = descriptorLayoutConfig.bindingCount;
+        descriptorSetLayoutInfo.pBindings = descriptorLayoutConfig.bindings;
 
-    VkDescriptorSetLayoutCreateInfo imageDescriptorSetLayoutInfo{};
-    imageDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    imageDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    imageDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDINGS;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &imageDescriptorSetLayoutInfo, nullptr, &imageDescriptorSetLayout),
-        "Failed to create image descriptor set layout");
+        VkDescriptorSetLayout targetLayout;
+        ASSERT_VK_RESULT_SUCCESS(
+            vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &descriptorSetLayoutInfo, nullptr, &targetLayout),
+            "Failed to create uniform descriptor set layout");
 
-    VkDescriptorSetLayoutCreateInfo instanceDescriptorSetLayoutInfo{};
-    instanceDescriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    instanceDescriptorSetLayoutInfo.bindingCount = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
-    instanceDescriptorSetLayoutInfo.pBindings = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDINGS;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateDescriptorSetLayout(context->GetLogicalDevice(), &instanceDescriptorSetLayoutInfo, nullptr, &instanceDescriptorSetLayout),
-        "Failed to create instance descriptor set layout");
+        switch (descriptorLayoutConfig.type)
+        {
+        case VulkanDescriptorLayoutType::Image:
+            imageDescriptorSetLayout = targetLayout;
+            break;
+        case VulkanDescriptorLayoutType::Instance:
+            instanceDescriptorSetLayout = targetLayout;
+            break;
+        case VulkanDescriptorLayoutType::Uniform:
+            uniformDescriptorSetLayout = targetLayout;
+            break;
+        }
 
-    VkDescriptorSetLayout descriptorSetLayouts[] = { uniformDescriptorSetLayout, imageDescriptorSetLayout, instanceDescriptorSetLayout };
+        resultingLayouts.push_back(targetLayout);
+    }
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.setLayoutCount = 3;
-    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts;
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(resultingLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = resultingLayouts.data();
     ASSERT_VK_RESULT_SUCCESS(
         vkCreatePipelineLayout(context->GetLogicalDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout),
         "Failed to create pipeline layout");

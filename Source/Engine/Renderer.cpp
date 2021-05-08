@@ -4,7 +4,6 @@
 #include <future>
 #include <numeric>
 
-#include "Common/FileSystem.h"
 #include "Common/Logger.h"
 #include "Camera.h"
 #include "DrawEngine.h"
@@ -48,17 +47,17 @@ void Renderer::Initialize(Screen *screen)
 #endif
     drawEngine = std::make_unique<VulkanDrawEngine>(screen, enableDebugging);
     drawEngine->Initialize();
-
-    Logger::Log(LogLevel::Info, "Loading fonts");
-    for (std::string fontFilePath : FileSystem::GetFontFiles())
-    {
-        fontManager.LoadFont(fontFilePath);
-    }
 }
 
-void Renderer::AddText(const Text &text)
+void Renderer::PutText(const Text &text)
 {
-    
+    ScreenMesh screenMesh;
+    if (!fontManager.GenerateTextMesh(text, screenMesh))
+    {
+        Logger::Log(LogLevel::Warning, "Failed to add or update text with ID {}", text.id);
+        return;
+    }
+    drawEngine->LoadScreenObject(screenMesh);
 }
 
 void Renderer::LoadBackground(const std::string &skyBoxImageFilePath)

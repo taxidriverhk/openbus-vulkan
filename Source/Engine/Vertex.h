@@ -18,6 +18,13 @@ struct Vertex
     }
 };
 
+struct ScreenObjectVertex
+{
+    glm::vec3 color;
+    glm::vec2 position;
+    glm::vec2 uv;
+};
+
 namespace std
 {
     template<> struct hash<Vertex>

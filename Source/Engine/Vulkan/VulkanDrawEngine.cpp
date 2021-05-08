@@ -14,9 +14,11 @@
 #include "Engine/Terrain.h"
 #include "VulkanCommon.h"
 #include "VulkanDrawEngine.h"
+#include "VulkanRenderPass.h"
 #include "Buffer/VulkanBuffer.h"
 #include "Buffer/VulkanBufferManager.h"
 #include "Command/VulkanCommandManager.h"
+#include "Pipeline/VulkanPipelineManager.h"
 
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
     : context(),
@@ -40,17 +42,9 @@ void VulkanDrawEngine::Destroy()
 
     DestroySynchronizationObjects();
     DestroyFrameBuffers();
-    DestroyPipelines();
-
+    pipelineManager->Destroy();
     renderPass->Destroy();
     context->Destroy();
-}
-
-void VulkanDrawEngine::DestroyPipelines()
-{
-    cubeMapPipeline->Destroy();
-    staticPipeline->Destroy();
-    terrainPipeline->Destroy();
 }
 
 void VulkanDrawEngine::DestroySynchronizationObjects()
@@ -80,21 +74,18 @@ void VulkanDrawEngine::Initialize()
     renderPass = std::make_unique<VulkanRenderPass>(context.get());
     renderPass->Create();
 
-    CreatePipelines();
+    pipelineManager = std::make_unique<VulkanPipelineManager>(context.get(), renderPass.get());
+    pipelineManager->Create();
+
     CreateFrameBuffers();
     CreateSynchronizationObjects();
-
-    VulkanDrawingPipelines pipelines{};
-    pipelines.staticPipeline = staticPipeline.get();
-    pipelines.cubeMapPipeline = cubeMapPipeline.get();
-    pipelines.terrainPipeline = terrainPipeline.get();
 
     CreateCommandBuffers();
     VkCommandPool commandPool = commandManager->GetOrCreateCommandPool(std::this_thread::get_id());
     bufferManager = std::make_unique<VulkanBufferManager>(
         context.get(),
         renderPass.get(),
-        pipelines,
+        pipelineManager->GetDrawingPipelines(),
         commandPool,
         static_cast<uint32_t>(frameBuffers.size()));
     bufferManager->Create();
@@ -155,7 +146,7 @@ void VulkanDrawEngine::ClearDrawingBuffers()
 
     for (uint32_t terrainId : terrainBufferIds)
     {
-        bufferManager->UnloadTerrain(terrainId);
+        bufferManager->UnloadTerrainBuffer(terrainId);
     }
     terrainBufferIds.clear();
 
@@ -164,15 +155,10 @@ void VulkanDrawEngine::ClearDrawingBuffers()
 
 void VulkanDrawEngine::CreateCommandBuffers()
 {
-    VulkanDrawingPipelines pipelines{};
-    pipelines.staticPipeline = staticPipeline.get();
-    pipelines.cubeMapPipeline = cubeMapPipeline.get();
-    pipelines.terrainPipeline = terrainPipeline.get();
-
     commandManager = std::make_unique<VulkanCommandManager>(
         context.get(),
         renderPass.get(),
-        pipelines);
+        pipelineManager->GetDrawingPipelines());
     commandManager->Create(static_cast<uint32_t>(frameBuffers.size()));
 
     dataUpdated.resize(frameBuffers.size());
@@ -210,70 +196,6 @@ void VulkanDrawEngine::CreateFrameBuffers()
 
         frameBuffers.push_back(frameBuffer);
     }
-}
-
-void VulkanDrawEngine::CreatePipelines()
-{
-    VulkanShader staticVertexShader(context.get(), VulkanShaderType::Vertex);
-    VulkanShader staticFragmentShader(context.get(), VulkanShaderType::Fragment);
-    if (!staticVertexShader.Compile(STATIC_PIPELINE_VERTEX_SHADER)
-        || !staticFragmentShader.Compile(STATIC_PIPELINE_FRAGMENT_SHADER))
-    {
-        throw std::runtime_error("Failed to compile static scene shader code");
-    }
-    staticVertexShader.Load();
-    staticFragmentShader.Load();
-
-    VulkanShader cubeMapVertexShader(context.get(), VulkanShaderType::Vertex);
-    VulkanShader cubeMapFragmentShader(context.get(), VulkanShaderType::Fragment);
-    if (!cubeMapVertexShader.Compile(CUBEMAP_PIPELINE_VERTEX_SHADER)
-        || !cubeMapFragmentShader.Compile(CUBEMAP_PIPELINE_FRAGMENT_SHADER))
-    {
-        throw std::runtime_error("Failed to compile cube map shader code");
-    }
-    cubeMapVertexShader.Load();
-    cubeMapFragmentShader.Load();
-
-    VulkanShader terrainVertexShader(context.get(), VulkanShaderType::Vertex);
-    VulkanShader terrainFragmentShader(context.get(), VulkanShaderType::Fragment);
-    if (!terrainVertexShader.Compile(TERRAIN_PIPELINE_VERTEX_SHADER)
-        || !terrainFragmentShader.Compile(TERRAIN_PIPELINE_FRAGMENT_SHADER))
-    {
-        throw std::runtime_error("Failed to compile terrain shader code");
-    }
-    terrainVertexShader.Load();
-    terrainFragmentShader.Load();
-
-    VulkanPipelineConfig staticPipelineConfig{};
-    staticPipelineConfig.vertexShader = &staticVertexShader;
-    staticPipelineConfig.fragmentShader = &staticFragmentShader;
-    staticPipelineConfig.cullMode = VK_CULL_MODE_BACK_BIT;
-    staticPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    staticPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
-    staticPipeline->Create(staticPipelineConfig);
-
-    VulkanPipelineConfig cubeMapPipelineConfig{};
-    cubeMapPipelineConfig.vertexShader = &cubeMapVertexShader;
-    cubeMapPipelineConfig.fragmentShader = &cubeMapFragmentShader;
-    cubeMapPipelineConfig.cullMode = VK_CULL_MODE_NONE;
-    cubeMapPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    cubeMapPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
-    cubeMapPipeline->Create(cubeMapPipelineConfig);
-
-    VulkanPipelineConfig terrainPipelineConfig{};
-    terrainPipelineConfig.vertexShader = &terrainVertexShader;
-    terrainPipelineConfig.fragmentShader = &terrainFragmentShader;
-    terrainPipelineConfig.cullMode = VK_CULL_MODE_BACK_BIT;
-    terrainPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    terrainPipeline = std::make_unique<VulkanPipeline>(context.get(), renderPass.get());
-    terrainPipeline->Create(terrainPipelineConfig);
-
-    staticVertexShader.Unload();
-    staticFragmentShader.Unload();
-    cubeMapVertexShader.Unload();
-    cubeMapFragmentShader.Unload();
-    terrainVertexShader.Unload();
-    terrainFragmentShader.Unload();
 }
 
 void VulkanDrawEngine::CreateSynchronizationObjects()
@@ -415,7 +337,21 @@ void VulkanDrawEngine::LoadEntity(Entity &entity)
 
 void VulkanDrawEngine::LoadScreenObject(ScreenMesh &screenMesh)
 {
+    uint32_t screenObjectId = screenMesh.id;
+    std::vector<ScreenObjectVertex> &vertices = screenMesh.vertices;
+    std::vector<ScreenObjectVertex> transformedVertices(vertices.size());
+    std::transform(
+        std::execution::par,
+        vertices.begin(),
+        vertices.end(),
+        transformedVertices.begin(),
+        [&](ScreenObjectVertex &vertex)
+        {
+            return ConvertToVulkanVertex(vertex);
+        });
 
+
+    MarkDataAsUpdated();
 }
 
 void VulkanDrawEngine::LoadTerrain(Terrain &terrain)
@@ -464,6 +400,7 @@ void VulkanDrawEngine::RecreateSwapChain()
     context->RecreateSwapChain();
     VkCommandPool commandPool = commandManager->GetOrCreateCommandPool(std::this_thread::get_id());
     bufferManager->ResetCommandPool(commandPool);
+    bufferManager->ResetScreenBuffers();
 
     CreateFrameBuffers();
     CreateCommandBuffers();
@@ -535,7 +472,9 @@ void VulkanDrawEngine::UnloadEntity(uint32_t entityId)
 
 void VulkanDrawEngine::UnloadScreenObject(uint32_t screenMeshId)
 {
-
+    context->WaitIdle();
+    bufferManager->UnloadScreenObjectBuffer(screenMeshId);
+    MarkDataAsUpdated();
 }
 
 void VulkanDrawEngine::UnloadTerrain(uint32_t terrainId)
@@ -544,7 +483,7 @@ void VulkanDrawEngine::UnloadTerrain(uint32_t terrainId)
 
     if (terrainBufferIds.count(terrainId) > 0)
     {
-        bufferManager->UnloadTerrain(terrainId);
+        bufferManager->UnloadTerrainBuffer(terrainId);
         terrainBufferIds.erase(terrainId);
     }
 

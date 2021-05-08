@@ -30,7 +30,7 @@ public:
     void LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity> &entities);
     void UnloadEntities(uint32_t blockId);
 
-    void AddText(const Text &text);
+    void PutText(const Text &text);
     void RemoveText(uint32_t textId);
 
 private:

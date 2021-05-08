@@ -20,8 +20,7 @@ struct Mesh
 struct ScreenMesh
 {
     uint32_t id;
-    std::vector<glm::vec2> vertices;
-    std::vector<uint32_t> indices;
+    std::vector<ScreenObjectVertex> vertices;
     std::shared_ptr<Image> image;
 };
 

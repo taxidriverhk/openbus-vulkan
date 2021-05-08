@@ -31,6 +31,7 @@ public:
     // Initialization
     void Create();
     void Destroy();
+    void ResetScreenBuffers();
     void ResetCommandPool(VkCommandPool commandPool);
 
     // Cubemap Buffering
@@ -45,7 +46,7 @@ public:
         std::vector<Vertex> &vertices,
         std::vector<uint32_t> &indices,
         Image *texture);
-    void UnloadTerrain(uint32_t terrainId);
+    void UnloadTerrainBuffer(uint32_t terrainId);
 
     // Vertex/Texture Buffering
     void LoadIntoBuffer(
@@ -60,6 +61,13 @@ public:
     void UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput input);
     void UpdateUniformBuffer(VulkanUniformBufferInput input);
 
+    // Screen Object Buffering
+    void LoadScreenObjectBuffer(
+        uint32_t screenObjectId,
+        std::vector<ScreenObjectVertex> &vertices,
+        Image *image);
+    void UnloadScreenObjectBuffer(uint32_t screenObjectId);
+
     VulkanDrawingBuffer GetDrawingBuffer(uint32_t imageIndex);
 
 private:
@@ -70,6 +78,7 @@ private:
 
     void CreateDescriptorPool();
     void CreateMemoryAllocator();
+    void CreateScreenBuffers();
     void CreateUniformBuffers();
     void DestroyCubeMapBuffer();
     void DestroyUniformBuffers();
@@ -86,8 +95,13 @@ private:
     VkCommandPool commandPool;
     VkDescriptorPool descriptorPool;
 
-    // Cubemap buffers
+    // Buffer caches
     VulkanCubeMapBuffer cubeMapBufferCache;
+    std::unordered_map<uint32_t, VulkanEntityBuffer> entityBufferCache;
+    std::unordered_map<uint32_t, VulkanTerrainBuffer> terrainBufferCache;
+    std::unordered_map<uint32_t, VulkanScreenObjectBuffer> screenObjectBufferCache;
+
+    // Cubemap buffers
     std::unique_ptr<VulkanBuffer> cubeMapVertexBuffer;
     std::unique_ptr<VulkanBuffer> cubeMapIndexBuffer;
     std::unique_ptr<VulkanImage> cubeMapImage;
@@ -103,7 +117,6 @@ private:
     std::unordered_map<uint32_t, uint32_t> imageBufferCount;
 
     std::unordered_map<uint32_t, VulkanEntityBufferIds> bufferIdCache;
-    std::unordered_map<uint32_t, VulkanEntityBuffer> entityBufferCache;
 
     // Screen object buffers
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> screenObjectBuffers;
@@ -111,9 +124,11 @@ private:
     // Terrain buffers
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainVertexBuffers;
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainIndexBuffers;
-    std::unordered_map<uint32_t, VulkanTerrainBuffer> terrainBufferCache;
 
+    // Uniform buffers
     bool uniformBufferUpdated;
     VulkanUniformBufferInput uniformBufferInput;
+    VulkanScreenBufferInput screenBufferInput;
     std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers;
+    std::vector<std::unique_ptr<VulkanBuffer>> screenBuffers;
 };
