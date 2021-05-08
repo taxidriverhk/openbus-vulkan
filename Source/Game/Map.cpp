@@ -243,7 +243,7 @@ void MapLoader::StartLoadBlocksThread()
 
                     float mapBlockOffsetX = static_cast<float>(mapBlockPositionValue.x) * MAP_BLOCK_SIZE,
                           mapBlockOffsetY = static_cast<float>(mapBlockPositionValue.y) * MAP_BLOCK_SIZE;
-                    uint32_t blockId = Identifier::GenerateIdentifier(mapBlockPositionValue.x, mapBlockPositionValue.y);
+                    uint32_t blockId = Identifier::GenerateIdentifier(IdentifierType::MapBlock, mapBlockPositionValue.x, mapBlockPositionValue.y);
 
                     MapBlockResources mapBlockResource;
                     mapBlockResource.blockId = blockId;
@@ -322,7 +322,7 @@ void MapLoader::StartLoadBlocksThread()
                             objectIdMeshMap[objectId] = std::make_shared<Mesh>(mesh);
                         }
 
-                        entity.id = entityConfig.id;
+                        entity.id = Identifier::GenerateIdentifier(IdentifierType::Entity, entityConfig.id);
                         entity.translation =
                         { 
                             mapBlockOffsetX + entityConfig.position.x,
