@@ -75,6 +75,7 @@ void VulkanCommandManager::Record(
     VkCommandBuffer primaryCommandBuffer = BeginPrimaryCommand(imageIndex, framebuffer);
 
     VulkanBuffer *uniformBuffer = drawingBuffer.uniformBuffer;
+    VulkanBuffer *screenBuffer = drawingBuffer.screenBuffer;
     std::mutex secondaryCommandMutex;
     std::vector<VkCommandBuffer> secondaryCommandBuffers;
 
@@ -149,6 +150,39 @@ void VulkanCommandManager::Record(
             EndCommand(secondaryCommandBuffer);
         });
 
+    std::future<void> screenCommandFuture = std::async(std::launch::async, [&]()
+        {
+            VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+
+            VulkanPipeline *screenPipeline = pipelines.screenPipeline;
+
+            for (const auto &screenObjectBuffer : drawingBuffer.screenObjectBuffers)
+            {
+                BindPipeline(secondaryCommandBuffer, screenPipeline);
+
+                VulkanBuffer *vertexBuffer = screenObjectBuffer.vertexBuffer;
+                VulkanImage *imageBuffer = screenObjectBuffer.imageBuffer;
+
+                // Bind vertex buffer
+                VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, vertexBuffers, offsets);
+                // Bind uniform descriptor set
+                screenBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, screenPipeline->GetPipelineLayout());
+                // Bind image sampler descriptor set
+                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, screenPipeline->GetPipelineLayout());
+
+                uint32_t vertexCount = vertexBuffer->Size() / sizeof(ScreenObjectVertex);
+                vkCmdDraw(secondaryCommandBuffer, vertexCount, 1, 0, 0);
+            }
+
+            secondaryCommandMutex.lock();
+            secondaryCommandBuffers.push_back(secondaryCommandBuffer);
+            secondaryCommandMutex.unlock();
+
+            EndCommand(secondaryCommandBuffer);
+        });
+
     std::future<void> terrainCommandFuture = std::async(std::launch::async, [&]()
         {
             VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
@@ -188,6 +222,7 @@ void VulkanCommandManager::Record(
     terrainCommandFuture.get();
     staticCommandFuture.get();
     cubeMapCommandFuture.get();
+    screenCommandFuture.get();
 
     vkCmdExecuteCommands(
         primaryCommandBuffer,

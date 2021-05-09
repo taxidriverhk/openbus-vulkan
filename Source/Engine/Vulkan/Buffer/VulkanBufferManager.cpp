@@ -41,10 +41,12 @@ void VulkanBufferManager::Create()
     CreateDescriptorPool();
     CreateMemoryAllocator();
     CreateUniformBuffers();
+    CreateScreenBuffers();
 }
 
 void VulkanBufferManager::Destroy()
 {
+    DestroyScreenBuffers();
     DestroyUniformBuffers();
     DestroyCubeMapBuffer();
 
@@ -61,6 +63,7 @@ VulkanDrawingBuffer VulkanBufferManager::GetDrawingBuffer(uint32_t imageIndex)
     VulkanDrawingBuffer drawingBuffer{};
     drawingBuffer.cubeMapBuffer = cubeMapBufferCache;
     drawingBuffer.uniformBuffer = uniformBuffers[imageIndex].get();
+    drawingBuffer.screenBuffer = screenBuffers[imageIndex].get();
     for (auto &entry : entityBufferCache)
     {
         drawingBuffer.entityBuffers.push_back(entry.second);
@@ -304,8 +307,8 @@ void VulkanBufferManager::ResetScreenBuffers()
 {
     int width = context->GetScreen()->GetWidth(),
         height = context->GetScreen()->GetHeight();
-    glm::mat4 projection = glm::ortho(0, width, 0, height);
-    screenBufferInput.projection = projection;
+    screenBufferInput.screenWidth = static_cast<float>(width);
+    screenBufferInput.screenHeight = static_cast<float>(height);
     for (uint32_t i = 0; i < frameBufferSize; i++)
     {
         screenBuffers[i]->Update(&screenBufferInput, sizeof(VulkanScreenBufferInput));
@@ -437,18 +440,14 @@ void VulkanBufferManager::CreateMemoryAllocator()
 
 void VulkanBufferManager::CreateScreenBuffers()
 {
-    int width = context->GetScreen()->GetWidth(),
-        height = context->GetScreen()->GetHeight();
-    glm::mat4 projection = glm::ortho(0, width, 0, height);
-    screenBufferInput.projection = projection;
-
+    VulkanScreenBufferInput dummyScreenBufferInput{};
     for (uint32_t i = 0; i < frameBufferSize; i++)
     {
         std::unique_ptr<VulkanBuffer> screenBuffer = std::make_unique<VulkanBuffer>(context, commandPool, vmaAllocator);
         screenBuffer->Load(
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            &screenBufferInput,
+            &dummyScreenBufferInput,
             sizeof(VulkanScreenBufferInput));
         screenBuffer->CreateDescriptorSet(
             descriptorPool,
@@ -457,6 +456,8 @@ void VulkanBufferManager::CreateScreenBuffers()
             sizeof(VulkanScreenBufferInput));
         screenBuffers.push_back(std::move(screenBuffer));
     }
+
+    ResetScreenBuffers();
 }
 
 void VulkanBufferManager::CreateUniformBuffers()
@@ -484,6 +485,15 @@ void VulkanBufferManager::DestroyCubeMapBuffer()
     cubeMapImage->Unload();
     cubeMapIndexBuffer->Unload();
     cubeMapVertexBuffer->Unload();
+}
+
+void VulkanBufferManager::DestroyScreenBuffers()
+{
+    for (std::unique_ptr<VulkanBuffer> &screenBuffer : screenBuffers)
+    {
+        screenBuffer->Unload();
+    }
+    screenBuffers.clear();
 }
 
 void VulkanBufferManager::DestroyUniformBuffers()

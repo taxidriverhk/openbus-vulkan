@@ -150,6 +150,12 @@ void VulkanDrawEngine::ClearDrawingBuffers()
     }
     terrainBufferIds.clear();
 
+    for (uint32_t screenObjectId : screenObjectIds)
+    {
+        bufferManager->UnloadScreenObjectBuffer(screenObjectId);
+    }
+    screenObjectIds.clear();
+
     bufferManager->Destroy();
 }
 
@@ -350,6 +356,10 @@ void VulkanDrawEngine::LoadScreenObject(ScreenMesh &screenMesh)
             return ConvertToVulkanVertex(vertex);
         });
 
+    bufferManager->LoadScreenObjectBuffer(
+        screenObjectId,
+        transformedVertices,
+        screenMesh.image.get());
 
     MarkDataAsUpdated();
 }

@@ -12,7 +12,8 @@ struct VulkanInstanceBufferInput
 
 struct VulkanScreenBufferInput
 {
-    glm::mat4 projection;
+    float screenWidth;
+    float screenHeight;
 };
 
 struct VulkanUniformBufferInput

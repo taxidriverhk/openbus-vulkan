@@ -4,6 +4,7 @@
 #include <future>
 #include <numeric>
 
+#include "Common/Identifier.h"
 #include "Common/Logger.h"
 #include "Camera.h"
 #include "DrawEngine.h"
@@ -125,7 +126,8 @@ void Renderer::LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity>
 
 void Renderer::RemoveText(uint32_t textMeshId)
 {
-
+    uint32_t screenMeshId = Identifier::GenerateIdentifier(IdentifierType::ScreenObject, textMeshId);
+    drawEngine->UnloadScreenObject(screenMeshId);
 }
 
 void Renderer::UnloadEntities(uint32_t blockId)

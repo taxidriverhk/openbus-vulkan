@@ -120,6 +120,16 @@ void Game::RunMainLoop()
     renderer->LoadBackground(map->GetSkyBoxImageFilePath());
     screen->Show();
 
+    // TODO: test text printing
+    Text text{};
+    text.color = { 1.0f, 0.0f, 0.0f };
+    text.fontSize = 48;
+    text.fontName = "arial";
+    text.id = 1;
+    text.lines = { "This is a sample text", "Text in a different line" };
+    text.position = { 50, 50 };
+    renderer->PutText(text);
+
     Logger::Log(LogLevel::Info, "Entering the rendering loop");
     while (!ShouldQuit())
     {
@@ -160,6 +170,8 @@ void Game::RunMainLoop()
             RenderScene();
         }
     }
+
+    renderer->RemoveText(1);
 
     gameLoopThread.Join();
     Cleanup();

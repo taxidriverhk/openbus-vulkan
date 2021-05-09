@@ -45,7 +45,7 @@ bool FontManager::LoadFont(const std::string &fontFilePath)
     int textureWidth = 4 * fontImage.getSize().x,
         textureHeight = 4 * fontImage.getSize().y;
 
-    std::string name = std::filesystem::path(fontFilePath).filename().string();
+    std::string name = std::filesystem::path(fontFilePath).filename().stem().string();
     for (int i = 0; i < NEHE_CHAR_SET.length(); i++)
     {
         wchar_t ch = NEHE_CHAR_SET[i];
@@ -97,7 +97,7 @@ bool FontManager::GenerateTextMesh(const Text &text, ScreenMesh &screenMesh)
     std::vector<ScreenObjectVertex> &vertices = screenMesh.vertices;
 
     glm::vec3 color = text.color;
-    float scale = text.fontSize;
+    float scale = text.fontSize * FONT_SIZE_SCREEN_SCALE;
     float positionX = text.position.x,
           positionY = text.position.y;
     for (const auto &lineText : text.lines)
@@ -127,10 +127,11 @@ bool FontManager::GenerateTextMesh(const Text &text, ScreenMesh &screenMesh)
             positionX += glyph.advanceX * scale;
         }
 
-        positionY += scale;
+        positionX = text.position.x;
+        positionY += LINE_HEIGHT * scale;
     }
 
-    screenMesh.id = Identifier::GenerateIdentifier(IdentifierType::ScreenObject, screenMesh.id);
+    screenMesh.id = Identifier::GenerateIdentifier(IdentifierType::ScreenObject, text.id);
     screenMesh.image = font->image;
 
     return true;

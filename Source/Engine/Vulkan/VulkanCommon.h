@@ -182,6 +182,7 @@ struct VulkanDrawingPipelines
 struct VulkanDrawingBuffer
 {
     VulkanBuffer *uniformBuffer;
+    VulkanBuffer *screenBuffer;
     VulkanCubeMapBuffer cubeMapBuffer;
     std::vector<VulkanTerrainBuffer> terrainBuffers;
     std::vector<VulkanEntityBuffer> entityBuffers;

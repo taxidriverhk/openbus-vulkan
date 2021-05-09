@@ -81,6 +81,7 @@ private:
     void CreateScreenBuffers();
     void CreateUniformBuffers();
     void DestroyCubeMapBuffer();
+    void DestroyScreenBuffers();
     void DestroyUniformBuffers();
 
     uint32_t frameBufferSize;
