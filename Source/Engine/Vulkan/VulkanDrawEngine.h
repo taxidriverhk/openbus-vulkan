@@ -49,16 +49,6 @@ private:
         };
     }
 
-    inline static ScreenObjectVertex ConvertToVulkanVertex(const ScreenObjectVertex &input)
-    {
-        return
-        {
-            { input.color.x, input.color.y, input.color.z },
-            { input.position.x, input.position.y },
-            { input.uv.x, 1.0f - input.uv.y }
-        };
-    }
-
     inline static glm::vec3 ConvertToVulkanCoordinates(const glm::vec3 &input)
     {
         return { input.x, input.z, -input.y };

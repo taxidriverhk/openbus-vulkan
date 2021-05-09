@@ -1,5 +1,6 @@
 #include <future>
 
+#include "Common/Logger.h"
 #include "Engine/Vulkan/VulkanCommon.h"
 #include "Engine/Vulkan/VulkanContext.h"
 #include "Engine/Vulkan/VulkanRenderPass.h"
@@ -72,6 +73,7 @@ void VulkanCommandManager::Record(
     VkFramebuffer framebuffer,
     VulkanDrawingBuffer drawingBuffer)
 {
+    ResetSecondaryCommandBuffers();
     VkCommandBuffer primaryCommandBuffer = BeginPrimaryCommand(imageIndex, framebuffer);
 
     VulkanBuffer *uniformBuffer = drawingBuffer.uniformBuffer;
@@ -81,7 +83,9 @@ void VulkanCommandManager::Record(
 
     std::future<void> staticCommandFuture = std::async(std::launch::async, [&]()
         {
+            secondaryCommandMutex.lock();
             VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+            secondaryCommandMutex.unlock();
 
             VulkanPipeline *staticPipeline = pipelines.staticPipeline;
             for (const auto &entityBuffer : drawingBuffer.entityBuffers)
@@ -119,7 +123,9 @@ void VulkanCommandManager::Record(
 
     std::future<void> cubeMapCommandFuture = std::async(std::launch::async, [&]()
         {
+            secondaryCommandMutex.lock();
             VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+            secondaryCommandMutex.unlock();
 
             VulkanPipeline *cubeMapPipeline = pipelines.cubeMapPipeline;
 
@@ -152,7 +158,9 @@ void VulkanCommandManager::Record(
 
     std::future<void> screenCommandFuture = std::async(std::launch::async, [&]()
         {
+            secondaryCommandMutex.lock();
             VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+            secondaryCommandMutex.unlock();
 
             VulkanPipeline *screenPipeline = pipelines.screenPipeline;
 
@@ -185,7 +193,9 @@ void VulkanCommandManager::Record(
 
     std::future<void> terrainCommandFuture = std::async(std::launch::async, [&]()
         {
+            secondaryCommandMutex.lock();
             VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+            secondaryCommandMutex.unlock();
 
             VulkanPipeline *terrainPipeline = pipelines.terrainPipeline;
 
@@ -301,48 +311,51 @@ void VulkanCommandManager::EndCommand(VkCommandBuffer commandBuffer)
 
 VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t imageIndex)
 {
+    // This method is not thread-safe, so need to have a mutx to ensure
+    // that only one thread is calling this function at a time
     std::thread::id threadId = std::this_thread::get_id();
     VkCommandPool commandPool = GetOrCreateCommandPool(threadId);
 
-    if (secondaryCommandBufferCache.count(threadId) > 0)
+    // This is obviously not be the best solution
+    // But if the same thread ID is assigned to two different secondary command buffers at the same time
+    // Then one of them must create a new command buffer, to avoid conflict with the other one
+    if (secondaryCommandBuffers.count(threadId) > 0)
     {
-        SecondaryCommandBufferCache &cache = secondaryCommandBufferCache[threadId];
-        if (cache.buffersInUse < cache.buffers.size())
+        if (!secondaryCommandBuffers[threadId][imageIndex].isInUse)
         {
-            cache.buffersInUse++;
-            return cache.buffers[cache.buffersInUse].get();
+            return secondaryCommandBuffers[threadId][imageIndex].commandBuffer.get();
         }
+        // Allocate extra command buffer for the thread in case all existing command buffers are in use
         else
         {
             std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
             commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-
-            cache.buffers.push_back(std::move(commandBuffer));
-            cache.buffersInUse++;
-            return cache.buffers.back().get();
+            secondaryCommandBuffers[threadId].push_back({ false, std::move(commandBuffer) });
+            return secondaryCommandBuffers[threadId].back().commandBuffer.get();
         }
     }
     else
     {
-        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
-        commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-
-        secondaryCommandBufferCache[threadId] = SecondaryCommandBufferCache{};
-        secondaryCommandBufferCache[threadId].buffers.push_back(std::move(commandBuffer));
-        secondaryCommandBufferCache[threadId].buffersInUse = 1;
-
-        return secondaryCommandBufferCache[threadId].buffers.back().get();
+        secondaryCommandBuffers[threadId].resize(frameBufferSize);
+        for (size_t i = 0; i < frameBufferSize; i++)
+        {
+            std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
+            commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+            secondaryCommandBuffers[threadId][i].commandBuffer = std::move(commandBuffer);
+            secondaryCommandBuffers[threadId][i].isInUse = true;
+        }
+        return secondaryCommandBuffers[threadId][imageIndex].commandBuffer.get();
     }
 }
 
 void VulkanCommandManager::ResetSecondaryCommandBuffers()
 {
-    for (auto &[threadId, cache] : secondaryCommandBufferCache)
+    // Allows threads to reuse the command buffer that were previously created
+    for (auto &[threadId, buffers] : secondaryCommandBuffers)
     {
-        cache.buffersInUse = 0;
-        for (auto &buffer : cache.buffers)
+        for (auto &buffer : buffers)
         {
-            buffer->Reset();
+            buffer.isInUse = false;
         }
     }
 }

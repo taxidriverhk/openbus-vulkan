@@ -97,6 +97,7 @@ void MainWindow::StartButtonClicked()
     if (mapList->GetSelectedMapFile(mapPath))
     {
         startConfig.mapConfigPath = mapPath;
+        startConfig.enableFrameRateDisplay = false;
         gameThread = std::make_unique<HandledThread>([&]()
             {
                 game = std::make_unique<Game>();

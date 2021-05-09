@@ -345,20 +345,10 @@ void VulkanDrawEngine::LoadScreenObject(ScreenMesh &screenMesh)
 {
     uint32_t screenObjectId = screenMesh.id;
     std::vector<ScreenObjectVertex> &vertices = screenMesh.vertices;
-    std::vector<ScreenObjectVertex> transformedVertices(vertices.size());
-    std::transform(
-        std::execution::par,
-        vertices.begin(),
-        vertices.end(),
-        transformedVertices.begin(),
-        [&](ScreenObjectVertex &vertex)
-        {
-            return ConvertToVulkanVertex(vertex);
-        });
 
     bufferManager->LoadScreenObjectBuffer(
         screenObjectId,
-        transformedVertices,
+        vertices,
         screenMesh.image.get());
 
     MarkDataAsUpdated();

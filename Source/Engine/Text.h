@@ -56,6 +56,7 @@ public:
 private:
     static constexpr std::wstring_view NEHE_CHAR_SET
         = L" \t\r\nABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*";
+    static constexpr char *FONT_IMAGE_TEMP_FILE = "temp/fontImage.bmp";
     static constexpr wchar_t DEFAULT_CHAR = '_';
     static constexpr float FONT_SIZE_SCREEN_SCALE = 0.05f;
     static constexpr int MAX_FONT_SIZE = 72;

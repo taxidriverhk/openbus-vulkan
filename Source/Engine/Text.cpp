@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <stdio.h>
 #include <SFML/Graphics/Font.hpp>
 
 #include "Common/FileSystem.h"
@@ -40,10 +41,9 @@ bool FontManager::LoadFont(const std::string &fontFilePath)
     }
 
     sf::Texture fontTexture = sfFont.getTexture(MAX_FONT_SIZE);
-    sf::Image fontImage = fontTexture.copyToImage();
     // Somehow the image size is 128x128, while it should have been 512x512
-    int textureWidth = 4 * fontImage.getSize().x,
-        textureHeight = 4 * fontImage.getSize().y;
+    int textureWidth = 4 * fontTexture.getSize().x,
+        textureHeight = 4 * fontTexture.getSize().y;
 
     std::string name = std::filesystem::path(fontFilePath).filename().stem().string();
     for (int i = 0; i < NEHE_CHAR_SET.length(); i++)
@@ -68,11 +68,12 @@ bool FontManager::LoadFont(const std::string &fontFilePath)
         font->characters[ch] = glyph;
     }
 
+    fontTexture = sfFont.getTexture(MAX_FONT_SIZE);
+    sf::Image fontImage = fontTexture.copyToImage();
+    fontImage.saveToFile(FONT_IMAGE_TEMP_FILE);
+
     font->name = name;
-    font->image = std::make_shared<Image>(
-        fontImage.getPixelsPtr(),
-        fontImage.getSize().x,
-        fontImage.getSize().y);
+    font->image = std::make_shared<Image>(FONT_IMAGE_TEMP_FILE);
     fontCache[name] = std::move(font);
 
     return true;
@@ -96,6 +97,7 @@ bool FontManager::GenerateTextMesh(const Text &text, ScreenMesh &screenMesh)
     const std::unique_ptr<Font> &font = fontCache[text.fontName];
     std::vector<ScreenObjectVertex> &vertices = screenMesh.vertices;
 
+    // This assumes that the origin (0, 0) of the screen is at the left top corner
     glm::vec3 color = text.color;
     float scale = text.fontSize * FONT_SIZE_SCREEN_SCALE;
     float positionX = text.position.x,
@@ -113,16 +115,16 @@ bool FontManager::GenerateTextMesh(const Text &text, ScreenMesh &screenMesh)
             const Glyph &glyph = font->characters[ch];
 
             float chPosX = positionX + glyph.offsetX * scale,
-                  chPosY = positionY - (glyph.sizeY - glyph.offsetY) * scale;
+                  chPosY = positionY + (glyph.sizeY + glyph.offsetY) * scale;
             float chWidth = glyph.sizeX * scale,
                   chHeight = glyph.sizeY * scale;
 
-            vertices.push_back({ color, { chPosX, chPosY + chHeight }, { glyph.textureCoordU, glyph.textureCoordV } });
+            vertices.push_back({ color, { chPosX, chPosY - chHeight }, { glyph.textureCoordU, glyph.textureCoordV } });
             vertices.push_back({ color, { chPosX, chPosY }, { glyph.textureCoordU, glyph.textureCoordVMax } });
             vertices.push_back({ color, { chPosX + chWidth, chPosY }, { glyph.textureCoordUMax, glyph.textureCoordVMax } });
-            vertices.push_back({ color, { chPosX, chPosY + chHeight }, { glyph.textureCoordU, glyph.textureCoordV } });
+            vertices.push_back({ color, { chPosX, chPosY - chHeight }, { glyph.textureCoordU, glyph.textureCoordV } });
             vertices.push_back({ color, { chPosX + chWidth, chPosY }, { glyph.textureCoordUMax, glyph.textureCoordVMax } });
-            vertices.push_back({ color, { chPosX + chWidth, chPosY + chHeight }, { glyph.textureCoordUMax, glyph.textureCoordV } });
+            vertices.push_back({ color, { chPosX + chWidth, chPosY - chHeight }, { glyph.textureCoordUMax, glyph.textureCoordV } });
 
             positionX += glyph.advanceX * scale;
         }

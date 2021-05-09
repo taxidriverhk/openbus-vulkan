@@ -121,6 +121,7 @@ void VulkanBuffer::Unload()
         return;
     }
 
+    context->WaitIdle();
     vmaDestroyBuffer(allocator, buffer, allocation);
 
     this->size = 0;

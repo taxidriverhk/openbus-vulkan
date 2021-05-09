@@ -5,4 +5,5 @@
 struct GameSessionConfig
 {
     std::string mapConfigPath;
+    bool enableFrameRateDisplay;
 };

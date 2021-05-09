@@ -53,12 +53,12 @@ private:
     std::unordered_map<std::thread::id, VkCommandPool> commandPools;
     std::vector<std::unique_ptr<VulkanCommand>> primaryCommandBuffers;
 
-    struct SecondaryCommandBufferCache
+    struct SecondaryCommandBuffer
     {
-        std::vector<std::unique_ptr<VulkanCommand>> buffers;
-        uint32_t buffersInUse;
+        bool isInUse;
+        std::unique_ptr<VulkanCommand> commandBuffer;
     };
-    std::unordered_map<std::thread::id, SecondaryCommandBufferCache> secondaryCommandBufferCache;
+    std::unordered_map<std::thread::id, std::vector<SecondaryCommandBuffer>> secondaryCommandBuffers;
 
     uint32_t frameBufferSize;
 

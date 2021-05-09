@@ -16,5 +16,9 @@ layout(location = 1) out vec3 fColor;
 void main() {
     fUV = inUV;
     fColor = inColor;
-    gl_Position = vec4(inPosition.x / inUniform.screenWidth, inPosition.y / inUniform.screenHeight, 0.0, 1.0);
+    gl_Position = vec4(
+        inPosition.x / inUniform.screenWidth - 0.5,
+        inPosition.y / inUniform.screenHeight - 0.5,
+        0.0,
+        1.0);
 }
