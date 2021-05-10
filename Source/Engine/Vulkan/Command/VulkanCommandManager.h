@@ -36,6 +36,7 @@ public:
         uint32_t imageIndex,
         VkFramebuffer framebuffer,
         VulkanDrawingBuffer drawingBuffer);
+    void Reset(uint32_t previousImageIndex);
 
 private:
     void BindPipeline(VkCommandBuffer commandBuffer, VulkanPipeline *pipeline);
@@ -45,7 +46,6 @@ private:
     // Secondary command buffer
     VkCommandBuffer BeginSecondaryCommand(uint32_t imageIndex, VkFramebuffer frameBuffer);
     VulkanCommand * RequestSecondaryCommandBuffer(uint32_t imageIndex);
-    void ResetSecondaryCommandBuffers();
 
     void EndCommand(VkCommandBuffer commandBuffer);
     void SetViewPortAndScissor(VkCommandBuffer commandBuffer);
@@ -55,10 +55,12 @@ private:
 
     struct SecondaryCommandBuffer
     {
-        int numInUse;
+        int activeBuffersInUse;
         std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
     };
-    std::unordered_map<std::thread::id, SecondaryCommandBuffer> secondaryCommandBuffers;
+    // Each thread has number of SecondaryCommandBuffer's equal to the number of frame buffers
+    // Then each SecondaryCommandBuffer allows one or more command buffer to be defined
+    std::unordered_map<std::thread::id, std::vector<SecondaryCommandBuffer>> secondaryCommandBuffers;
 
     uint32_t frameBufferSize;
 

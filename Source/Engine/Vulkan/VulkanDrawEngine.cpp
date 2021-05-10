@@ -60,7 +60,7 @@ void VulkanDrawEngine::DestroySynchronizationObjects()
 
 void VulkanDrawEngine::DrawFrame()
 {
-    uint32_t imageIndex;
+    uint32_t imageIndex = 0;
     BeginFrame(imageIndex);
     Submit(imageIndex);
     EndFrame(imageIndex);
@@ -93,6 +93,9 @@ void VulkanDrawEngine::Initialize()
 
 void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
 {
+    // Reset command buffer of previous image index
+    commandManager->Reset(imageIndex);
+
     VkDevice logicalDevice = context->GetLogicalDevice();
     VkSwapchainKHR swapChain = context->GetSwapChain();
 

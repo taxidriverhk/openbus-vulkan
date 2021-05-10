@@ -60,7 +60,17 @@ VkCommandPool VulkanCommandManager::GetOrCreateCommandPool(std::thread::id threa
 
 void VulkanCommandManager::Destroy()
 {
-    ResetSecondaryCommandBuffers();
+    for (auto &[threadId, secondaryCommandBuffer] : secondaryCommandBuffers)
+    {
+        for (auto &commandBufferForFrame : secondaryCommandBuffer)
+        {
+            for (auto &commandBuffer : commandBufferForFrame.commandBuffers)
+            {
+                commandBuffer->Reset();
+            }
+        }
+    }
+
     for (auto &[threadId, commandPool] : commandPools)
     {
         vkDestroyCommandPool(context->GetLogicalDevice(), commandPool, nullptr);
@@ -319,43 +329,41 @@ VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t ima
 
     if (secondaryCommandBuffers.count(threadId) == 0)
     {
-        secondaryCommandBuffers[threadId].numInUse = 0;
+        secondaryCommandBuffers[threadId].resize(frameBufferSize);
+        secondaryCommandBuffers[threadId][imageIndex].activeBuffersInUse = 0;
     }
 
     // This is obviously not be the best solution
     // But if the same thread ID is assigned to two different secondary command buffers at the same time
     // Then one of them must create a new command buffer, to avoid conflict with the other one
-    auto &secondaryCommandBuffer = secondaryCommandBuffers[threadId];
-    if (secondaryCommandBuffer.numInUse < secondaryCommandBuffer.commandBuffers.size())
+    auto &secondaryCommandBuffer = secondaryCommandBuffers[threadId][imageIndex];
+    if (secondaryCommandBuffer.activeBuffersInUse < secondaryCommandBuffer.commandBuffers.size())
     {
-        int currentIndex = secondaryCommandBuffer.numInUse;
-        secondaryCommandBuffer.numInUse++;
+        Logger::Log(LogLevel::Debug, "Secondary command buffer is already created and can be reused");
+        int currentIndex = secondaryCommandBuffer.activeBuffersInUse;
+        secondaryCommandBuffer.activeBuffersInUse++;
         return secondaryCommandBuffer.commandBuffers[currentIndex].get();
     }
     // Allocate extra command buffer for the thread in case all existing command buffers are in use
     else
     {
-        Logger::Log(LogLevel::Debug, "Secondary command buffer is already created but is in use");
+        Logger::Log(LogLevel::Debug, "Secondary command buffer is either not created or already in use");
         std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
         commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
         secondaryCommandBuffer.commandBuffers.push_back(std::move(commandBuffer));
-        secondaryCommandBuffer.numInUse++;
+        secondaryCommandBuffer.activeBuffersInUse++;
 
         return secondaryCommandBuffer.commandBuffers.back().get();
     }
 }
 
-void VulkanCommandManager::ResetSecondaryCommandBuffers()
+void VulkanCommandManager::Reset(uint32_t previousImageIndex)
 {
     // Allows threads to reuse the command buffer that were previously created
     for (auto &[threadId, secondaryCommandBuffer] : secondaryCommandBuffers)
     {
-        secondaryCommandBuffer.numInUse = 0;
-        for (auto &buffer : secondaryCommandBuffer.commandBuffers)
-        {
-            buffer->Reset();
-        }
+        secondaryCommandBuffer[previousImageIndex].activeBuffersInUse = 0;
     }
 }
 
