@@ -60,10 +60,12 @@ VkCommandPool VulkanCommandManager::GetOrCreateCommandPool(std::thread::id threa
 
 void VulkanCommandManager::Destroy()
 {
+    ResetSecondaryCommandBuffers();
     for (auto &[threadId, commandPool] : commandPools)
     {
         vkDestroyCommandPool(context->GetLogicalDevice(), commandPool, nullptr);
     }
+    secondaryCommandBuffers.clear();
     primaryCommandBuffers.clear();
     commandPools.clear();
 }
@@ -73,7 +75,6 @@ void VulkanCommandManager::Record(
     VkFramebuffer framebuffer,
     VulkanDrawingBuffer drawingBuffer)
 {
-    ResetSecondaryCommandBuffers();
     VkCommandBuffer primaryCommandBuffer = BeginPrimaryCommand(imageIndex, framebuffer);
 
     VulkanBuffer *uniformBuffer = drawingBuffer.uniformBuffer;
@@ -316,46 +317,44 @@ VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t ima
     std::thread::id threadId = std::this_thread::get_id();
     VkCommandPool commandPool = GetOrCreateCommandPool(threadId);
 
+    if (secondaryCommandBuffers.count(threadId) == 0)
+    {
+        secondaryCommandBuffers[threadId].numInUse = 0;
+    }
+
     // This is obviously not be the best solution
     // But if the same thread ID is assigned to two different secondary command buffers at the same time
     // Then one of them must create a new command buffer, to avoid conflict with the other one
-    if (secondaryCommandBuffers.count(threadId) > 0)
+    auto &secondaryCommandBuffer = secondaryCommandBuffers[threadId];
+    if (secondaryCommandBuffer.numInUse < secondaryCommandBuffer.commandBuffers.size())
     {
-        if (!secondaryCommandBuffers[threadId][imageIndex].isInUse)
-        {
-            return secondaryCommandBuffers[threadId][imageIndex].commandBuffer.get();
-        }
-        // Allocate extra command buffer for the thread in case all existing command buffers are in use
-        else
-        {
-            std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
-            commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-            secondaryCommandBuffers[threadId].push_back({ false, std::move(commandBuffer) });
-            return secondaryCommandBuffers[threadId].back().commandBuffer.get();
-        }
+        int currentIndex = secondaryCommandBuffer.numInUse;
+        secondaryCommandBuffer.numInUse++;
+        return secondaryCommandBuffer.commandBuffers[currentIndex].get();
     }
+    // Allocate extra command buffer for the thread in case all existing command buffers are in use
     else
     {
-        secondaryCommandBuffers[threadId].resize(frameBufferSize);
-        for (size_t i = 0; i < frameBufferSize; i++)
-        {
-            std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
-            commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-            secondaryCommandBuffers[threadId][i].commandBuffer = std::move(commandBuffer);
-            secondaryCommandBuffers[threadId][i].isInUse = true;
-        }
-        return secondaryCommandBuffers[threadId][imageIndex].commandBuffer.get();
+        Logger::Log(LogLevel::Debug, "Secondary command buffer is already created but is in use");
+        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
+        commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+
+        secondaryCommandBuffer.commandBuffers.push_back(std::move(commandBuffer));
+        secondaryCommandBuffer.numInUse++;
+
+        return secondaryCommandBuffer.commandBuffers.back().get();
     }
 }
 
 void VulkanCommandManager::ResetSecondaryCommandBuffers()
 {
     // Allows threads to reuse the command buffer that were previously created
-    for (auto &[threadId, buffers] : secondaryCommandBuffers)
+    for (auto &[threadId, secondaryCommandBuffer] : secondaryCommandBuffers)
     {
-        for (auto &buffer : buffers)
+        secondaryCommandBuffer.numInUse = 0;
+        for (auto &buffer : secondaryCommandBuffer.commandBuffers)
         {
-            buffer.isInUse = false;
+            buffer->Reset();
         }
     }
 }

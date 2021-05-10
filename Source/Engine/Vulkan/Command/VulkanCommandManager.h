@@ -55,10 +55,10 @@ private:
 
     struct SecondaryCommandBuffer
     {
-        bool isInUse;
-        std::unique_ptr<VulkanCommand> commandBuffer;
+        int numInUse;
+        std::vector<std::unique_ptr<VulkanCommand>> commandBuffers;
     };
-    std::unordered_map<std::thread::id, std::vector<SecondaryCommandBuffer>> secondaryCommandBuffers;
+    std::unordered_map<std::thread::id, SecondaryCommandBuffer> secondaryCommandBuffers;
 
     uint32_t frameBufferSize;
 

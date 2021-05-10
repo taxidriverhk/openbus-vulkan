@@ -25,8 +25,11 @@ Game::~Game()
 
 void Game::Cleanup()
 {
+    Logger::Log(LogLevel::Info, "Stopping other threads");
     mapLoader->TerminateLoadBlocksThread();
+    Logger::Log(LogLevel::Info, "Cleaning up graphics context");
     renderer->Cleanup();
+    Logger::Log(LogLevel::Info, "Closing screen");
     screen->Close();
 }
 
