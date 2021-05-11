@@ -143,7 +143,7 @@ void VulkanCommandManager::Record(
             VulkanCubeMapBuffer cubeMapBuffer = drawingBuffer.cubeMapBuffer;
             VulkanBuffer *cubeMapVertexBuffer = cubeMapBuffer.vertexBuffer;
             VulkanBuffer *cubeMapIndexBuffer = cubeMapBuffer.indexBuffer;
-            if (cubeMapVertexBuffer->IsLoaded())
+            if (cubeMapVertexBuffer != nullptr && cubeMapVertexBuffer->IsLoaded())
             {
                 BindPipeline(secondaryCommandBuffer, cubeMapPipeline);
                 // Bind cubemap mesh

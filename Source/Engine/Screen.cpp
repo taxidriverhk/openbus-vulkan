@@ -19,7 +19,10 @@ Screen::~Screen()
 
 void Screen::Close()
 {
-    window->close();
+    if (window != nullptr)
+    {
+        window->close();
+    }
 }
 
 void Screen::Create()

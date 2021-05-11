@@ -70,6 +70,7 @@ private:
 
     void MarkDataAsUpdated();
 
+    bool isInitialized;
     bool enableDebugging;
 
     Screen *screen;

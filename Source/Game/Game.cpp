@@ -25,6 +25,8 @@ Game::~Game()
 
 void Game::Cleanup()
 {
+    Logger::Log(LogLevel::Info, "Stopping game loop thread");
+    gameLoopThread->Join();
     Logger::Log(LogLevel::Info, "Stopping other threads");
     mapLoader->TerminateLoadBlocksThread();
     Logger::Log(LogLevel::Info, "Cleaning up graphics context");
@@ -94,6 +96,20 @@ void Game::Start(const GameSessionConfig &startConfig)
     Logger::Log(LogLevel::Info, "Initializing graphics context");
     InitializeComponents();
 
+    Logger::Log(LogLevel::Info, "Creating a separate thread for game logic loop");
+    gameLoopThread = std::make_unique<HandledThread>(
+        [&]()
+        {
+            RunGameLoop();
+        },
+        [&]()
+        {
+            SetShouldEndGame(true);
+        });
+
+    Logger::Log(LogLevel::Info, "Creating a separate thread for loading resources");
+    mapLoader->StartLoadBlocksThread();
+
     RunMainLoop();
 }
 
@@ -105,20 +121,6 @@ void Game::RenderScene()
 
 void Game::RunMainLoop()
 {
-    Logger::Log(LogLevel::Info, "Creating a separate thread for game logic loop");
-    HandledThread gameLoopThread(
-        [&]()
-        {
-            RunGameLoop();
-        },
-        [&]() 
-        {
-            SetShouldEndGame(true);
-        });
-
-    Logger::Log(LogLevel::Info, "Creating a separate thread for loading resources");
-    mapLoader->StartLoadBlocksThread();
-
     Logger::Log(LogLevel::Info, "Loading uniform background");
     renderer->LoadBackground(map->GetSkyBoxImageFilePath());
     screen->Show();
@@ -164,7 +166,6 @@ void Game::RunMainLoop()
         }
     }
 
-    gameLoopThread.Join();
     Cleanup();
     gameStarted = false;
 }

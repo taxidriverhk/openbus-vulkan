@@ -98,14 +98,17 @@ void MainWindow::StartButtonClicked()
     {
         startConfig.mapConfigPath = mapPath;
         startConfig.enableFrameRateDisplay = false;
+
+        game = std::make_unique<Game>();
         gameThread = std::make_unique<HandledThread>([&]()
             {
-                game = std::make_unique<Game>();
                 game->Start(startConfig);
             },
             [&]()
             {
-                game->SetShouldEndGame(true);
+                // Terminate the game loop thread and clean up graphics context
+                game->Cleanup();
+                GameThreadError();
             });
     }
     else

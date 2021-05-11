@@ -25,6 +25,7 @@ VulkanBufferManager::VulkanBufferManager(
       pipelines(pipelines),
       frameBufferSize(frameBufferSize),
       commandPool(commandPool),
+      cubeMapBufferLoaded(false),
       uniformBufferUpdated(true),
       entityBufferCache{},
       terrainBufferCache{},
@@ -117,6 +118,8 @@ void VulkanBufferManager::LoadCubeMapBuffer(
     cubeMapBufferCache.imageBuffer = cubeMapImage.get();
     cubeMapBufferCache.vertexBuffer = cubeMapVertexBuffer.get();
     cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
+
+    cubeMapBufferLoaded = true;
 }
 
 void VulkanBufferManager::LoadIntoBuffer(
@@ -482,6 +485,11 @@ void VulkanBufferManager::CreateUniformBuffers()
 
 void VulkanBufferManager::DestroyCubeMapBuffer()
 {
+    if (!cubeMapBufferLoaded)
+    {
+        return;
+    }
+
     cubeMapImage->Unload();
     cubeMapIndexBuffer->Unload();
     cubeMapVertexBuffer->Unload();

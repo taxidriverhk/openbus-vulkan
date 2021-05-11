@@ -23,7 +23,7 @@
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
     : context(),
       screen(screen),
-      dataUpdated(),
+      isInitialized(false),
       enableDebugging(enableDebugging),
       currentInFlightFrame(0)
 {
@@ -35,6 +35,11 @@ VulkanDrawEngine::~VulkanDrawEngine()
 
 void VulkanDrawEngine::Destroy()
 {
+    if (!isInitialized)
+    {
+        return;
+    }
+
     context->WaitIdle();
 
     DestroyCommandBuffers();
@@ -89,6 +94,8 @@ void VulkanDrawEngine::Initialize()
         commandPool,
         static_cast<uint32_t>(frameBuffers.size()));
     bufferManager->Create();
+
+    isInitialized = true;
 }
 
 void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)

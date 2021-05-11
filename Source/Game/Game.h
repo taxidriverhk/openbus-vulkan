@@ -6,6 +6,7 @@
 #include "Config/GameConfig.h"
 #include "Config/SettingsConfig.h"
 
+class HandledThread;
 class ControlManager;
 class Map;
 class MapLoader;
@@ -20,13 +21,14 @@ public:
     Game();
     ~Game();
 
+    
     bool GetGameStarted() const { return gameStarted; }
 
+    void Cleanup();
     void SetShouldEndGame(const bool &shouldEndGame);
     void Start(const GameSessionConfig &startConfig);
 
 private:
-    void Cleanup();
     void InitializeComponents();
     void InitializeSettings(const GameSessionConfig &startConfig);
     void InitializeState(const GameSessionConfig &startConfig);
@@ -45,6 +47,7 @@ private:
 
     bool gameStarted;
     bool shouldEndGame;
+    std::unique_ptr<HandledThread> gameLoopThread;
 
     std::atomic<bool> readyToRender;
 

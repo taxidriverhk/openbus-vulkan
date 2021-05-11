@@ -103,6 +103,7 @@ private:
     std::unordered_map<uint32_t, VulkanScreenObjectBuffer> screenObjectBufferCache;
 
     // Cubemap buffers
+    bool cubeMapBufferLoaded;
     std::unique_ptr<VulkanBuffer> cubeMapVertexBuffer;
     std::unique_ptr<VulkanBuffer> cubeMapIndexBuffer;
     std::unique_ptr<VulkanImage> cubeMapImage;
