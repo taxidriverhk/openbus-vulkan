@@ -167,41 +167,6 @@ void VulkanCommandManager::Record(
             EndCommand(secondaryCommandBuffer);
         });
 
-    std::future<void> screenCommandFuture = std::async(std::launch::async, [&]()
-        {
-            secondaryCommandMutex.lock();
-            VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
-            secondaryCommandMutex.unlock();
-
-            VulkanPipeline *screenPipeline = pipelines.screenPipeline;
-
-            for (const auto &screenObjectBuffer : drawingBuffer.screenObjectBuffers)
-            {
-                BindPipeline(secondaryCommandBuffer, screenPipeline);
-
-                VulkanBuffer *vertexBuffer = screenObjectBuffer.vertexBuffer;
-                VulkanImage *imageBuffer = screenObjectBuffer.imageBuffer;
-
-                // Bind vertex buffer
-                VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
-                VkDeviceSize offsets[] = { 0 };
-                vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, vertexBuffers, offsets);
-                // Bind uniform descriptor set
-                screenBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, screenPipeline->GetPipelineLayout());
-                // Bind image sampler descriptor set
-                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, screenPipeline->GetPipelineLayout());
-
-                uint32_t vertexCount = vertexBuffer->Size() / sizeof(ScreenObjectVertex);
-                vkCmdDraw(secondaryCommandBuffer, vertexCount, 1, 0, 0);
-            }
-
-            secondaryCommandMutex.lock();
-            secondaryCommandBuffers.push_back(secondaryCommandBuffer);
-            secondaryCommandMutex.unlock();
-
-            EndCommand(secondaryCommandBuffer);
-        });
-
     std::future<void> terrainCommandFuture = std::async(std::launch::async, [&]()
         {
             secondaryCommandMutex.lock();
@@ -243,6 +208,44 @@ void VulkanCommandManager::Record(
     terrainCommandFuture.get();
     staticCommandFuture.get();
     cubeMapCommandFuture.get();
+
+    // Screen objects must appear on top of everthing else
+    // Otherwise, the screen object could be blended by something else
+    std::future<void> screenCommandFuture = std::async(std::launch::async, [&]()
+        {
+            secondaryCommandMutex.lock();
+            VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+            secondaryCommandMutex.unlock();
+
+            VulkanPipeline *screenPipeline = pipelines.screenPipeline;
+
+            for (const auto &screenObjectBuffer : drawingBuffer.screenObjectBuffers)
+            {
+                BindPipeline(secondaryCommandBuffer, screenPipeline);
+
+                VulkanBuffer *vertexBuffer = screenObjectBuffer.vertexBuffer;
+                VulkanImage *imageBuffer = screenObjectBuffer.imageBuffer;
+
+                // Bind vertex buffer
+                VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, vertexBuffers, offsets);
+                // Bind uniform descriptor set
+                screenBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, screenPipeline->GetPipelineLayout());
+                // Bind image sampler descriptor set
+                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, screenPipeline->GetPipelineLayout());
+
+                uint32_t vertexCount = vertexBuffer->Size() / sizeof(ScreenObjectVertex);
+                vkCmdDraw(secondaryCommandBuffer, vertexCount, 1, 0, 0);
+            }
+
+            secondaryCommandMutex.lock();
+            secondaryCommandBuffers.push_back(secondaryCommandBuffer);
+            secondaryCommandMutex.unlock();
+
+            EndCommand(secondaryCommandBuffer);
+        });
+
     screenCommandFuture.get();
 
     vkCmdExecuteCommands(

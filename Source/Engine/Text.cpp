@@ -114,8 +114,8 @@ bool FontManager::GenerateTextMesh(const Text &text, ScreenMesh &screenMesh)
             }
             const Glyph &glyph = font->characters[ch];
 
-            float chPosX = positionX + glyph.offsetX * scale,
-                  chPosY = positionY + (glyph.sizeY + glyph.offsetY) * scale;
+            float chPosX = positionX + glyph.offsetX,
+                  chPosY = positionY + (glyph.sizeY + glyph.offsetY);
             float chWidth = glyph.sizeX * scale,
                   chHeight = glyph.sizeY * scale;
 

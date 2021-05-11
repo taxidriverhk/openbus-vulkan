@@ -62,6 +62,7 @@ void VulkanPipelineManager::Create()
     staticPipelineConfig.fragmentShader = &staticFragmentShader;
     staticPipelineConfig.cullMode = VK_CULL_MODE_BACK_BIT;
     staticPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    staticPipelineConfig.depthTestEnable = true;
 
     staticPipelineConfig.descriptorLayoutConfigs.resize(3);
     staticPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
@@ -86,6 +87,7 @@ void VulkanPipelineManager::Create()
     cubeMapPipelineConfig.fragmentShader = &cubeMapFragmentShader;
     cubeMapPipelineConfig.cullMode = VK_CULL_MODE_NONE;
     cubeMapPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    cubeMapPipelineConfig.depthTestEnable = true;
 
     cubeMapPipelineConfig.descriptorLayoutConfigs.resize(2);
     cubeMapPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
@@ -107,6 +109,7 @@ void VulkanPipelineManager::Create()
     terrainPipelineConfig.fragmentShader = &terrainFragmentShader;
     terrainPipelineConfig.cullMode = VK_CULL_MODE_BACK_BIT;
     terrainPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    terrainPipelineConfig.depthTestEnable = true;
 
     terrainPipelineConfig.descriptorLayoutConfigs.resize(2);
     terrainPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
@@ -128,6 +131,7 @@ void VulkanPipelineManager::Create()
     screenPipelineConfig.fragmentShader = &screenFragmentShader;
     screenPipelineConfig.cullMode = VK_CULL_MODE_NONE;
     screenPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    screenPipelineConfig.depthTestEnable = false;
 
     screenPipelineConfig.descriptorLayoutConfigs.resize(2);
     screenPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;

@@ -37,6 +37,7 @@ struct VulkanPipelineConfig
     VulkanVertexLayoutConfig vertexLayoutConfig;
     std::vector<VulkanDescriptorLayoutConfig> descriptorLayoutConfigs;
 
+    bool depthTestEnable;
     VkCullModeFlags cullMode;
     VkFrontFace frontFace;
 };

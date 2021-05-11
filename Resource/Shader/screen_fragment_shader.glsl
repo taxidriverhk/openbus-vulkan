@@ -10,8 +10,5 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     float textSample = texture(inSampler, fUV).g;
-    if (textSample < 1)
-        discard;
-
     outColor = vec4(fColor, textSample);
 }

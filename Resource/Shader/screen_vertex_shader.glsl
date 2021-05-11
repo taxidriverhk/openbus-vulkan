@@ -17,8 +17,8 @@ void main() {
     fUV = inUV;
     fColor = inColor;
     gl_Position = vec4(
-        inPosition.x / inUniform.screenWidth - 0.5,
-        inPosition.y / inUniform.screenHeight - 0.5,
+        inPosition.x / inUniform.screenWidth - 1,
+        inPosition.y / inUniform.screenHeight - 0.97,
         0.0,
         1.0);
 }

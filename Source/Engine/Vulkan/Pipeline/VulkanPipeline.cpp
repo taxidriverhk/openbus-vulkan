@@ -71,13 +71,13 @@ void VulkanPipeline::Create(VulkanPipelineConfig config)
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.sampleShadingEnable = VK_TRUE;
     multisampling.rasterizationSamples = context->GetMSAASampleBits();
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_TRUE;
-    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthTestEnable = config.depthTestEnable;
+    depthStencil.depthWriteEnable = config.depthTestEnable;
     depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.front.compareOp = VK_COMPARE_OP_ALWAYS;
     depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;

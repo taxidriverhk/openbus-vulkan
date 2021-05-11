@@ -21,7 +21,6 @@ public:
     Game();
     ~Game();
 
-    
     bool GetGameStarted() const { return gameStarted; }
 
     void Cleanup();
