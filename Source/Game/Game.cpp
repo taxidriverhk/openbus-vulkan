@@ -57,6 +57,7 @@ void Game::InitializeComponents()
 void Game::InitializeSettings(const GameSessionConfig &startConfig)
 {
     gameSettings.mapLoadSettings.maxAdjacentBlocks = 1;
+    gameSettings.graphicsSettings.enableFog = true;
     gameSettings.graphicsSettings.targetFrameRate = 120;
     gameSettings.graphicsSettings.maxViewableDistance = 1200;
     gameSettings.graphicsSettings.screenWidth = 1920;
@@ -122,7 +123,7 @@ void Game::RenderScene()
 void Game::RunMainLoop()
 {
     Logger::Log(LogLevel::Info, "Loading uniform background");
-    renderer->LoadBackground(map->GetSkyBoxImageFilePath());
+    renderer->LoadBackground(map->GetSkyBoxImageFilePath(), gameSettings.graphicsSettings.enableFog);
     screen->Show();
 
     Logger::Log(LogLevel::Info, "Entering the rendering loop");

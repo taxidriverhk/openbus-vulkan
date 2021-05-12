@@ -61,7 +61,7 @@ void Renderer::PutText(const Text &text)
     drawEngine->LoadScreenObject(screenMesh);
 }
 
-void Renderer::LoadBackground(const std::string &skyBoxImageFilePath)
+void Renderer::LoadBackground(const std::string &skyBoxImageFilePath, bool enableFog)
 {
     // Load any resources that need to be loaded regardless of the game state
     // (ex. sky, sun, etc.)
@@ -107,6 +107,16 @@ void Renderer::LoadBackground(const std::string &skyBoxImageFilePath)
 
     drawEngine->LoadCubeMap(cubeMap);
     Logger::Log(LogLevel::Info, "Finished loading skybox into buffer");
+
+    if (enableFog)
+    {
+        Logger::Log(LogLevel::Info, "Fog is enabled, setting fog density and gradient");
+        drawEngine->SetFog(0.002f, camera->GetZFar() * 0.005f);
+    }
+    else
+    {
+        drawEngine->SetFog(0.0f, 5.0f);
+    }
 }
 
 void Renderer::LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity> &entities)

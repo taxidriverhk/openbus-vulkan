@@ -20,13 +20,28 @@ layout(location = 1) out vec4 fNormal;
 layout(location = 2) out vec4 fWorldPosition;
 layout(location = 3) out vec4 fEyePosition;
 layout(location = 4) out vec4 fLightPosition;
+layout(location = 5) out float fVisibility;
+layout(location = 6) out vec3 fFogColor;
+
+layout(push_constant) uniform MeshPushContant{
+    float fogDensity;
+    float fogGradient;
+    vec3 fogColor;
+} inMeshPushConstant;
 
 void main() {
     fUV = inUV;
     fNormal = inInstance.transformation * vec4(inNormal, 0.0);
-    fWorldPosition = inInstance.transformation * vec4(inPosition, 1.0);
+
     fEyePosition = vec4(inUniform.eyePosition, 1.0);
     fLightPosition = vec4(inUniform.lightPosition, 1.0);
 
-    gl_Position = inUniform.projection * inUniform.view * inInstance.transformation * vec4(inPosition, 1.0);
+    fWorldPosition = inInstance.transformation * vec4(inPosition, 1.0);
+    vec4 fCameraLocalPosition = inUniform.view * fWorldPosition;
+    float distance = length(fCameraLocalPosition.xyz);
+    fVisibility = exp(-pow(distance * inMeshPushConstant.fogDensity, inMeshPushConstant.fogGradient));
+    fVisibility = clamp(fVisibility, 0.0, 1.0);
+    fFogColor = inMeshPushConstant.fogColor;
+
+    gl_Position = inUniform.projection * fCameraLocalPosition;
 }

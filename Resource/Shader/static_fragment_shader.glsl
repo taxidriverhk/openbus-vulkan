@@ -8,18 +8,21 @@ layout(location = 1) in vec4 fNormal;
 layout(location = 2) in vec4 fWorldPosition;
 layout(location = 3) in vec4 fEyePosition;
 layout(location = 4) in vec4 fLightPosition;
+layout(location = 5) in float fVisibility;
+layout(location = 6) in vec3 fFogColor;
 
 layout(location = 0) out vec4 outColor;
+
+// TODO: hard-code some values for now
+const vec4 lightColor = vec4(vec3(0.5), 1.0);
+const float shininess = 0.15;
+const float ambientStrength = 0.35;
 
 void main() {
     vec4 objectColor = texture(inSampler, fUV);
     if (objectColor.a < 1)
         discard;
 
-    // TODO: hard-code some values for now
-    float shininess = 0.15;
-    float ambientStrength = 0.35;
-    vec4 lightColor = vec4(vec3(0.5), 1.0);
     vec4 ambient = ambientStrength * vec4(1.0);
     vec4 diffuseColor = vec4(1.0);
     vec4 specularColor = vec4(0.0);
@@ -38,5 +41,6 @@ void main() {
     vec4 specular = pow(RdotV, shininess) * lightColor * specularColor;
 
     outColor = (ambient + diffuse + specular) * objectColor;
+    outColor = mix(vec4(fFogColor, 1.0), outColor, fVisibility);
     outColor.a = objectColor.a;
 }

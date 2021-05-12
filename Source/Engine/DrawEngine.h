@@ -18,6 +18,7 @@ public:
     virtual void LoadEntity(Entity &entity) = 0;
     virtual void LoadScreenObject(ScreenMesh &screenMesh) = 0;
     virtual void LoadTerrain(Terrain &terrain) = 0;
+    virtual void SetFog(float density, float gradient) = 0;
     virtual void UpdateCamera(Camera *camera) = 0;
     virtual void UnloadEntity(uint32_t entityId) = 0;
     virtual void UnloadTerrain(uint32_t terrainId) = 0;

@@ -2,6 +2,7 @@
 
 struct GraphicsSettings
 {
+    bool enableFog;
     int targetFrameRate;
     int maxViewableDistance;
     int screenWidth;

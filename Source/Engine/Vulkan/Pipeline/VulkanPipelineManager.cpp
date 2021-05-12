@@ -75,6 +75,10 @@ void VulkanPipelineManager::Create()
     staticPipelineConfig.descriptorLayoutConfigs[2].bindingCount = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
     staticPipelineConfig.descriptorLayoutConfigs[2].bindings = STATIC_PIPELINE_INSTANCE_DESCRIPTOR_LAYOUT_BINDINGS;
 
+    staticPipelineConfig.pushConstantConfigs.resize(1);
+    staticPipelineConfig.pushConstantConfigs[0].size = sizeof(VulkanMeshPushConstant);
+    staticPipelineConfig.pushConstantConfigs[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+
     staticPipelineConfig.vertexLayoutConfig.vertexSize = sizeof(Vertex);
     staticPipelineConfig.vertexLayoutConfig.descriptionCount = VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT;
     staticPipelineConfig.vertexLayoutConfig.descriptions = VERTEX_INPUT_ATTRIBUTE_DESCRIPTIONS;
@@ -118,6 +122,10 @@ void VulkanPipelineManager::Create()
     terrainPipelineConfig.descriptorLayoutConfigs[1].type = VulkanDescriptorLayoutType::Image;
     terrainPipelineConfig.descriptorLayoutConfigs[1].bindingCount = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT;
     terrainPipelineConfig.descriptorLayoutConfigs[1].bindings = STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDINGS;
+
+    terrainPipelineConfig.pushConstantConfigs.resize(1);
+    terrainPipelineConfig.pushConstantConfigs[0].size = sizeof(VulkanMeshPushConstant);
+    terrainPipelineConfig.pushConstantConfigs[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
 
     terrainPipelineConfig.vertexLayoutConfig.vertexSize = sizeof(Vertex);
     terrainPipelineConfig.vertexLayoutConfig.descriptionCount = VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT;

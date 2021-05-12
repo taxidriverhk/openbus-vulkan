@@ -9,10 +9,10 @@
 #include "Common/Logger.h"
 #include "Engine/Camera.h"
 #include "Engine/Entity.h"
+#include "Engine/Image.h"
 #include "Engine/Material.h"
 #include "Engine/Mesh.h"
 #include "Engine/Terrain.h"
-#include "VulkanCommon.h"
 #include "VulkanDrawEngine.h"
 #include "VulkanRenderPass.h"
 #include "Buffer/VulkanBuffer.h"
@@ -25,7 +25,8 @@ VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
       screen(screen),
       isInitialized(false),
       enableDebugging(enableDebugging),
-      currentInFlightFrame(0)
+      currentInFlightFrame(0),
+      pushConstants{}
 {
 }
 
@@ -138,6 +139,7 @@ void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
         commandManager->Record(
             imageIndex,
             frameBuffers[imageIndex],
+            pushConstants,
             bufferManager->GetDrawingBuffer(imageIndex));
         dataUpdated[imageIndex] = false;
     }
@@ -308,6 +310,14 @@ void VulkanDrawEngine::LoadCubeMap(CubeMap &cubeMap)
         transformedVertices,
         cubeMap.indices,
         cubeMap.images);
+
+    std::vector<uint8_t> skyColor = cubeMap.images[0]->GetDominantColor();
+    pushConstants.meshPushConstant.fogColor =
+    {
+        skyColor[0] / 255.f,
+        skyColor[1] / 255.f,
+        skyColor[2] / 255.f
+    };
 }
 
 void VulkanDrawEngine::LoadEntity(Entity &entity)
@@ -414,6 +424,15 @@ void VulkanDrawEngine::RecreateSwapChain()
 
     CreateFrameBuffers();
     CreateCommandBuffers();
+}
+
+void VulkanDrawEngine::SetFog(float density, float gradient)
+{
+    // Fog color is already set when the cubemap image is being loaded/updated
+    pushConstants.meshPushConstant.fogDensity = density;
+    pushConstants.meshPushConstant.fogGradient = gradient;
+
+    MarkDataAsUpdated();
 }
 
 void VulkanDrawEngine::Submit(uint32_t &imageIndex)

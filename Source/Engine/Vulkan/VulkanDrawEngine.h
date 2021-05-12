@@ -7,6 +7,7 @@
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
 #include "Engine/Vertex.h"
+#include "VulkanCommon.h"
 #include "VulkanContext.h"
 
 class VulkanPipeline;
@@ -28,6 +29,7 @@ public:
     void LoadEntity(Entity &entity) override;
     void LoadScreenObject(ScreenMesh &screenMesh) override;
     void LoadTerrain(Terrain &terrain) override;
+    void SetFog(float density, float gradient) override;
     void UpdateCamera(Camera *camera) override;
     void UnloadEntity(uint32_t entityId) override;
     void UnloadScreenObject(uint32_t screenMeshId) override;
@@ -84,6 +86,9 @@ private:
     std::unordered_set<uint32_t> terrainBufferIds;
     std::unordered_set<uint32_t> screenObjectIds;
     std::unique_ptr<VulkanBufferManager> bufferManager;
+
+    // Push constants
+    VulkanPushConstants pushConstants;
 
     // Based on number of swap chain images (which is usually 3)
     std::vector<VkFramebuffer> frameBuffers;

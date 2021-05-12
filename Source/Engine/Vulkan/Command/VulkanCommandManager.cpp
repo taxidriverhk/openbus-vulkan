@@ -83,12 +83,16 @@ void VulkanCommandManager::Destroy()
 void VulkanCommandManager::Record(
     uint32_t imageIndex,
     VkFramebuffer framebuffer,
+    VulkanPushConstants pushConstants,
     VulkanDrawingBuffer drawingBuffer)
 {
     VkCommandBuffer primaryCommandBuffer = BeginPrimaryCommand(imageIndex, framebuffer);
 
     VulkanBuffer *uniformBuffer = drawingBuffer.uniformBuffer;
     VulkanBuffer *screenBuffer = drawingBuffer.screenBuffer;
+
+    VulkanMeshPushConstant &meshPushConstant = pushConstants.meshPushConstant;
+
     std::mutex secondaryCommandMutex;
     std::vector<VkCommandBuffer> secondaryCommandBuffers;
 
@@ -99,10 +103,17 @@ void VulkanCommandManager::Record(
             secondaryCommandMutex.unlock();
 
             VulkanPipeline *staticPipeline = pipelines.staticPipeline;
+            BindPipeline(secondaryCommandBuffer, staticPipeline);
+
+            PushConstant(
+                secondaryCommandBuffer,
+                VK_SHADER_STAGE_VERTEX_BIT,
+                staticPipeline,
+                &meshPushConstant,
+                sizeof(VulkanMeshPushConstant));
+
             for (const auto &entityBuffer : drawingBuffer.entityBuffers)
             {
-                BindPipeline(secondaryCommandBuffer, staticPipeline);
-
                 VulkanBuffer *instanceBuffer = entityBuffer.instanceBuffer;
                 VulkanBuffer *vertexBuffer = entityBuffer.vertexBuffer;
                 VulkanBuffer *indexBuffer = entityBuffer.indexBuffer;
@@ -174,11 +185,17 @@ void VulkanCommandManager::Record(
             secondaryCommandMutex.unlock();
 
             VulkanPipeline *terrainPipeline = pipelines.terrainPipeline;
+            BindPipeline(secondaryCommandBuffer, terrainPipeline);
+
+            PushConstant(
+                secondaryCommandBuffer,
+                VK_SHADER_STAGE_VERTEX_BIT,
+                terrainPipeline,
+                &meshPushConstant,
+                sizeof(VulkanMeshPushConstant));
 
             for (const auto &terrainBuffer : drawingBuffer.terrainBuffers)
             {
-                BindPipeline(secondaryCommandBuffer, terrainPipeline);
-
                 VulkanBuffer *vertexBuffer = terrainBuffer.vertexBuffer;
                 VulkanBuffer *indexBuffer = terrainBuffer.indexBuffer;
                 VulkanImage *imageBuffer = terrainBuffer.imageBuffer;
@@ -218,11 +235,10 @@ void VulkanCommandManager::Record(
             secondaryCommandMutex.unlock();
 
             VulkanPipeline *screenPipeline = pipelines.screenPipeline;
+            BindPipeline(secondaryCommandBuffer, screenPipeline);
 
             for (const auto &screenObjectBuffer : drawingBuffer.screenObjectBuffers)
             {
-                BindPipeline(secondaryCommandBuffer, screenPipeline);
-
                 VulkanBuffer *vertexBuffer = screenObjectBuffer.vertexBuffer;
                 VulkanImage *imageBuffer = screenObjectBuffer.imageBuffer;
 
@@ -317,10 +333,25 @@ void VulkanCommandManager::BindPipeline(VkCommandBuffer commandBuffer, VulkanPip
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
 }
 
-
 void VulkanCommandManager::EndCommand(VkCommandBuffer commandBuffer)
 {
     ASSERT_VK_RESULT_SUCCESS(vkEndCommandBuffer(commandBuffer), "Failed to end the command buffer");
+}
+
+void VulkanCommandManager::PushConstant(
+    VkCommandBuffer commandBuffer,
+    VkShaderStageFlags stage,
+    VulkanPipeline *pipeline,
+    void *data,
+    uint32_t size)
+{
+    vkCmdPushConstants(
+        commandBuffer,
+        pipeline->GetPipelineLayout(),
+        stage,
+        0,
+        size,
+        data);
 }
 
 VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t imageIndex)

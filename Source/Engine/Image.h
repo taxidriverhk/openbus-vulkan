@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 enum class ImageColor
 {
@@ -16,6 +17,7 @@ public:
     Image(const uint8_t *srcPixels, int width, int height);
     ~Image();
 
+    std::vector<uint8_t> GetDominantColor() const;
     int GetWidth() const { return width; }
     int GetHeight() const { return height; }
     uint8_t *GetPixels() const { return pixels; }
@@ -28,5 +30,6 @@ private:
     int width;
     int height;
     int channels;
+
     uint8_t *pixels;
 };

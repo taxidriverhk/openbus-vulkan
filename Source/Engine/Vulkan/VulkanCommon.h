@@ -135,6 +135,7 @@ class VulkanBuffer;
 class VulkanImage;
 class VulkanPipeline;
 
+// Drawing Buffers
 struct VulkanCubeMapBuffer
 {
     VulkanBuffer *vertexBuffer;
@@ -187,4 +188,17 @@ struct VulkanDrawingBuffer
     std::vector<VulkanTerrainBuffer> terrainBuffers;
     std::vector<VulkanEntityBuffer> entityBuffers;
     std::vector<VulkanScreenObjectBuffer> screenObjectBuffers;
+};
+
+// Push constants
+struct VulkanMeshPushConstant
+{
+    float fogDensity;
+    float fogGradient;
+    alignas(16) glm::vec3 fogColor; // To match the GLSL alignment requirement
+};
+
+struct VulkanPushConstants
+{
+    VulkanMeshPushConstant meshPushConstant;
 };

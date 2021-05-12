@@ -22,6 +22,12 @@ struct VulkanDescriptorLayoutConfig
     const VkDescriptorSetLayoutBinding *bindings;
 };
 
+struct VulkanPushConstantLayoutConfig
+{
+    VkShaderStageFlags stage;
+    uint32_t size;
+};
+
 struct VulkanVertexLayoutConfig
 {
     uint32_t vertexSize;
@@ -36,6 +42,7 @@ struct VulkanPipelineConfig
 
     VulkanVertexLayoutConfig vertexLayoutConfig;
     std::vector<VulkanDescriptorLayoutConfig> descriptorLayoutConfigs;
+    std::vector<VulkanPushConstantLayoutConfig> pushConstantConfigs;
 
     bool depthTestEnable;
     VkCullModeFlags cullMode;
@@ -58,7 +65,9 @@ public:
     void Destroy();
 
 private:
-    void CreateDescriptorLayouts(const std::vector<VulkanDescriptorLayoutConfig> &descriptorLayoutConfigs);
+    void CreateDescriptorLayouts(
+        const std::vector<VulkanDescriptorLayoutConfig> &descriptorLayoutConfigs,
+        const std::vector<VulkanPushConstantLayoutConfig> &pushConstantConfigs);
     void DestroyDescriptorLayouts();
 
     VulkanContext *context;

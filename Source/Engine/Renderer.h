@@ -25,7 +25,7 @@ public:
     void DrawScene();
     void Initialize(Screen *screen);
     
-    void LoadBackground(const std::string &skyBoxImageFilePath);
+    void LoadBackground(const std::string &skyBoxImageFilePath, bool enableFog);
 
     void LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity> &entities);
     void UnloadEntities(uint32_t blockId);

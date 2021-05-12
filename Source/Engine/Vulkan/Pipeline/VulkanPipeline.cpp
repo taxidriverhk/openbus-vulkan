@@ -19,7 +19,7 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::Create(VulkanPipelineConfig config)
 {
-    CreateDescriptorLayouts(config.descriptorLayoutConfigs);
+    CreateDescriptorLayouts(config.descriptorLayoutConfigs, config.pushConstantConfigs);
 
     const VulkanVertexLayoutConfig &vertexLayoutConfig = config.vertexLayoutConfig;
 
@@ -71,13 +71,13 @@ void VulkanPipeline::Create(VulkanPipelineConfig config)
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_TRUE;
+    multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = context->GetMSAASampleBits();
 
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = config.depthTestEnable;
-    depthStencil.depthWriteEnable = config.depthTestEnable;
+    depthStencil.depthTestEnable = config.depthTestEnable ? VK_TRUE : VK_FALSE;
+    depthStencil.depthWriteEnable = config.depthTestEnable ? VK_TRUE : VK_FALSE;
     depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.front.compareOp = VK_COMPARE_OP_ALWAYS;
     depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
@@ -133,7 +133,9 @@ void VulkanPipeline::Create(VulkanPipelineConfig config)
         "Failed to create pipeline");
 }
 
-void VulkanPipeline::CreateDescriptorLayouts(const std::vector<VulkanDescriptorLayoutConfig> &descriptorLayoutConfigs)
+void VulkanPipeline::CreateDescriptorLayouts(
+    const std::vector<VulkanDescriptorLayoutConfig> &descriptorLayoutConfigs,
+    const std::vector<VulkanPushConstantLayoutConfig> &pushConstantConfigs)
 {
     std::vector<VkDescriptorSetLayout> resultingLayouts;
     for (auto const &descriptorLayoutConfig : descriptorLayoutConfigs)
@@ -164,9 +166,23 @@ void VulkanPipeline::CreateDescriptorLayouts(const std::vector<VulkanDescriptorL
         resultingLayouts.push_back(targetLayout);
     }
 
+    uint32_t pushConstantOffset = 0;
+    std::vector<VkPushConstantRange> resultingPushConstants;
+    for (auto const &pushConstantConfig : pushConstantConfigs)
+    {
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.offset = pushConstantOffset;
+        pushConstantRange.size = pushConstantConfig.size;
+        pushConstantRange.stageFlags = pushConstantConfig.stage;
+
+        pushConstantOffset += pushConstantConfig.size;
+        resultingPushConstants.push_back(pushConstantRange);
+    }
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(resultingPushConstants.size());
+    pipelineLayoutInfo.pPushConstantRanges = resultingPushConstants.data();
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(resultingLayouts.size());
     pipelineLayoutInfo.pSetLayouts = resultingLayouts.data();
     ASSERT_VK_RESULT_SUCCESS(

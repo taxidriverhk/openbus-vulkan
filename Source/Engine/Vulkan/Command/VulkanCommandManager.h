@@ -12,6 +12,7 @@
 struct VulkanCubeMapBuffer;
 struct VulkanTerrainBuffer;
 struct VulkanDrawingPipelines;
+struct VulkanPushConstants;
 class VulkanContext;
 class VulkanRenderPass;
 
@@ -35,11 +36,18 @@ public:
     void Record(
         uint32_t imageIndex,
         VkFramebuffer framebuffer,
+        VulkanPushConstants pushConstants,
         VulkanDrawingBuffer drawingBuffer);
     void Reset(uint32_t previousImageIndex);
 
 private:
     void BindPipeline(VkCommandBuffer commandBuffer, VulkanPipeline *pipeline);
+    void PushConstant(
+        VkCommandBuffer commandBuffer,
+        VkShaderStageFlags stage,
+        VulkanPipeline *pipeline,
+        void *data,
+        uint32_t size);
 
     // Primary command buffer
     VkCommandBuffer BeginPrimaryCommand(uint32_t imageIndex, VkFramebuffer frameBuffer);
