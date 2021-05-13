@@ -56,12 +56,11 @@ void Game::InitializeComponents()
 
 void Game::InitializeSettings(const GameSessionConfig &startConfig)
 {
-    gameSettings.mapLoadSettings.maxAdjacentBlocks = 1;
-    gameSettings.graphicsSettings.enableFog = true;
-    gameSettings.graphicsSettings.targetFrameRate = 120;
-    gameSettings.graphicsSettings.maxViewableDistance = 1200;
-    gameSettings.graphicsSettings.screenWidth = 1920;
-    gameSettings.graphicsSettings.screenHeight = 1080;
+    std::string settingsFilePath = FileSystem::GetSettingsFile();
+    if (!ConfigReader::ReadConfig(settingsFilePath, gameSettings))
+    {
+        throw std::runtime_error("Failed to read config file from settings.json");
+    }
 }
 
 void Game::InitializeState(const GameSessionConfig &startConfig)

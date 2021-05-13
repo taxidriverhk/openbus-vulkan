@@ -49,6 +49,11 @@ std::string FileSystem::GetModelFile(const std::string &baseDirectory, const std
     return (std::filesystem::path(baseDirectory) / MODEL_DIRECTORY_NAME / modelFileName).string();
 }
 
+std::string FileSystem::GetSettingsFile()
+{
+    return (baseDirectory / SETTINGS_FILE_NAME).string();
+}
+
 std::string FileSystem::GetTextureFile(const std::string &baseDirectory, const std::string &textureFileName)
 {
     return (std::filesystem::path(baseDirectory) / TEXTURE_DIRECTORY_NAME / textureFileName).string();

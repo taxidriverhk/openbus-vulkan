@@ -4,6 +4,7 @@
 #include "EntityConfig.h"
 #include "MapConfig.h"
 #include "ObjectConfig.h"
+#include "SettingsConfig.h"
 #include "TerrainConfig.h"
 
 bool ConfigReader::registered = false;
@@ -40,4 +41,15 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&MapInfoConfig::image, "image");
     JsonParser::RegisterMapper(&MapInfoConfig::skyBoxImage, "skyBoxImage");
     JsonParser::RegisterMapper(&MapInfoConfig::blocks, "blocks");
+
+    JsonParser::RegisterMapper(&GraphicsSettings::enableFog, "enableFog");
+    JsonParser::RegisterMapper(&GraphicsSettings::targetFrameRate, "targetFrameRate");
+    JsonParser::RegisterMapper(&GraphicsSettings::maxViewableDistance, "maxViewableDistance");
+    JsonParser::RegisterMapper(&GraphicsSettings::screenWidth, "screenWidth");
+    JsonParser::RegisterMapper(&GraphicsSettings::screenHeight, "screenHeight");
+
+    JsonParser::RegisterMapper(&MapLoadSettings::maxAdjacentBlocks, "maxAdjacentBlocks");
+
+    JsonParser::RegisterMapper(&GameSettings::graphicsSettings, "graphicsSettings");
+    JsonParser::RegisterMapper(&GameSettings::mapLoadSettings, "mapLoadSettings");
 }

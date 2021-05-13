@@ -7,6 +7,7 @@ class FileSystem
 {
 public:
     static constexpr char *MAP_FILE_NAME = "map.json";
+    static constexpr char *SETTINGS_FILE_NAME = "settings.json";
 
     static constexpr char *FONT_DIRECTORY_NAME = "fonts";
     static constexpr char *HEIGHT_MAP_DIRECTORY_NAME = "heightmaps";
@@ -24,6 +25,7 @@ public:
     static std::string GetMapBlockFile(const std::string &mapBaseDirectory, const std::string &mapBlockFileName);
     static std::string GetObjectFile(const std::string &objectFileName);
     static std::string GetModelFile(const std::string &baseDirectory, const std::string &modelFileName);
+    static std::string GetSettingsFile();
     static std::string GetTextureFile(const std::string &baseDirectory, const std::string &textureFileName);
 
 private:
