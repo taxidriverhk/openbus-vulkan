@@ -4,6 +4,11 @@
 #include <vector>
 #include <unordered_set>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
 #include "Engine/Vertex.h"
@@ -31,6 +36,7 @@ public:
     void LoadTerrain(Terrain &terrain) override;
     void SetFog(float density, float gradient) override;
     void UpdateCamera(Camera *camera) override;
+    void UpdateEntityTransformation(uint32_t entityId, EntityTransformation transformation) override;
     void UnloadEntity(uint32_t entityId) override;
     void UnloadScreenObject(uint32_t screenMeshId) override;
     void UnloadTerrain(uint32_t terrainId) override;
@@ -54,6 +60,18 @@ private:
     inline static glm::vec3 ConvertToVulkanCoordinates(const glm::vec3 &input)
     {
         return { input.x, input.z, -input.y };
+    }
+
+    inline static glm::mat4 ComputeTransformationMatrix(
+        const glm::vec3 &translation,
+        const glm::vec3 &scale,
+        float rotationAngles
+    )
+    {
+        glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
+        glm::mat4 translatedMatrix = glm::translate(identitiyMatrix, translation);
+        translatedMatrix = glm::rotate(translatedMatrix, glm::radians<float>(rotationAngles), glm::vec3(0, 1, 0));
+        return glm::scale(translatedMatrix, scale);
     }
 
     void CreateCommandBuffers();

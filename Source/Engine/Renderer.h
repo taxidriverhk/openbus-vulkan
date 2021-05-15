@@ -27,6 +27,7 @@ public:
     
     void LoadBackground(const std::string &skyBoxImageFilePath, bool enableFog);
 
+    void MoveEntity(uint32_t entityId, EntityTransformation transformation);
     void LoadBlock(uint32_t blockId, Terrain &terrain, std::vector<Entity> &entities);
     void UnloadEntities(uint32_t blockId);
 

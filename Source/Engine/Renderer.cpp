@@ -50,6 +50,11 @@ void Renderer::Initialize(Screen *screen)
     drawEngine->Initialize();
 }
 
+void Renderer::MoveEntity(uint32_t entityId, EntityTransformation transformation)
+{
+    drawEngine->UpdateEntityTransformation(entityId, transformation);
+}
+
 void Renderer::PutText(const Text &text)
 {
     ScreenMesh screenMesh;

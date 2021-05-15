@@ -2,6 +2,7 @@
 
 class Camera;
 struct CubeMap;
+struct EntityTransformation;
 struct Entity;
 struct Terrain;
 struct ScreenMesh;
@@ -20,6 +21,7 @@ public:
     virtual void LoadTerrain(Terrain &terrain) = 0;
     virtual void SetFog(float density, float gradient) = 0;
     virtual void UpdateCamera(Camera *camera) = 0;
+    virtual void UpdateEntityTransformation(uint32_t entityId, EntityTransformation transformation) = 0;
     virtual void UnloadEntity(uint32_t entityId) = 0;
     virtual void UnloadTerrain(uint32_t terrainId) = 0;
     virtual void UnloadScreenObject(uint32_t screenMeshId) = 0;

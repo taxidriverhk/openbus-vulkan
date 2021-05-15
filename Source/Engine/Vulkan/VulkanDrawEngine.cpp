@@ -1,11 +1,6 @@
 #include <algorithm>
 #include <execution>
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "Common/Logger.h"
 #include "Engine/Camera.h"
 #include "Engine/Entity.h"
@@ -291,6 +286,8 @@ void VulkanDrawEngine::EndFrame(uint32_t &imageIndex)
 
 void VulkanDrawEngine::MarkDataAsUpdated()
 {
+    // This method should be called only when there are objects add/removed
+    // No need to call this when only the position/color of an object is changed
     std::fill(dataUpdated.begin(), dataUpdated.end(), true);
 }
 
@@ -339,10 +336,7 @@ void VulkanDrawEngine::LoadEntity(Entity &entity)
             return ConvertToVulkanVertex(vertex);
         });
 
-    glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
-    glm::mat4 translatedMatrix = glm::translate(identitiyMatrix, translation);
-    translatedMatrix = glm::rotate(translatedMatrix, glm::radians<float>(rotationAngles), glm::vec3(0, 1, 0));
-    translatedMatrix = glm::scale(translatedMatrix, scale);
+    glm::mat4 translatedMatrix = ComputeTransformationMatrix(translation, scale, rotationAngles);
 
     VulkanInstanceBufferInput instanceBufferInput{};
     instanceBufferInput.transformation = translatedMatrix;
@@ -483,6 +477,16 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
     input.eyePosition = position;
 
     bufferManager->UpdateUniformBuffer(input);
+}
+
+void VulkanDrawEngine::UpdateEntityTransformation(uint32_t entityId, EntityTransformation transformation)
+{
+    VulkanInstanceBufferInput input{};
+    input.transformation = ComputeTransformationMatrix(
+        transformation.translation,
+        transformation.scale,
+        transformation.rotation.z);
+    bufferManager->UpdateInstanceBuffer(entityId, input);
 }
 
 void VulkanDrawEngine::UnloadEntity(uint32_t entityId)
