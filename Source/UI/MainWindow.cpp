@@ -39,6 +39,7 @@ MainWindow::MainWindow()
     gridLayout->setRowStretch(2, 35);
     gridLayout->addWidget(logViewer.get(), 2, 0);
 
+    connect(gameScreen.get(), &GameScreen::AddVehicleButtonClicked, this, &MainWindow::AddVehicleButtonClicked);
     connect(gameScreen.get(), &GameScreen::StartButtonClicked, this, &MainWindow::StartButtonClicked);
     connect(gameScreen.get(), &GameScreen::StopButtonClicked, this, &MainWindow::ShutdownButtonClicked);
     connect(mapList.get(), &MapList::MapListItemSelected, this, &MainWindow::EnableStartButton);
@@ -76,6 +77,11 @@ void MainWindow::EnableStartButton()
 {
     gameScreen->SetStartButtonEnabled(true);
     gameScreen->SetStopButtonEnabled(false);
+}
+
+void MainWindow::AddVehicleButtonClicked()
+{
+    // TODO: show vehicle selection menu and then add to the game
 }
 
 void MainWindow::ExitButtonClicked()

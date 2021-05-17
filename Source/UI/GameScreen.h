@@ -16,6 +16,7 @@ public:
     void SetStopButtonEnabled(bool enabled);
 
 Q_SIGNALS:
+    void AddVehicleButtonClicked();
     void StartButtonClicked();
     void StopButtonClicked();
 
@@ -27,5 +28,6 @@ private:
 
     std::unique_ptr<QPushButton> startButton;
     std::unique_ptr<QPushButton> stopButton;
+    std::unique_ptr<QPushButton> addVehicleButton;
     std::unique_ptr<QPushButton> settingsButton;
 };

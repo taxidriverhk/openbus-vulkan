@@ -15,17 +15,23 @@ GameScreen::GameScreen()
     stopButton->setIcon(standardStyle->standardIcon(QStyle::StandardPixmap::SP_MediaStop));
     stopButton->setFixedHeight(BUTTON_HEIGHT);
     stopButton->setDisabled(true);
+    addVehicleButton = std::make_unique<QPushButton>("Add Vehicle");
+    addVehicleButton->setIcon(standardStyle->standardIcon(QStyle::StandardPixmap::SP_FileDialogListView));
+    addVehicleButton->setFixedHeight(BUTTON_HEIGHT);
+    addVehicleButton->setDisabled(true);
     settingsButton = std::make_unique<QPushButton>("Settings");
     settingsButton->setIcon(standardStyle->standardIcon(QStyle::StandardPixmap::SP_ComputerIcon));
     settingsButton->setFixedHeight(BUTTON_HEIGHT);
 
     buttonLayout->addWidget(startButton.get(), 0, 0);
     buttonLayout->addWidget(stopButton.get(), 0, 1);
-    buttonLayout->addWidget(settingsButton.get(), 0, 2);
+    buttonLayout->addWidget(addVehicleButton.get(), 0, 2);
+    buttonLayout->addWidget(settingsButton.get(), 0, 3);
 
     setWidget(buttonLayoutContainer.get());
     buttonLayoutContainer->setLayout(buttonLayout.get());
 
+    connect(addVehicleButton.get(), &QPushButton::clicked, this, &GameScreen::AddVehicleButtonClicked);
     connect(startButton.get(), &QPushButton::clicked, this, &GameScreen::StartButtonClicked);
     connect(stopButton.get(), &QPushButton::clicked, this, &GameScreen::StopButtonClicked);
 }
