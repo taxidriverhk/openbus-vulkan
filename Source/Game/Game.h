@@ -1,13 +1,18 @@
 #pragma once
 
+#include <list>
 #include <memory>
 #include <thread>
 
 #include "Config/GameConfig.h"
 #include "Config/SettingsConfig.h"
+#include "Object/BaseGameObject.h"
 
+struct GameObjectLoadRequest;
 class HandledThread;
 class ControlManager;
+class GameObjectSystem;
+class GameObjectLoader;
 class Map;
 class MapLoader;
 class Camera;
@@ -16,13 +21,13 @@ class Renderer;
 
 class Game
 {
-
 public:
     Game();
     ~Game();
 
     bool GetGameStarted() const { return gameStarted; }
 
+    void AddUserGameObject(const GameObjectLoadRequest &request);
     void Cleanup();
     void SetShouldEndGame(const bool &shouldEndGame);
     void Start(const GameSessionConfig &startConfig);
@@ -39,7 +44,7 @@ private:
 
     void RunGameLoop();
     void HandleInputCommands(float deltaTime);
-    void UpdateState(float deltaTime);
+    void UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands);
 
     GameSettings gameSettings;
     GameSessionConfig gameStartConfig;
@@ -49,6 +54,9 @@ private:
     std::unique_ptr<HandledThread> gameLoopThread;
 
     std::atomic<bool> readyToRender;
+
+    std::unique_ptr<GameObjectSystem> gameObjectSystem;
+    std::unique_ptr<GameObjectLoader> gameObjectLoader;
 
     std::unique_ptr<ControlManager> controlManager;
     std::unique_ptr<Map> map;
