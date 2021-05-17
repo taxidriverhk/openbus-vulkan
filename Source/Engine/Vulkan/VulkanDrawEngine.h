@@ -31,7 +31,7 @@ public:
     void DrawFrame() override;
     void Initialize() override;
     void LoadCubeMap(CubeMap &cubeMap) override;
-    void LoadEntity(Entity &entity) override;
+    void LoadEntity(const Entity &entity) override;
     void LoadScreenObject(ScreenMesh &screenMesh) override;
     void LoadTerrain(Terrain &terrain) override;
     void SetFog(float density, float gradient) override;

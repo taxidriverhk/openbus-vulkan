@@ -16,7 +16,7 @@ public:
     virtual void DrawFrame() = 0;
     virtual void Initialize() = 0;
     virtual void LoadCubeMap(CubeMap &cubemap) = 0;
-    virtual void LoadEntity(Entity &entity) = 0;
+    virtual void LoadEntity(const Entity &entity) = 0;
     virtual void LoadScreenObject(ScreenMesh &screenMesh) = 0;
     virtual void LoadTerrain(Terrain &terrain) = 0;
     virtual void SetFog(float density, float gradient) = 0;

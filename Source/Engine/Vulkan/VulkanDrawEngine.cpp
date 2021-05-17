@@ -317,7 +317,7 @@ void VulkanDrawEngine::LoadCubeMap(CubeMap &cubeMap)
     };
 }
 
-void VulkanDrawEngine::LoadEntity(Entity &entity)
+void VulkanDrawEngine::LoadEntity(const Entity &entity)
 {
     std::shared_ptr<Mesh> mesh = entity.mesh;
     glm::vec3 translation = ConvertToVulkanCoordinates(entity.translation);
@@ -483,8 +483,8 @@ void VulkanDrawEngine::UpdateEntityTransformation(uint32_t entityId, EntityTrans
 {
     VulkanInstanceBufferInput input{};
     input.transformation = ComputeTransformationMatrix(
-        transformation.translation,
-        transformation.scale,
+        ConvertToVulkanCoordinates(transformation.translation),
+        ConvertToVulkanCoordinates(transformation.scale),
         transformation.rotation.z);
     bufferManager->UpdateInstanceBuffer(entityId, input);
 }

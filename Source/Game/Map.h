@@ -83,6 +83,7 @@ struct MapBlockResources
     std::vector<Entity> entities;
 
     MapBlockResources()
+        : blockId(0)
     {
     }
 

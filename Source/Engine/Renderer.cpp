@@ -16,8 +16,7 @@
 #include "Vulkan/VulkanDrawEngine.h"
 
 Renderer::Renderer(Camera *camera)
-    : camera(camera),
-      drawEngine()
+    : camera(camera)
 {
 }
 
@@ -50,9 +49,22 @@ void Renderer::Initialize(Screen *screen)
     drawEngine->Initialize();
 }
 
+void Renderer::AddEntity(const Entity &entity)
+{
+    // TODO: may add code to reject the addition if the entity ID is duplicate
+
+    drawEngine->LoadEntity(entity);
+    gameObjectEntityIds.insert(entity.id);
+}
+
 void Renderer::MoveEntity(uint32_t entityId, EntityTransformation transformation)
 {
     drawEngine->UpdateEntityTransformation(entityId, transformation);
+}
+
+void Renderer::RemoveEntity(uint32_t entityId)
+{
+    drawEngine->UnloadEntity(entityId);
 }
 
 void Renderer::PutText(const Text &text)
@@ -145,7 +157,7 @@ void Renderer::RemoveText(uint32_t textMeshId)
     drawEngine->UnloadScreenObject(screenMeshId);
 }
 
-void Renderer::UnloadEntities(uint32_t blockId)
+void Renderer::UnloadBlock(uint32_t blockId)
 {
     if (blockIdEntityIdsMap.count(blockId) == 0)
     {
