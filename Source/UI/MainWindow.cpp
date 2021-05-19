@@ -1,5 +1,6 @@
 #include "Common/HandledThread.h"
 #include "Config/GameConfig.h"
+#include "Game/Object/GameObjectLoader.h"
 #include "GameScreen.h"
 #include "MapList.h"
 #include "MessageDialog.h"
@@ -42,7 +43,7 @@ MainWindow::MainWindow()
     connect(gameScreen.get(), &GameScreen::AddVehicleButtonClicked, this, &MainWindow::AddVehicleButtonClicked);
     connect(gameScreen.get(), &GameScreen::StartButtonClicked, this, &MainWindow::StartButtonClicked);
     connect(gameScreen.get(), &GameScreen::StopButtonClicked, this, &MainWindow::ShutdownButtonClicked);
-    connect(mapList.get(), &MapList::MapListItemSelected, this, &MainWindow::EnableStartButton);
+    connect(mapList.get(), &MapList::MapListItemSelected, this, &MainWindow::ResetButtonState);
     connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
     connect(this, &MainWindow::GameThreadError, this, &MainWindow::EndGame);
 }
@@ -70,18 +71,24 @@ void MainWindow::EndGame()
         gameThread->Join();
     }
 
-    EnableStartButton();
+    ResetButtonState();
 }
 
-void MainWindow::EnableStartButton()
+void MainWindow::ResetButtonState()
 {
     gameScreen->SetStartButtonEnabled(true);
     gameScreen->SetStopButtonEnabled(false);
+    gameScreen->SetAddVehicleButtonEnabled(false);
 }
 
 void MainWindow::AddVehicleButtonClicked()
 {
     // TODO: show vehicle selection menu and then add to the game
+    // hard-coding the vehicle entity to load for now
+    GameObjectLoadRequest loadRequest{};
+    loadRequest.configFilePath = "D:\\Documents\\BitBucket\\OpenBus.Vulkan\\bin\\Debug\\vehicles\\Porsche GT2\\vehicle.json";
+    loadRequest.position = { 50, 50, 10 };
+    game->AddUserGameObject(loadRequest);
 }
 
 void MainWindow::ExitButtonClicked()
@@ -98,6 +105,7 @@ void MainWindow::StartButtonClicked()
 {
     gameScreen->SetStartButtonEnabled(false);
     gameScreen->SetStopButtonEnabled(true);
+    gameScreen->SetAddVehicleButtonEnabled(true);
     
     std::string mapPath;
     if (mapList->GetSelectedMapFile(mapPath))

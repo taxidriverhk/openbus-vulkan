@@ -16,11 +16,11 @@ public:
     std::list<GameObjectEntity> GetRenderingEntities() const;
 
     void DespawnGameObject(uint32_t gameObjectId);
-    void SpawnGameObject(uint32_t gameObjectId, std::unique_ptr<BaseGameObject> gameObject);
+    void SpawnGameObject(uint32_t gameObjectId, std::shared_ptr<BaseGameObject> gameObject);
     void SetCurrentUserObject(uint32_t gameObjectId);
     void UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands);
 
 private:
     std::unique_ptr<BaseGameObject> currentUserObject;
-    std::unordered_map<uint32_t, std::unique_ptr<BaseGameObject>> gameObjects;
+    std::unordered_map<uint32_t, std::shared_ptr<BaseGameObject>> gameObjects;
 };

@@ -2,6 +2,7 @@
 #include "ConfigReader.h"
 
 #include "EntityConfig.h"
+#include "GameObjectConfig.h"
 #include "MapConfig.h"
 #include "ObjectConfig.h"
 #include "SettingsConfig.h"
@@ -41,6 +42,11 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&MapInfoConfig::image, "image");
     JsonParser::RegisterMapper(&MapInfoConfig::skyBoxImage, "skyBoxImage");
     JsonParser::RegisterMapper(&MapInfoConfig::blocks, "blocks");
+
+    JsonParser::RegisterMapper(&VehicleConfig::name, "name");
+    JsonParser::RegisterMapper(&VehicleConfig::mass, "mass");
+    JsonParser::RegisterMapper(&VehicleConfig::chassisObject, "chassisObject");
+    JsonParser::RegisterMapper(&VehicleConfig::wheelObjects, "wheelObjects");
 
     JsonParser::RegisterMapper(&GraphicsSettings::enableFog, "enableFog");
     JsonParser::RegisterMapper(&GraphicsSettings::targetFrameRate, "targetFrameRate");

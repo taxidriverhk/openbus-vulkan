@@ -12,6 +12,11 @@ std::string FileSystem::MapDirectory()
     return (baseDirectory / MAP_DIRECTORY_NAME).string();
 }
 
+std::string FileSystem::VehicleDirectory()
+{
+    return (baseDirectory / VEHICLE_DIRECTORY_NAME).string();
+}
+
 std::list<std::string> FileSystem::GetFontFiles()
 {
     std::list<std::string> fontFiles;
@@ -39,7 +44,12 @@ std::string FileSystem::GetMapBlockFile(const std::string &mapBaseDirectory, con
     return (std::filesystem::path(mapBaseDirectory) / mapBlockFileName).string();
 }
 
-std::string FileSystem::GetObjectFile(const std::string &objectFileName)
+std::string FileSystem::GetGameObjectFile(const std::string &gameObjectBaseDirectory, const std::string &objectFileName)
+{
+    return (std::filesystem::path(gameObjectBaseDirectory) / objectFileName).string();
+}
+
+std::string FileSystem::GetStaticObjectFile(const std::string &objectFileName)
 {
     return (baseDirectory / OBJECT_DIRECTORY_NAME / objectFileName).string();
 }
@@ -57,4 +67,9 @@ std::string FileSystem::GetSettingsFile()
 std::string FileSystem::GetTextureFile(const std::string &baseDirectory, const std::string &textureFileName)
 {
     return (std::filesystem::path(baseDirectory) / TEXTURE_DIRECTORY_NAME / textureFileName).string();
+}
+
+std::string FileSystem::GetVehicleFile(const std::string &vehicleBaseDirectory)
+{
+    return (std::filesystem::path(vehicleBaseDirectory) / VEHICLE_FILE_NAME).string();
 }

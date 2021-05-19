@@ -36,7 +36,7 @@ private:
     void EndGame();
 
     void AddVehicleButtonClicked();
-    void EnableStartButton();
+    void ResetButtonState();
     void ExitButtonClicked();
     void ShutdownButtonClicked();
     void StartButtonClicked();

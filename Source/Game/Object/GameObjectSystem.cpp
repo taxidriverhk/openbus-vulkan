@@ -25,11 +25,19 @@ std::list<GameObjectEntity> GameObjectSystem::GetRenderingEntities() const
 
 void GameObjectSystem::DespawnGameObject(uint32_t gameObjectId)
 {
+    if (gameObjects.count(gameObjectId) == 0)
+    {
+        return;
+    }
+
+    gameObjects[gameObjectId]->Destroy();
+    gameObjects.erase(gameObjectId);
 }
 
-void GameObjectSystem::SpawnGameObject(uint32_t gameObjectId, std::unique_ptr<BaseGameObject> gameObject)
+void GameObjectSystem::SpawnGameObject(uint32_t gameObjectId, std::shared_ptr<BaseGameObject> gameObject)
 {
-    gameObjects[gameObjectId] = std::move(gameObject);
+    gameObject->Initialize();
+    gameObjects[gameObjectId] = gameObject;
 }
 
 void GameObjectSystem::SetCurrentUserObject(uint32_t gameObjectId)

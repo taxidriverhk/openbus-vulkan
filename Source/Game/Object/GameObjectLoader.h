@@ -12,12 +12,36 @@ struct Entity;
 class HandledThread;
 class BaseGameObject;
 
+enum class GameObjectType
+{
+    Vehicle,
+    Human
+};
+
 struct GameObjectLoadRequest
 {
     bool isUserObject;
+    GameObjectType type;
     std::string configFilePath;
     glm::vec3 position;
     glm::vec3 rotation;
+};
+
+struct GameObjectLoadResult
+{
+    uint32_t id;
+    std::shared_ptr<BaseGameObject> object;
+
+    GameObjectLoadResult()
+        : id(0),
+          object(nullptr)
+    {}
+
+    GameObjectLoadResult(const GameObjectLoadResult &other)
+    {
+        id = other.id;
+        object = other.object;
+    }
 };
 
 class GameObjectLoader
@@ -31,7 +55,7 @@ public:
 
     void AddGameObjectToLoad(const GameObjectLoadRequest &request);
     std::list<std::unique_ptr<Entity>> PollLoadedEntities();
-    std::list<std::unique_ptr<BaseGameObject>> PollLoadedGameObjects();
+    std::list<GameObjectLoadResult> PollLoadedGameObjects();
 
     void StartLoadGameObjectThread();
     void TerminateLoadGameObjectThread();
@@ -39,8 +63,15 @@ public:
 private:
     static constexpr uint32_t WAIT_TIME_SECONDS = 1;
 
+    bool LoadVehicleConfig(
+        const GameObjectLoadRequest &loadRequest,
+        GameObjectLoadResult &vehicleObject,
+        std::list<std::unique_ptr<Entity>> &entities);
+
+    uint32_t gameObjectEntityIdCount;
+
     std::atomic<bool> readyToSpawn;
-    std::list<std::unique_ptr<BaseGameObject>> loadedGameObjects;
+    std::list<GameObjectLoadResult> loadedGameObjects;
 
     std::atomic<bool> readyToBuffer;
     std::list<std::unique_ptr<Entity>> loadedEntities;

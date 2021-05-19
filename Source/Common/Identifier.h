@@ -7,8 +7,8 @@ enum class IdentifierType : uint32_t
 {
     MapBlock = 100,
     Entity = 50000,
-    AnimatedEntity = 250000,
-    ScreenObject = 500000
+    GameObjectEntity = 10000000,
+    ScreenObject = 20000000
 };
 
 class Identifier

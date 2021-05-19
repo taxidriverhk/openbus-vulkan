@@ -12,6 +12,7 @@ public:
     GameScreen();
     ~GameScreen();
 
+    void SetAddVehicleButtonEnabled(bool enabled);
     void SetStartButtonEnabled(bool enabled);
     void SetStopButtonEnabled(bool enabled);
 

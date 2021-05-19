@@ -85,7 +85,7 @@ void Game::AddUserGameObject(const GameObjectLoadRequest &request)
         return;
     }
 
-
+    gameObjectLoader->AddGameObjectToLoad(request);
 }
 
 void Game::SetShouldEndGame(const bool &shouldEndGame)
@@ -148,30 +148,11 @@ void Game::RenderScene()
     readyToRender = false;
 }
 
-// TODO: includes only for the hard-coded vehicle game object
-#include "Engine/Image.h"
-#include "Engine/Material.h"
-
 void Game::RunMainLoop()
 {
     Logger::Log(LogLevel::Info, "Loading uniform background");
     renderer->LoadBackground(map->GetSkyBoxImageFilePath(), gameSettings.graphicsSettings.enableFog);
     screen->Show();
-    
-    // TODO: test code for game object which is moving
-    Entity vehicleEntity{};
-    vehicleEntity.id = 999;
-    vehicleEntity.scale = { 1.0, 1.0, 1.0 };
-    vehicleEntity.translation = { 50, 50, 10 };
-    MeshLoader loader;
-    Mesh vehicleMesh{};
-    loader.LoadFromFile("objects\\Test Objects\\models\\car.obj", vehicleMesh);
-    vehicleMesh.id = 999;
-    vehicleMesh.material = std::make_shared<Material>();
-    vehicleMesh.material->id = 999;
-    vehicleMesh.material->diffuseImage = std::make_shared<Image>("objects\\Test Objects\\models\\car-yellow.bmp");
-    vehicleEntity.mesh = std::make_shared<Mesh>(vehicleMesh);
-    renderer->AddEntity(vehicleEntity);
 
     Logger::Log(LogLevel::Info, "Entering the rendering loop");
     while (!ShouldQuit())
@@ -214,7 +195,11 @@ void Game::RunMainLoop()
         // works in the same way as the map block loading thread
         if (gameObjectLoader->IsReadyToBuffer())
         {
-
+            std::list<std::unique_ptr<Entity>> gameObjectEntities = gameObjectLoader->PollLoadedEntities();
+            for (const auto &gameObjectEntity : gameObjectEntities)
+            {
+                renderer->AddEntity(*gameObjectEntity);
+            }
         }
 
         // Redraw the scene only if the game thread has completed its updates
@@ -223,9 +208,6 @@ void Game::RunMainLoop()
             RenderScene();
         }
     }
-
-    // TODO: test code for removing the hard-coded moving entity
-    renderer->RemoveEntity(vehicleEntity.id);
 
     Cleanup();
     gameStarted = false;
@@ -241,7 +223,6 @@ void Game::RunGameLoop()
     // TODO: test code to ensure that the game state logic is working
     // spawn game object only after the mesh is loaded
     std::list<GameObjectCommand> commands;
-    gameObjectSystem->SpawnGameObject(1, std::make_unique<VehicleGameObject>(999));
 
     float timeSinceLastUpdate = 0.0f;
     Timer timer;
@@ -251,7 +232,11 @@ void Game::RunGameLoop()
         // thread and then put into the game object system for state/physics updates in future frames
         if (gameObjectLoader->IsReadyToSpawn())
         {
-
+            std::list<GameObjectLoadResult> gameObjects = gameObjectLoader->PollLoadedGameObjects();
+            for (auto &gameObject : gameObjects)
+            {
+                gameObjectSystem->SpawnGameObject(gameObject.id, gameObject.object);
+            }
         }
         // TOOD: Otherwise, determine if game objects should spawn or despawn
         // Then put the game object into loader thread for loading the meshes and initializing the phyiscs

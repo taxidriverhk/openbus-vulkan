@@ -144,6 +144,8 @@ private:
     void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
     std::unordered_set<MapBlockPosition> GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition);
 
+    uint32_t staticEntityIdCount;
+
     bool firstBlockLoaded;
     Map *map;
     MapLoadSettings mapLoadSettings;

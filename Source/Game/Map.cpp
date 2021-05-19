@@ -110,6 +110,7 @@ std::list<uint32_t> Map::UnloadBlocks(const std::unordered_set<MapBlockPosition>
 MapLoader::MapLoader(Map *map, const MapLoadSettings &mapLoadSettings)
     : meshLoader(),
       terrainLoader(MAP_BLOCK_SIZE, 10, 50),
+      staticEntityIdCount(0),
       loadProgress(0),
       readyToBuffer(false),
       shouldTerminate(false),
@@ -229,6 +230,8 @@ void MapLoader::StartLoadBlocksThread()
                         continue;
                     }
 
+                    // TODO: add code to load surface and collision meshes into the physics system
+
                     Logger::Log(LogLevel::Info, "Loading resources for block ({}, {})",
                         mapBlockPositionValue.x, mapBlockPositionValue.y);
                     std::string mapBaseDirectory = FileSystem::GetParentDirectory(map->GetConfigFilePath());
@@ -283,7 +286,7 @@ void MapLoader::StartLoadBlocksThread()
                             Mesh mesh;
                             mesh.id = objectId;
 
-                            std::string objectFilePath = FileSystem::GetObjectFile(objectFile);
+                            std::string objectFilePath = FileSystem::GetStaticObjectFile(objectFile);
                             std::string objectBaseDirectory = FileSystem::GetParentDirectory(objectFilePath);
 
                             StaticObjectConfig staticObjectConfig;
@@ -322,7 +325,7 @@ void MapLoader::StartLoadBlocksThread()
                             objectIdMeshMap[objectId] = std::make_shared<Mesh>(mesh);
                         }
 
-                        entity.id = Identifier::GenerateIdentifier(IdentifierType::Entity, entityConfig.id);
+                        entity.id = Identifier::GenerateIdentifier(IdentifierType::Entity, ++staticEntityIdCount);
                         entity.translation =
                         { 
                             mapBlockOffsetX + entityConfig.position.x,

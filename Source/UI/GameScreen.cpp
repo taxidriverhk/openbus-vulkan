@@ -40,6 +40,11 @@ GameScreen::~GameScreen()
 {
 }
 
+void GameScreen::SetAddVehicleButtonEnabled(bool enabled)
+{
+    addVehicleButton->setEnabled(enabled);
+}
+
 void GameScreen::SetStartButtonEnabled(bool enabled)
 {
     startButton->setEnabled(enabled);
