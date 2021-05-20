@@ -30,16 +30,19 @@ struct GameObjectLoadRequest
 struct GameObjectLoadResult
 {
     uint32_t id;
+    bool isUserObject;
     std::shared_ptr<BaseGameObject> object;
 
     GameObjectLoadResult()
         : id(0),
+          isUserObject(false),
           object(nullptr)
     {}
 
     GameObjectLoadResult(const GameObjectLoadResult &other)
     {
         id = other.id;
+        isUserObject = other.isUserObject;
         object = other.object;
     }
 };

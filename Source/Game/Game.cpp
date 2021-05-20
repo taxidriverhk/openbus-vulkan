@@ -14,6 +14,7 @@
 #include "Map/MapLoader.h"
 #include "Control.h"
 #include "Game.h"
+#include "View.h"
 
 Game::Game()
     : gameStarted(false),
@@ -54,7 +55,8 @@ void Game::InitializeComponents()
     gameObjectLoader = std::make_unique<GameObjectLoader>();
 
     camera = std::make_unique<Camera>(screenWidth, screenHeight);
-    camera->SetZFar(static_cast<float>(maxDistance));
+    view = std::make_unique<View>(camera.get(), gameObjectSystem.get());
+    view->SetViewableDistance(static_cast<float>(maxDistance));
 
     std::string screenTitle = Util::FormatWindowTitle("Game Screen");
     screen = std::make_unique<Screen>(screenWidth, screenHeight, screenTitle);
@@ -141,8 +143,8 @@ void Game::RenderScene()
     for (const auto &renderingEntity : gameObjectSystem->GetRenderingEntities())
     {
         EntityTransformation entityTransformation{};
-        entityTransformation.translation = renderingEntity.worldPosition;
-        entityTransformation.rotation = renderingEntity.rotation;
+        entityTransformation.translation = renderingEntity.transform.worldPosition;
+        entityTransformation.rotation = renderingEntity.transform.rotation;
         entityTransformation.scale = { 1.0f, 1.0f, 1.0f };
         renderer->MoveEntity(renderingEntity.entityId, entityTransformation);
     }
@@ -166,7 +168,7 @@ void Game::RunMainLoop()
 
         // Update the block position based on the camera position
         // so that it knows if blocks should be added/removed
-        bool blockPositionChanged = map->UpdateBlockPosition(camera->GetPosition());
+        bool blockPositionChanged = map->UpdateBlockPosition(view->GetWorldPosition());
         if (blockPositionChanged)
         {
             std::unordered_set<MapBlockPosition> mapBlockPositionsToKeep = mapLoader->GetAdjacentBlocks();
@@ -208,6 +210,7 @@ void Game::RunMainLoop()
         // Redraw the scene only if the game thread has completed its updates
         if (readyToRender)
         {
+            view->UpdateView();
             RenderScene();
         }
     }
@@ -239,6 +242,10 @@ void Game::RunGameLoop()
             for (auto &gameObject : gameObjects)
             {
                 gameObjectSystem->SpawnGameObject(gameObject.id, gameObject.object);
+                if (gameObject.isUserObject)
+                {
+                    gameObjectSystem->SetCurrentUserObject(gameObject.id);
+                }
             }
         }
         // TOOD: Otherwise, determine if game objects should spawn or despawn
@@ -266,34 +273,22 @@ void Game::RunGameLoop()
 // TODO: could be moved into a separate class for handling?
 void Game::HandleInputCommands(float deltaTime)
 {
-    float movementSpeed = 100;
     for (const ControlCommand &command : controlManager->PollCommands())
     {
         switch (command.operation)
         {
         case ControlCommandOperation::CameraMoveForward:
-            camera->MoveBy(0.0f, movementSpeed * deltaTime, 0.0f);
-            break;
         case ControlCommandOperation::CameraMoveBackward:
-            camera->MoveBy(0.0f, -movementSpeed * deltaTime, 0.0f);
-            break;
         case ControlCommandOperation::CameraMoveLeft:
-            camera->MoveBy(-movementSpeed * deltaTime, 0.0f, 0.0f);
-            break;
         case ControlCommandOperation::CameraMoveRight:
-            camera->MoveBy(movementSpeed * deltaTime, 0.0f, 0.0f);
-            break;
         case ControlCommandOperation::CameraMoveUp:
-            camera->MoveBy(0.0f, 0.0f, movementSpeed * deltaTime);
-            break;
         case ControlCommandOperation::CameraMoveDown:
-            camera->MoveBy(0.0f, 0.0f, -movementSpeed * deltaTime);
-            break;
         case ControlCommandOperation::CameraRotateCounterClockwise:
-            camera->RotateBy(0.0f, -movementSpeed * deltaTime, 0.0f);
-            break;
         case ControlCommandOperation::CameraRotateClockwise:
-            camera->RotateBy(0.0f, movementSpeed * deltaTime, 0.0f);
+            view->Move(command.operation, deltaTime);
+            break;
+        case ControlCommandOperation::SwitchView:
+            view->SwitchView();
             break;
         case ControlCommandOperation::ToggleFrameRateDisplay:
             gameStartConfig.enableFrameRateDisplay = !gameStartConfig.enableFrameRateDisplay;

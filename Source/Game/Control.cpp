@@ -119,6 +119,10 @@ void ControlManager::RegisterControls()
                 ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveDown }
             },
             {
+                Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyC },
+                ControlCommand{ ControlCommandType::Discrete, ControlCommandOperation::SwitchView }
+            },
+            {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyF },
                 ControlCommand{ ControlCommandType::Discrete, ControlCommandOperation::ToggleFrameRateDisplay }
             }

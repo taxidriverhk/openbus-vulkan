@@ -18,6 +18,7 @@ class MapLoader;
 class Camera;
 class Screen;
 class Renderer;
+class View;
 
 class Game
 {
@@ -63,6 +64,8 @@ private:
     std::unique_ptr<MapLoader> mapLoader;
 
     std::unique_ptr<Camera> camera;
+    std::unique_ptr<View> view;
+
     std::unique_ptr<Screen> screen;
     std::unique_ptr<Renderer> renderer;
 };

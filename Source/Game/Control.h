@@ -17,6 +17,7 @@ enum class KeyCode
 {
     Invalid = -1,
     KeyA = 0,
+    KeyC = 2,
     KeyD = 3,
     KeyE = 4,
     KeyF = 5,
@@ -61,6 +62,7 @@ enum class ControlCommandOperation
     CameraMoveDown,
     CameraRotateCounterClockwise,
     CameraRotateClockwise,
+    SwitchView,
     ToggleFrameRateDisplay
 };
 

@@ -88,6 +88,7 @@ void MainWindow::AddVehicleButtonClicked()
     GameObjectLoadRequest loadRequest{};
     loadRequest.configFilePath = "D:\\Documents\\BitBucket\\OpenBus.Vulkan\\bin\\Debug\\vehicles\\Porsche GT2\\vehicle.json";
     loadRequest.position = { 50, 50, 10 };
+    loadRequest.isUserObject = true;
     game->AddUserGameObject(loadRequest);
 }
 

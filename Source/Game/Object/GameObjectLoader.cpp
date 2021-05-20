@@ -110,7 +110,10 @@ bool GameObjectLoader::LoadVehicleConfig(
     chassisEntity->scale = { 1.0f, 1.0f, 1.0f };
     chassisEntity->mesh = std::make_shared<Mesh>(chassisMesh);
 
-    std::shared_ptr<BaseGameObject> vehicleGameObject = std::make_unique<VehicleGameObject>(chassisEntity->id);
+    GameObjectTransform originTransform{};
+    originTransform.worldPosition = translation;
+    originTransform.rotation = rotation;
+    std::shared_ptr<BaseGameObject> vehicleGameObject = std::make_unique<VehicleGameObject>(chassisEntity->id, originTransform);
 
     vehicleObject.id = chassisEntity->id;
     vehicleObject.object = vehicleGameObject;
@@ -147,26 +150,29 @@ void GameObjectLoader::StartLoadGameObjectThread()
                 }
 
                 const GameObjectLoadRequest &loadRequestValue = loadRequest.value();
+
+                GameObjectLoadResult gameObjectLoadResult{};
+                gameObjectLoadResult.isUserObject = loadRequestValue.isUserObject;
+
+                std::list<std::unique_ptr<Entity>> entities;
                 if (loadRequestValue.type == GameObjectType::Vehicle)
                 {
                     Logger::Log(LogLevel::Info, "Loading vehicle game object from {}", loadRequestValue.configFilePath);
-                    GameObjectLoadResult vehicleObject{};
-                    std::list<std::unique_ptr<Entity>> entities;
-                    if (!LoadVehicleConfig(loadRequestValue, vehicleObject, entities))
+                    if (!LoadVehicleConfig(loadRequestValue, gameObjectLoadResult, entities))
                     {
                         Logger::Log(LogLevel::Warning, "Failed to load the vehicle object from {}", loadRequestValue.configFilePath);
                         continue;
-                    }
-
-                    loadedGameObjects.push_back(vehicleObject);
-                    for (auto &entity : entities)
-                    {
-                        loadedEntities.push_back(std::move(entity));
                     }
                 }
                 else if (loadRequestValue.type == GameObjectType::Human)
                 {
 
+                }
+
+                loadedGameObjects.push_back(gameObjectLoadResult);
+                for (auto &entity : entities)
+                {
+                    loadedEntities.push_back(std::move(entity));
                 }
 
                 readyToBuffer = true;

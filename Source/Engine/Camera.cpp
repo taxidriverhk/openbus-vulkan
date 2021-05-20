@@ -24,8 +24,7 @@ Camera::~Camera()
 
 void Camera::MoveTo(float x, float y, float z)
 {
-    position.x = x;
-    position.y = y;
+    position = x * right + y * front;
     position.z = z;
 }
 

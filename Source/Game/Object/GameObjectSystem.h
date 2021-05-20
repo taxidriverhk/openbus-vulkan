@@ -12,15 +12,17 @@ public:
     GameObjectSystem();
     ~GameObjectSystem();
 
-    BaseGameObject *GetCurrentUserObject() const { return currentUserObject.get(); }
+    bool HasUserObject() const { return currentUserObject != nullptr; }
+    BaseGameObject *GetCurrentUserObject() const { return currentUserObject; }
     std::list<GameObjectEntity> GetRenderingEntities() const;
 
+    void Cleanup();
     void DespawnGameObject(uint32_t gameObjectId);
     void SpawnGameObject(uint32_t gameObjectId, std::shared_ptr<BaseGameObject> gameObject);
     void SetCurrentUserObject(uint32_t gameObjectId);
     void UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands);
 
 private:
-    std::unique_ptr<BaseGameObject> currentUserObject;
+    BaseGameObject *currentUserObject;
     std::unordered_map<uint32_t, std::shared_ptr<BaseGameObject>> gameObjects;
 };

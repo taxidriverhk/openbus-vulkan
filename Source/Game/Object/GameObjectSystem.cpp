@@ -23,6 +23,11 @@ std::list<GameObjectEntity> GameObjectSystem::GetRenderingEntities() const
     return entities;
 }
 
+void GameObjectSystem::Cleanup()
+{
+    gameObjects.clear();
+}
+
 void GameObjectSystem::DespawnGameObject(uint32_t gameObjectId)
 {
     if (gameObjects.count(gameObjectId) == 0)
@@ -42,6 +47,12 @@ void GameObjectSystem::SpawnGameObject(uint32_t gameObjectId, std::shared_ptr<Ba
 
 void GameObjectSystem::SetCurrentUserObject(uint32_t gameObjectId)
 {
+    if (gameObjects.count(gameObjectId) == 0)
+    {
+        return;
+    }
+
+    currentUserObject = gameObjects[gameObjectId].get();
 }
 
 void GameObjectSystem::UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands)
