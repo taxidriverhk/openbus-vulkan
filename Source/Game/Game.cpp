@@ -10,9 +10,10 @@
 #include "Game/Object/GameObjectLoader.h"
 #include "Game/Object/GameObjectSystem.h"
 #include "Game/Object/VehicleGameObject.h"
+#include "Map/Map.h"
+#include "Map/MapLoader.h"
 #include "Control.h"
 #include "Game.h"
-#include "Map.h"
 
 Game::Game()
     : gameStarted(false),
@@ -33,6 +34,8 @@ void Game::Cleanup()
     Logger::Log(LogLevel::Info, "Stopping other threads");
     mapLoader->TerminateLoadBlocksThread();
     gameObjectLoader->TerminateLoadGameObjectThread();
+    Logger::Log(LogLevel::Info, "Cleaning up game objects");
+    gameObjectSystem->Cleanup();
     Logger::Log(LogLevel::Info, "Cleaning up graphics context");
     renderer->Cleanup();
     Logger::Log(LogLevel::Info, "Closing screen");
