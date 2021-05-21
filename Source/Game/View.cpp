@@ -14,7 +14,9 @@ View::View(Camera *camera, GameObjectSystem *gameObjectSystem)
       up(0.0, 0.0, 1.0f),
       pitch(0.0f),
       yaw(0.0f),
-      roll(0.0f)
+      roll(0.0f),
+      followPitch(10.0f),
+      distanceFromObject(-15.0f, 15.0f, 5.0f)
 {
 }
 
@@ -34,24 +36,23 @@ void View::UpdateView()
     {
         const GameObjectTransform transform = gameObjectSystem->GetCurrentUserObject()->GetWorldTransform();
         const glm::vec3 &rotation = transform.rotation;
-        float carYawRadians = glm::radians<float>(rotation.z);
 
-        constexpr float pitchRadians = glm::radians<float>(10);
-        glm::vec3 distanceFromObject = { -15, 15, 5 };
-
+        float objectYawRadians = glm::radians<float>(rotation.z);
+        float objectPitchRadians = glm::radians<float>(followPitch + rotation.x);
         glm::vec3 position = transform.worldPosition;
-        float sinYaw = glm::sin(carYawRadians),
-              cosYaw = glm::cos(carYawRadians);
-        float sinPitch = glm::sin(pitchRadians),
-              cosPitch = glm::cos(pitchRadians);
+
+        float sinYaw = glm::sin(objectYawRadians),
+              cosYaw = glm::cos(objectYawRadians);
+        float sinPitch = glm::sin(objectPitchRadians),
+              cosPitch = glm::cos(objectPitchRadians);
         position.x += (distanceFromObject.x * sinYaw);
         position.y += (distanceFromObject.y * cosYaw);
         position.z += distanceFromObject.z;
 
         glm::vec3 objectFront = { sinYaw, -cosYaw, -sinPitch };
         objectFront = glm::normalize(objectFront);
-
         glm::vec3 objectRight = glm::cross(objectFront, up);
+
         camera->SetCamera(position, objectFront, objectRight, up);
     }
 }

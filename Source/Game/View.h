@@ -39,6 +39,11 @@ private:
     float movementSpeed;
     float viewableDistance;
 
+    // Used for follow mode
+    float followPitch;
+    glm::vec3 distanceFromObject;
+
+    // Used for free mode
     float pitch;
     float yaw;
     float roll;
