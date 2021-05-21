@@ -21,6 +21,7 @@ private:
     // TODO: just some test code to show how can a game object contain multiple entities
     uint32_t bodyEntityId;
     float angle;
+    float speed;
     glm::vec3 origin;
     GameObjectTransform baseTransform;
     std::vector<uint32_t> wheelEntityIds;

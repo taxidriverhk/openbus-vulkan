@@ -1,5 +1,6 @@
 #pragma once
 
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
 #include "Control.h"
@@ -41,7 +42,12 @@ private:
     float pitch;
     float yaw;
     float roll;
+
     glm::vec3 worldPosition;
+    glm::vec3 front;
+    glm::vec3 right;
+    glm::vec3 up;
+
     ViewMode mode;
 
     Camera *camera;

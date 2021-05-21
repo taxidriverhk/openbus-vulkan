@@ -4,7 +4,8 @@ VehicleGameObject::VehicleGameObject(uint32_t bodyEntityId, const GameObjectTran
     : baseTransform(originTransform),
       origin(originTransform.worldPosition),
       bodyEntityId(bodyEntityId),
-      angle(0.0f)
+      angle(0.0f),
+      speed(40)
 {
 }
 
@@ -24,14 +25,17 @@ void VehicleGameObject::Initialize()
 void VehicleGameObject::Update(float deltaTime, const std::list<GameObjectCommand> &commands)
 {
     // TODO: just some test code to move object
-    angle += deltaTime;
-    float cosTheta = glm::cos(angle),
-          sinTheta = glm::sin(angle);
+    angle -= speed * deltaTime;
+    float angleRadians = glm::radians<float>(angle);
+    float cosTheta = glm::cos(angleRadians),
+          sinTheta = glm::sin(angleRadians);
     float newX = origin.x + 20 * cosTheta,
           newY = origin.y + 20 * sinTheta;
+
     baseTransform.worldPosition.x = newX;
     baseTransform.worldPosition.y = newY;
-    baseTransform.rotation.z = 20 * angle;
+
+    baseTransform.rotation.z = angle;
 }
 
 GameObjectTransform VehicleGameObject::GetWorldTransform() const

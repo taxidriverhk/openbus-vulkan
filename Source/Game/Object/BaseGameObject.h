@@ -1,6 +1,8 @@
 #pragma once
 
 #include <list>
+
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
 enum class GameObjectCommand
