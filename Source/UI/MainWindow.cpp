@@ -5,6 +5,7 @@
 #include "MapList.h"
 #include "MessageDialog.h"
 #include "LogViewer.h"
+#include "VehicleSelectionScreen.h"
 #include "MainWindow.h"
 
 MainWindow::MainWindow()
@@ -40,9 +41,16 @@ MainWindow::MainWindow()
     gridLayout->setRowStretch(2, 35);
     gridLayout->addWidget(logViewer.get(), 2, 0);
 
+    vehicleSelectionScreen = std::make_unique<VehicleSelectionScreen>();
+    vehicleSelectionScreen->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
+
     connect(gameScreen.get(), &GameScreen::AddVehicleButtonClicked, this, &MainWindow::AddVehicleButtonClicked);
     connect(gameScreen.get(), &GameScreen::StartButtonClicked, this, &MainWindow::StartButtonClicked);
     connect(gameScreen.get(), &GameScreen::StopButtonClicked, this, &MainWindow::ShutdownButtonClicked);
+
+    connect(vehicleSelectionScreen.get(), &VehicleSelectionScreen::ConfirmButtonClicked, this, &MainWindow::AddVehicleConfirmed);
+    connect(vehicleSelectionScreen.get(), &VehicleSelectionScreen::CancelButtonClicked, this, &MainWindow::AddVehicleCanceled);
+
     connect(mapList.get(), &MapList::MapListItemSelected, this, &MainWindow::ResetButtonState);
     connect(exitAction.get(), &QAction::triggered, this, &MainWindow::ExitButtonClicked);
     connect(this, &MainWindow::GameThreadError, this, &MainWindow::EndGame);
@@ -83,13 +91,34 @@ void MainWindow::ResetButtonState()
 
 void MainWindow::AddVehicleButtonClicked()
 {
-    // TODO: show vehicle selection menu and then add to the game
-    // hard-coding the vehicle entity to load for now
-    GameObjectLoadRequest loadRequest{};
-    loadRequest.configFilePath = "D:\\Documents\\BitBucket\\OpenBus.Vulkan\\bin\\Debug\\vehicles\\Porsche GT2\\vehicle.json";
-    loadRequest.position = { 50, 50, 10 };
-    loadRequest.isUserObject = true;
-    game->AddUserGameObject(loadRequest);
+    mapList->hide();
+    vehicleSelectionScreen->show();
+    gameScreen->SetAddVehicleButtonEnabled(false);
+    gridLayout->removeWidget(mapList.get());
+    gridLayout->addWidget(vehicleSelectionScreen.get(), 1, 0);
+}
+
+void MainWindow::AddVehicleConfirmed()
+{
+    std::string configFilePath = vehicleSelectionScreen->GetSelectedVehicleFilePath();
+
+    GameObjectLoadRequest request{};
+    request.configFilePath = configFilePath;
+    request.type = GameObjectType::Vehicle;
+    request.isUserObject = true;
+
+    game->AddUserGameObject(request);
+    // Close the vehicle selection screen
+    AddVehicleCanceled();
+}
+
+void MainWindow::AddVehicleCanceled()
+{
+    vehicleSelectionScreen->hide();
+    mapList->show();
+    gameScreen->SetAddVehicleButtonEnabled(true);
+    gridLayout->removeWidget(vehicleSelectionScreen.get());
+    gridLayout->addWidget(mapList.get(), 1, 0);
 }
 
 void MainWindow::ExitButtonClicked()

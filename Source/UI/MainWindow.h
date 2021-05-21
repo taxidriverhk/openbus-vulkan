@@ -12,6 +12,7 @@ class HandledThread;
 class GameScreen;
 class MapList;
 class LogViewer;
+class VehicleSelectionScreen;
 
 class MainWindow : public QMainWindow
 {
@@ -36,6 +37,9 @@ private:
     void EndGame();
 
     void AddVehicleButtonClicked();
+    void AddVehicleConfirmed();
+    void AddVehicleCanceled();
+
     void ResetButtonState();
     void ExitButtonClicked();
     void ShutdownButtonClicked();
@@ -54,4 +58,5 @@ private:
     std::unique_ptr<GameScreen> gameScreen;
     std::unique_ptr<LogViewer> logViewer;
     std::unique_ptr<MapList> mapList;
+    std::unique_ptr<VehicleSelectionScreen> vehicleSelectionScreen;
 };

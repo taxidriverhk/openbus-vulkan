@@ -55,10 +55,12 @@ void MapList::Refresh()
                 if (mapFile.is_regular_file() && mapFile.path().filename() == FileSystem::MAP_FILE_NAME)
                 {
                     MapInfoConfig mapConfig;
-                    ConfigReader::ReadConfig(mapFile.path().string(), mapConfig);
-
-                    std::filesystem::path imagePath = mapEntry.path() / mapConfig.image;
-                    mapListItems->InsertMapTableRow(mapFile.path().string(), mapConfig.name, imagePath.string());
+                    if (ConfigReader::ReadConfig(mapFile.path().string(), mapConfig))
+                    {
+                        std::filesystem::path imagePath = mapEntry.path() / mapConfig.image;
+                        mapListItems->InsertMapTableRow(mapFile.path().string(), mapConfig.name, imagePath.string());
+                    }
+                    break;
                 }
             }
         }
