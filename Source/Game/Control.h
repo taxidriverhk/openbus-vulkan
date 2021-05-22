@@ -25,7 +25,7 @@ enum class KeyCode
     KeyS = 18,
     KeyW = 22,
     KeyLeft = 71,
-    KeyRight = 72
+    KeyRight = 72,
 };
 
 enum class KeyModifier : int
@@ -46,10 +46,56 @@ inline KeyModifier &operator |=(KeyModifier &left, KeyModifier right)
     return left = left | right;
 }
 
+enum class MouseAction
+{
+    MouseLeftButton = 1,
+    MouseRightButton = 2,
+    MouseMiddleButton = 4,
+    MouseWheelScrollUp = 5,
+    MouseWheelScrollDown = 6,
+    MouseMove = 7
+};
+
+enum class MouseMovementModifier : int
+{
+    None = 0,
+    MouseLeftButton = 1,
+    MouseRightButton = 2,
+    MouseMiddleButton = 4
+};
+
+inline MouseMovementModifier operator |(MouseMovementModifier left, MouseMovementModifier right)
+{
+    return static_cast<MouseMovementModifier>(static_cast<int>(left) | static_cast<int>(right));
+}
+
+inline MouseMovementModifier &operator |=(MouseMovementModifier &left, MouseMovementModifier right)
+{
+    return left = left | right;
+}
+
+struct MousePosition
+{
+    int x;
+    int y;
+};
+
+struct MouseMovement
+{
+    // Negative delta menas the mouse scrolled down
+    // Positive means the mouse scrolled up
+    float wheelDelta;
+    // Negative delta means the mouse moved to the left/down
+    // Positive means the mouse moved to the right/up
+    int deltaX;
+    int deltaY;
+};
+
 enum class ControlCommandType
 {
     Discrete,
-    Continuous
+    Continuous,
+    NonHoldable
 };
 
 enum class ControlCommandOperation
@@ -58,10 +104,11 @@ enum class ControlCommandOperation
     CameraMoveRight,
     CameraMoveForward,
     CameraMoveBackward,
-    CameraMoveUp,
-    CameraMoveDown,
+    CameraPitchChange,
     CameraRotateCounterClockwise,
     CameraRotateClockwise,
+    CameraZoomIn,
+    CameraZoomOut,
     SwitchView,
     ToggleFrameRateDisplay
 };
@@ -69,14 +116,23 @@ enum class ControlCommandOperation
 struct Control
 {
     ControlSource source;
+
     KeyModifier modifier;
     KeyCode key;
+
+    MouseAction mouse;
+    MouseMovementModifier mouseModifier;
+    MouseMovement movement;
 
     bool operator==(const Control &other) const
     {
         return this->source == other.source
-            && this->modifier == other.modifier
-            && this->key == other.key;
+            && ((this->source == ControlSource::Keyboard
+                && this->modifier == other.modifier
+                && this->key == other.key)
+            || (this->source == ControlSource::Mouse
+                && this->mouse == other.mouse
+                && this->mouseModifier == other.mouseModifier));
     }
 };
 
@@ -84,6 +140,7 @@ struct ControlCommand
 {
     ControlCommandType type;
     ControlCommandOperation operation;
+    MouseMovement movement;
 
     bool operator==(const ControlCommand &other) const
     {
@@ -122,6 +179,9 @@ public:
     void RegisterControls();
 
 private:
+    MouseMovementModifier currentMouseModifier;
+    MousePosition currentPosition;
+
     std::mutex commandMutex;
 
     std::unordered_map<Control, ControlCommand> registeredControls;

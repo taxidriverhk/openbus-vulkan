@@ -33,11 +33,17 @@ public:
     void UpdateView();
     void SwitchView();
 
-    void Move(ControlCommandOperation controlCommand, float deltaTime);
+    void Move(const ControlCommand &controlCommand, float deltaTime);
 
 private:
+    static constexpr float MAX_ALLOWABLE_ZOOM = 50.0f;
+    static constexpr float MIN_ALLOWABLE_ZOOM = 1.0f;
+    static constexpr float MAX_ALLOWABLE_PITCH = 90.0f;
+    static constexpr float MIN_ALLOWABLE_PITCH = 0.0f;
+
     float movementSpeed;
     float viewableDistance;
+    float zoom;
 
     // Used for follow mode
     float followPitch;

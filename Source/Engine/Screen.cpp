@@ -48,6 +48,12 @@ std::list<sf::Event> Screen::PollEvent()
             break;
         case sf::Event::KeyPressed:
         case sf::Event::KeyReleased:
+        case sf::Event::MouseButtonPressed:
+        case sf::Event::MouseButtonReleased:
+        case sf::Event::MouseMoved:
+        case sf::Event::MouseWheelScrolled:
+        case sf::Event::MouseEntered:
+        case sf::Event::MouseLeft:
             events.push_back(lastEvent);
         }
     }

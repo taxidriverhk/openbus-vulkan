@@ -1,6 +1,4 @@
-﻿#include <iostream>
-
-#include "Common/Logger.h"
+﻿#include "Common/Logger.h"
 #include "UI/MessageDialog.h"
 #include "UI/MainWindow.h"
 

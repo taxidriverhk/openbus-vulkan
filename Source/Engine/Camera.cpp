@@ -31,9 +31,6 @@ void Camera::SetCamera(glm::vec3 position, glm::vec3 front, glm::vec3 right, glm
 
 void Camera::Zoom(float factor)
 {
-    if (factor <= 0.0f)
-    {
-        factor = 0.001f;
-    }
     zoomFactor = factor;
+    fieldOfView = (1 / zoomFactor) * glm::radians(45.0f);
 }

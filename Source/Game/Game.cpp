@@ -90,7 +90,9 @@ void Game::AddUserGameObject(const GameObjectLoadRequest &request)
         return;
     }
 
-    gameObjectLoader->AddGameObjectToLoad(request);
+    GameObjectLoadRequest requestWithCurrentPosition(request);
+    requestWithCurrentPosition.position = view->GetWorldPosition();
+    gameObjectLoader->AddGameObjectToLoad(requestWithCurrentPosition);
 }
 
 void Game::SetShouldEndGame(const bool &shouldEndGame)
@@ -281,11 +283,12 @@ void Game::HandleInputCommands(float deltaTime)
         case ControlCommandOperation::CameraMoveBackward:
         case ControlCommandOperation::CameraMoveLeft:
         case ControlCommandOperation::CameraMoveRight:
-        case ControlCommandOperation::CameraMoveUp:
-        case ControlCommandOperation::CameraMoveDown:
+        case ControlCommandOperation::CameraPitchChange:
         case ControlCommandOperation::CameraRotateCounterClockwise:
         case ControlCommandOperation::CameraRotateClockwise:
-            view->Move(command.operation, deltaTime);
+        case ControlCommandOperation::CameraZoomIn:
+        case ControlCommandOperation::CameraZoomOut:
+            view->Move(command, deltaTime);
             break;
         case ControlCommandOperation::SwitchView:
             view->SwitchView();
