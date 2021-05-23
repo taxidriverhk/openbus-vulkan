@@ -104,7 +104,7 @@ enum class ControlCommandOperation
     CameraMoveRight,
     CameraMoveForward,
     CameraMoveBackward,
-    CameraPitchChange,
+    CameraAngleChange,
     CameraRotateCounterClockwise,
     CameraRotateClockwise,
     CameraZoomIn,

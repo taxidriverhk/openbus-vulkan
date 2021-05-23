@@ -209,7 +209,7 @@ void ControlManager::RegisterControls()
             },
             {
                 Control{ ControlSource::Mouse, KeyModifier::None, KeyCode::Invalid, MouseAction::MouseMove, MouseMovementModifier::MouseRightButton },
-                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraPitchChange }
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraAngleChange }
             }
         }
     );

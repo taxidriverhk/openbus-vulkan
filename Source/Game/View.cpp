@@ -5,7 +5,7 @@
 View::View(Camera *camera, GameObjectSystem *gameObjectSystem)
     : camera(camera),
       gameObjectSystem(gameObjectSystem),
-      mode(ViewMode::Free),
+      currentViewModeIndex(0),
       viewableDistance(0.0f),
       movementSpeed(50.0f),
       worldPosition{},
@@ -16,7 +16,8 @@ View::View(Camera *camera, GameObjectSystem *gameObjectSystem)
       yaw(0.0f),
       roll(0.0f),
       zoom(1.0f),
-      followPitch(10.0f),
+      followYaw(0.0f),
+      followPitch(-10.0f),
       distanceFromObject(-15.0f, 15.0f, 5.0f)
 {
 }
@@ -27,19 +28,20 @@ View::~View()
 
 void View::UpdateView()
 {
-    // If free camera, then simply update camera with free mode position
-    if (mode == ViewMode::Free)
+    // If free mode, then simply update camera with free mode position
+    if (VIEW_MODES[currentViewModeIndex] == ViewMode::Free)
     {
         camera->SetCamera(worldPosition, front, right, up);
     }
-    // If follow, then get the current user object's world position, then update the camera
-    else if (mode == ViewMode::Follow)
+    // If third person mode, then get the current user object's world position, then update the camera
+    else if (VIEW_MODES[currentViewModeIndex] == ViewMode::FirstPerson
+        || VIEW_MODES[currentViewModeIndex] == ViewMode::ThirdPerson)
     {
         const GameObjectTransform transform = gameObjectSystem->GetCurrentUserObject()->GetWorldTransform();
         const glm::vec3 &rotation = transform.rotation;
 
-        float objectYawRadians = glm::radians<float>(rotation.z);
-        float objectPitchRadians = glm::radians<float>(followPitch + rotation.x);
+        float objectYawRadians = glm::radians<float>(rotation.z - followYaw);
+        float objectPitchRadians = glm::radians<float>(rotation.x - followPitch);
         glm::vec3 position = transform.worldPosition;
 
         float sinYaw = glm::sin(objectYawRadians),
@@ -71,28 +73,35 @@ void View::Move(const ControlCommand &controlCommand, float deltaTime)
     case ControlCommandOperation::CameraZoomOut:
         zoom -= 0.05f;
         break;
-    case ControlCommandOperation::CameraPitchChange:
+    case ControlCommandOperation::CameraAngleChange:
     {
-        float intensity = controlCommand.movement.deltaY * 0.1f;
-        if (mode == ViewMode::Free)
+        float intensityX = controlCommand.movement.deltaX * 0.2f,
+              intensityY = controlCommand.movement.deltaY * 0.2f;
+        if (VIEW_MODES[currentViewModeIndex] == ViewMode::Free)
         {
-            pitch += intensity;
+            yaw -= intensityX;
+            pitch += intensityY;
+
+            pitch = std::clamp(pitch, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
+            yaw = std::clamp(yaw, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
         }
         else
         {
-            followPitch += intensity;
+            followYaw += intensityX;
+            followPitch += intensityY;
+
+            followYaw = std::clamp(followYaw, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
+            followPitch = std::clamp(followPitch, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
         }
     }
         break;
     }
 
-    pitch = std::clamp(pitch, MIN_ALLOWABLE_PITCH, MAX_ALLOWABLE_PITCH);
-    followPitch = std::clamp(followPitch, MIN_ALLOWABLE_PITCH, MAX_ALLOWABLE_PITCH);
     zoom = std::clamp(zoom, MIN_ALLOWABLE_ZOOM, MAX_ALLOWABLE_ZOOM);
 
     // Don't move the camera manually if not in free mode
     // The user object will make the camera move by changing its own position
-    if (mode != ViewMode::Free)
+    if (VIEW_MODES[currentViewModeIndex] != ViewMode::Free)
     {
         return;
     }
@@ -140,12 +149,14 @@ void View::Move(const ControlCommand &controlCommand, float deltaTime)
 
 void View::SwitchView()
 {
-    if (mode == ViewMode::Free && gameObjectSystem->HasUserObject())
+    if (currentViewModeIndex >= 0
+        && currentViewModeIndex < VIEW_MODE_COUNT - 1
+        && gameObjectSystem->HasUserObject())
     {
-        mode = ViewMode::Follow;
+        currentViewModeIndex++;
     }
     else
     {
-        mode = ViewMode::Free;
+        currentViewModeIndex = 0;
     }
 }

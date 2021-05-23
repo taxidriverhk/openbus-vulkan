@@ -29,8 +29,8 @@ void VehicleGameObject::Update(float deltaTime, const std::list<GameObjectComman
     float angleRadians = glm::radians<float>(angle);
     float cosTheta = glm::cos(angleRadians),
           sinTheta = glm::sin(angleRadians);
-    float newX = origin.x + 20 * cosTheta,
-          newY = origin.y + 20 * sinTheta;
+    float newX = origin.x + 100 * cosTheta,
+          newY = origin.y + 100 * sinTheta;
 
     baseTransform.worldPosition.x = newX;
     baseTransform.worldPosition.y = newY;

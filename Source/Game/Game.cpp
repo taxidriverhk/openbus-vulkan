@@ -283,7 +283,7 @@ void Game::HandleInputCommands(float deltaTime)
         case ControlCommandOperation::CameraMoveBackward:
         case ControlCommandOperation::CameraMoveLeft:
         case ControlCommandOperation::CameraMoveRight:
-        case ControlCommandOperation::CameraPitchChange:
+        case ControlCommandOperation::CameraAngleChange:
         case ControlCommandOperation::CameraRotateCounterClockwise:
         case ControlCommandOperation::CameraRotateClockwise:
         case ControlCommandOperation::CameraZoomIn:

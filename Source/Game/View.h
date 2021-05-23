@@ -8,10 +8,11 @@
 class Camera;
 class GameObjectSystem;
 
-enum class ViewMode
+enum class ViewMode : int
 {
-    Free,
-    Follow
+    Free = 0,
+    FirstPerson = 1,
+    ThirdPerson = 2
 };
 
 class View
@@ -22,7 +23,6 @@ public:
 
     glm::vec3 GetWorldPosition() const { return worldPosition; }
 
-    void SetMode(ViewMode nextMode) { mode = nextMode; }
     void SetMovementSpeed(float speed) { movementSpeed = speed; }
     void SetViewableDistance(float distance)
     { 
@@ -38,14 +38,24 @@ public:
 private:
     static constexpr float MAX_ALLOWABLE_ZOOM = 50.0f;
     static constexpr float MIN_ALLOWABLE_ZOOM = 1.0f;
-    static constexpr float MAX_ALLOWABLE_PITCH = 90.0f;
-    static constexpr float MIN_ALLOWABLE_PITCH = 0.0f;
+    static constexpr float MAX_ALLOWABLE_ANGLE = 89.0f;
+    static constexpr float MIN_ALLOWABLE_ANGLE = -89.0f;
 
+    static constexpr int VIEW_MODE_COUNT = 3;
+    static constexpr ViewMode VIEW_MODES[] =
+    {
+        ViewMode::Free,
+        ViewMode::FirstPerson,
+        ViewMode::ThirdPerson
+    };
+
+    // Applicable to both free and third/first person modes
     float movementSpeed;
     float viewableDistance;
     float zoom;
 
-    // Used for follow mode
+    // Used for third/first person mode
+    float followYaw;
     float followPitch;
     glm::vec3 distanceFromObject;
 
@@ -59,7 +69,7 @@ private:
     glm::vec3 right;
     glm::vec3 up;
 
-    ViewMode mode;
+    int currentViewModeIndex;
 
     Camera *camera;
     GameObjectSystem *gameObjectSystem;
