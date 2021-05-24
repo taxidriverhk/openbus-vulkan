@@ -8,7 +8,9 @@ class VulkanContext;
 enum class VulkanImageType
 {
     Texture,
-    CubeMap
+    CubeMap,
+    Color,
+    Depth
 };
 
 class VulkanImage
@@ -55,7 +57,12 @@ private:
         uint32_t width,
         uint32_t height);
     void EndSingleUseCommandBuffer(VkCommandBuffer commandBuffer);
-    void GenerateMipmaps();
+    
+    VkFormat FindImageFormat(VulkanImageType type);
+    VkImageAspectFlags GetAspectFlags(VulkanImageType type);
+    VkImageUsageFlags GetUsageFlags(VulkanImageType type);
+
+    void GenerateMipmaps(VkFormat format);
     void RunPipelineBarrierCommand(VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     VulkanImageType type;
@@ -69,7 +76,6 @@ private:
     uint32_t width;
     uint32_t height;
 
-    VkFormat format;
     VkImage image;
     VkImageView imageView;
     VkSampler sampler;

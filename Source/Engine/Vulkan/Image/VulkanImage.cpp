@@ -15,7 +15,8 @@ VulkanImage::VulkanImage(
       type(type),
       allocation(),
       descriptorSet(),
-      format(VK_FORMAT_R8G8B8A8_SRGB),
+      width(0),
+      height(0),
       image(),
       imageView(),
       sampler(),
@@ -44,7 +45,10 @@ void VulkanImage::Load(
     CreateImage(imagePixels, width, height);
     CreateImageView();
     CreateSampler();
-    CreateDescriptorSet(descriptorPool, descriptorSetLayout);
+    if (descriptorPool != VK_NULL_HANDLE && descriptorSetLayout != VK_NULL_HANDLE)
+    {
+        CreateDescriptorSet(descriptorPool, descriptorSetLayout);
+    }
 
     this->loaded = true;
 }
@@ -85,21 +89,26 @@ void VulkanImage::CreateImage(
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = mipLevels;
-    imageInfo.format = format;
+    imageInfo.format = FindImageFormat(type);
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.usage = GetUsageFlags(type);
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     if (type == VulkanImageType::Texture)
     {
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.arrayLayers = 1;
     }
     else if (type == VulkanImageType::CubeMap)
     {
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.arrayLayers = 6;
         imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+    else
+    {
+        imageInfo.samples = context->GetMSAASampleBits();;
     }
 
     VmaAllocationCreateInfo allocationInfo{};
@@ -121,8 +130,8 @@ void VulkanImage::CreateImageView()
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.format = FindImageFormat(type);
+    viewInfo.subresourceRange.aspectMask = GetAspectFlags(type);
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = mipLevels;
     viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -265,7 +274,51 @@ void VulkanImage::EndSingleUseCommandBuffer(VkCommandBuffer commandBuffer)
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
 }
 
-void VulkanImage::GenerateMipmaps()
+VkFormat VulkanImage::FindImageFormat(VulkanImageType type)
+{
+    switch (type)
+    {
+    case VulkanImageType::Color:
+        return context->GetSwapChainImageFormat();
+    case VulkanImageType::Depth:
+        return context->GetDepthImageFormat();
+    case VulkanImageType::Texture:
+    case VulkanImageType::CubeMap:
+    default:
+        return VK_FORMAT_R8G8B8A8_SRGB;
+    }
+}
+
+VkImageAspectFlags VulkanImage::GetAspectFlags(VulkanImageType type)
+{
+    switch (type)
+    {
+    case VulkanImageType::Depth:
+        return VK_IMAGE_ASPECT_DEPTH_BIT;
+    case VulkanImageType::Texture:
+    case VulkanImageType::CubeMap:
+    case VulkanImageType::Color:
+    default:
+        return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+}
+
+VkImageUsageFlags VulkanImage::GetUsageFlags(VulkanImageType type)
+{
+    switch (type)
+    {
+    case VulkanImageType::Color:
+        return VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    case VulkanImageType::Depth:
+        return VK_IMAGE_ASPECT_DEPTH_BIT;
+    case VulkanImageType::Texture:
+    case VulkanImageType::CubeMap:
+    default:
+        return VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+}
+
+void VulkanImage::GenerateMipmaps(VkFormat format)
 {
     VkFormatProperties formatProperties;
     vkGetPhysicalDeviceFormatProperties(context->GetPhysicalDevice(), format, &formatProperties);
@@ -454,6 +507,7 @@ void VulkanImage::UpdateImagePixels(
     width = imageWidth;
     height = imageHeight;
 
+    VkFormat format = FindImageFormat(type);
     RunPipelineBarrierCommand(format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkDeviceSize imageSize = 0, layerSize = 1;
@@ -492,7 +546,7 @@ void VulkanImage::UpdateImagePixels(
 
     if (type == VulkanImageType::Texture)
     {
-        GenerateMipmaps();
+        GenerateMipmaps(format);
     }
     else if (type == VulkanImageType::CubeMap)
     {
