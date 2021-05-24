@@ -14,6 +14,7 @@ struct VulkanTerrainBuffer;
 struct VulkanDrawingPipelines;
 struct VulkanPushConstants;
 class VulkanContext;
+class VulkanCommandPool;
 class VulkanRenderPass;
 
 class VulkanCommandManager
@@ -21,6 +22,7 @@ class VulkanCommandManager
 public:
     VulkanCommandManager(
         VulkanContext *context,
+        VulkanCommandPool *commandPool,
         VulkanRenderPass *renderPass,
         VulkanDrawingPipelines pipelines);
     ~VulkanCommandManager();
@@ -32,7 +34,6 @@ public:
 
     void Create(uint32_t frameBufferSize);
     void Destroy();
-    VkCommandPool GetOrCreateCommandPool(std::thread::id threadId);
     void Record(
         uint32_t imageIndex,
         VkFramebuffer framebuffer,
@@ -58,9 +59,7 @@ private:
     void EndCommand(VkCommandBuffer commandBuffer);
     void SetViewPortAndScissor(VkCommandBuffer commandBuffer);
 
-    std::unordered_map<std::thread::id, VkCommandPool> commandPools;
     std::vector<std::unique_ptr<VulkanCommand>> primaryCommandBuffers;
-
     struct SecondaryCommandBuffer
     {
         int activeBuffersInUse;
@@ -73,6 +72,7 @@ private:
     uint32_t frameBufferSize;
 
     VulkanContext *context;
+    VulkanCommandPool *commandPool;
     VulkanRenderPass *renderPass;
     VulkanDrawingPipelines pipelines;
 };

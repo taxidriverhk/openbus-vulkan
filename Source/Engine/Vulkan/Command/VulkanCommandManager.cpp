@@ -7,13 +7,16 @@
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
 #include "Engine/Vulkan/Image/VulkanImage.h"
 #include "Engine/Vulkan/Pipeline/VulkanPipeline.h"
+#include "VulkanCommandPool.h"
 #include "VulkanCommandManager.h"
 
 VulkanCommandManager::VulkanCommandManager(
     VulkanContext *context,
+    VulkanCommandPool *commandPool,
     VulkanRenderPass *renderPass,
     VulkanDrawingPipelines pipelines)
     : context(context),
+      commandPool(commandPool),
       renderPass(renderPass),
       pipelines(pipelines),
       frameBufferSize(0)
@@ -26,36 +29,16 @@ VulkanCommandManager::~VulkanCommandManager()
 
 void VulkanCommandManager::Create(uint32_t frameBufferSize)
 {
-    VkCommandPool commandPool = GetOrCreateCommandPool(std::this_thread::get_id());
+    VkCommandPool commandPoolToUse = commandPool->GetOrCreateCommandPool(std::this_thread::get_id());
 
     this->frameBufferSize = frameBufferSize;
     for (uint32_t i = 0; i < frameBufferSize; i++)
     {
-        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
+        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPoolToUse);
         commandBuffer->Create();
 
         primaryCommandBuffers.push_back(std::move(commandBuffer));
     }
-}
-
-VkCommandPool VulkanCommandManager::GetOrCreateCommandPool(std::thread::id threadId)
-{
-    if (commandPools.count(threadId) > 0)
-    {
-        return commandPools[threadId];
-    }
-
-    VkCommandPool commandPool;
-    VkCommandPoolCreateInfo commandPoolInfo{};
-    commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    commandPoolInfo.queueFamilyIndex = context->GetGraphicsQueueIndex();
-    commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    ASSERT_VK_RESULT_SUCCESS(
-        vkCreateCommandPool(context->GetLogicalDevice(), &commandPoolInfo, nullptr, &commandPool),
-        "Failed to create command pool");
-    commandPools.insert(std::make_pair(threadId, commandPool));
-
-    return commandPools[threadId];
 }
 
 void VulkanCommandManager::Destroy()
@@ -71,13 +54,8 @@ void VulkanCommandManager::Destroy()
         }
     }
 
-    for (auto &[threadId, commandPool] : commandPools)
-    {
-        vkDestroyCommandPool(context->GetLogicalDevice(), commandPool, nullptr);
-    }
     secondaryCommandBuffers.clear();
     primaryCommandBuffers.clear();
-    commandPools.clear();
 }
 
 void VulkanCommandManager::Record(
@@ -359,7 +337,7 @@ VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t ima
     // This method is not thread-safe, so need to have a mutx to ensure
     // that only one thread is calling this function at a time
     std::thread::id threadId = std::this_thread::get_id();
-    VkCommandPool commandPool = GetOrCreateCommandPool(threadId);
+    VkCommandPool commandPoolToUse = commandPool->GetOrCreateCommandPool(threadId);
 
     if (secondaryCommandBuffers.count(threadId) == 0)
     {
@@ -382,7 +360,7 @@ VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t ima
     else
     {
         Logger::Log(LogLevel::Debug, "Secondary command buffer is either not created or already in use");
-        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPool);
+        std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPoolToUse);
         commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 
         secondaryCommandBuffer.commandBuffers.push_back(std::move(commandBuffer));

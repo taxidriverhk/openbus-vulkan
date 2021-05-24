@@ -55,16 +55,13 @@ void VulkanContext::Create()
     CreateLogicalDevice();
     FindGraphicsAndPresentQueues();
     CreateSwapChain();
-    CreateImageViews();
-    CreateColorImage();
-    CreateDepthImage();
+    CreateSwapChainImageViews();
+    FindDepthImageFormat();
 }
 
 void VulkanContext::Destroy()
 {
-    DestroyDepthImage();
-    DestroyColorImage();
-    DestroyImageViews();
+    DestroySwapChainImageViews();
     DestroySwapChain();
     
     vkDestroyDevice(logicalDevice, nullptr);
@@ -83,14 +80,10 @@ void VulkanContext::Destroy()
 void VulkanContext::RecreateSwapChain()
 {
     oldSwapChain = swapChain;
-    DestroyDepthImage();
-    DestroyColorImage();
-    DestroyImageViews();
+    DestroySwapChainImageViews();
     CreateSwapChain();
     DestroyOldSwapChain();
-    CreateImageViews();
-    CreateColorImage();
-    CreateDepthImage();
+    CreateSwapChainImageViews();
 }
 
 void VulkanContext::WaitIdle()
@@ -165,30 +158,7 @@ void VulkanContext::CreateImageForFrameBuffer(
         "Failed to create image view");
 }
 
-void VulkanContext::CreateColorImage()
-{
-    CreateImageForFrameBuffer(
-        swapChainImageFormat,
-        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT,
-        colorImage,
-        colorImageView,
-        colorImageMemory);
-}
-
-void VulkanContext::CreateDepthImage()
-{
-    depthImageFormat = FindDepthImageFormat();
-    CreateImageForFrameBuffer(
-        depthImageFormat,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        VK_IMAGE_ASPECT_DEPTH_BIT,
-        depthImage,
-        depthImageView,
-        depthImageMemory);
-}
-
-void VulkanContext::CreateImageViews()
+void VulkanContext::CreateSwapChainImageViews()
 {
     uint32_t swapChainImageCount;
     vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, nullptr);
@@ -400,21 +370,7 @@ void VulkanContext::CreateWindowSurface()
     }
 }
 
-void VulkanContext::DestroyColorImage()
-{
-    vkDestroyImageView(logicalDevice, colorImageView, nullptr);
-    vkDestroyImage(logicalDevice, colorImage, nullptr);
-    vkFreeMemory(logicalDevice, colorImageMemory, nullptr);
-}
-
-void VulkanContext::DestroyDepthImage()
-{
-    vkDestroyImageView(logicalDevice, depthImageView, nullptr);
-    vkDestroyImage(logicalDevice, depthImage, nullptr);
-    vkFreeMemory(logicalDevice, depthImageMemory, nullptr);
-}
-
-void VulkanContext::DestroyImageViews()
+void VulkanContext::DestroySwapChainImageViews()
 {
     for (VkImageView swapChainImageView : swapChainImageViews)
     {
@@ -456,7 +412,7 @@ void VulkanContext::EnableDebugging()
         "Failed to create debug function");
 }
 
-VkFormat VulkanContext::FindDepthImageFormat()
+void VulkanContext::FindDepthImageFormat()
 {
     for (VkFormat format : DEPTH_IMAGE_FORMATS)
     {
@@ -465,7 +421,8 @@ VkFormat VulkanContext::FindDepthImageFormat()
         if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
             == VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
         {
-            return format;
+            depthImageFormat = format;
+            return;
         }
     }
 

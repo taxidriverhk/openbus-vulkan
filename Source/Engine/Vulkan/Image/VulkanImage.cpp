@@ -109,6 +109,7 @@ void VulkanImage::CreateImage(
     else
     {
         imageInfo.samples = context->GetMSAASampleBits();;
+        imageInfo.arrayLayers = 1;
     }
 
     VmaAllocationCreateInfo allocationInfo{};
@@ -133,17 +134,24 @@ void VulkanImage::CreateImageView()
     viewInfo.format = FindImageFormat(type);
     viewInfo.subresourceRange.aspectMask = GetAspectFlags(type);
     viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = mipLevels;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     if (type == VulkanImageType::Texture)
     {
+        viewInfo.subresourceRange.levelCount = mipLevels;
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.subresourceRange.layerCount = 1;
     }
     else if (type == VulkanImageType::CubeMap)
     {
+        viewInfo.subresourceRange.levelCount = mipLevels;
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         viewInfo.subresourceRange.layerCount = 6;
+    }
+    else
+    {
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.subresourceRange.levelCount = 1;
     }
 
     ASSERT_VK_RESULT_SUCCESS(
@@ -310,7 +318,7 @@ VkImageUsageFlags VulkanImage::GetUsageFlags(VulkanImageType type)
     case VulkanImageType::Color:
         return VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     case VulkanImageType::Depth:
-        return VK_IMAGE_ASPECT_DEPTH_BIT;
+        return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     case VulkanImageType::Texture:
     case VulkanImageType::CubeMap:
     default:

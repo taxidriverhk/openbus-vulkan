@@ -8,6 +8,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "vk_mem_alloc.hpp"
 
 #include "Engine/DrawEngine.h"
 #include "Engine/Screen.h"
@@ -15,8 +16,10 @@
 #include "VulkanCommon.h"
 #include "VulkanContext.h"
 
+class VulkanFrameBuffer;
 class VulkanPipeline;
 class VulkanBufferManager;
+class VulkanCommandPool;
 class VulkanCommandManager;
 class VulkanPipelineManager;
 class VulkanRenderPass;
@@ -97,6 +100,7 @@ private:
     std::unique_ptr<VulkanContext> context;
     std::unique_ptr<VulkanRenderPass> renderPass;
 
+    std::unique_ptr<VulkanCommandPool> commandPool;
     std::unique_ptr<VulkanCommandManager> commandManager;
     std::unique_ptr<VulkanPipelineManager> pipelineManager;
 
@@ -108,8 +112,11 @@ private:
     // Push constants
     VulkanPushConstants pushConstants;
 
+    // Used for frame buffer
+    VmaAllocator frameBufferImageAllocator;
+
     // Based on number of swap chain images (which is usually 3)
-    std::vector<VkFramebuffer> frameBuffers;
+    std::vector<std::unique_ptr<VulkanFrameBuffer>> screenFrameBuffers;
     std::vector<VkFence> imagesInFlight;
     std::vector<bool> dataUpdated;
 

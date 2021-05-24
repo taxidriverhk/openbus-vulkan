@@ -12,7 +12,9 @@
 #include "VulkanRenderPass.h"
 #include "Buffer/VulkanBuffer.h"
 #include "Buffer/VulkanBufferManager.h"
+#include "Command/VulkanCommandPool.h"
 #include "Command/VulkanCommandManager.h"
+#include "Frame/VulkanFrameBuffer.h"
 #include "Pipeline/VulkanPipelineManager.h"
 
 VulkanDrawEngine::VulkanDrawEngine(Screen *screen, bool enableDebugging)
@@ -43,6 +45,10 @@ void VulkanDrawEngine::Destroy()
 
     DestroySynchronizationObjects();
     DestroyFrameBuffers();
+
+    vmaDestroyAllocator(frameBufferImageAllocator);
+
+    commandPool->Destroy();
     pipelineManager->Destroy();
     renderPass->Destroy();
     context->Destroy();
@@ -78,17 +84,29 @@ void VulkanDrawEngine::Initialize()
     pipelineManager = std::make_unique<VulkanPipelineManager>(context.get(), renderPass.get());
     pipelineManager->Create();
 
+    commandPool = std::make_unique<VulkanCommandPool>(context.get());
+    commandPool->Create();
+
+    VmaAllocatorCreateInfo vmaCreateInto{};
+    vmaCreateInto.device = context->GetLogicalDevice();
+    vmaCreateInto.physicalDevice = context->GetPhysicalDevice();
+    vmaCreateInto.vulkanApiVersion = VK_API_VERSION_1_0;
+    vmaCreateInto.instance = context->GetInstance();
+    ASSERT_VK_RESULT_SUCCESS(
+        vmaCreateAllocator(&vmaCreateInto, &frameBufferImageAllocator),
+        "Failed to create frame buffer image VMA allocator");
+
     CreateFrameBuffers();
     CreateSynchronizationObjects();
 
     CreateCommandBuffers();
-    VkCommandPool commandPool = commandManager->GetOrCreateCommandPool(std::this_thread::get_id());
+    VkCommandPool commandPoolToUse = commandPool->GetOrCreateCommandPool(std::this_thread::get_id());
     bufferManager = std::make_unique<VulkanBufferManager>(
         context.get(),
         renderPass.get(),
         pipelineManager->GetDrawingPipelines(),
-        commandPool,
-        static_cast<uint32_t>(frameBuffers.size()));
+        commandPoolToUse,
+        static_cast<uint32_t>(screenFrameBuffers.size()));
     bufferManager->Create();
 
     isInitialized = true;
@@ -133,7 +151,7 @@ void VulkanDrawEngine::BeginFrame(uint32_t &imageIndex)
     {
         commandManager->Record(
             imageIndex,
-            frameBuffers[imageIndex],
+            screenFrameBuffers[imageIndex]->GetFrameBuffer(),
             pushConstants,
             bufferManager->GetDrawingBuffer(imageIndex));
         dataUpdated[imageIndex] = false;
@@ -170,44 +188,33 @@ void VulkanDrawEngine::CreateCommandBuffers()
 {
     commandManager = std::make_unique<VulkanCommandManager>(
         context.get(),
+        commandPool.get(),
         renderPass.get(),
         pipelineManager->GetDrawingPipelines());
-    commandManager->Create(static_cast<uint32_t>(frameBuffers.size()));
+    commandManager->Create(static_cast<uint32_t>(screenFrameBuffers.size()));
 
-    dataUpdated.resize(frameBuffers.size());
+    dataUpdated.resize(screenFrameBuffers.size());
     MarkDataAsUpdated();
 }
 
 void VulkanDrawEngine::CreateFrameBuffers()
 {
     VkExtent2D swapChainExtent = context->GetSwapChainExtent();
-    VkImageView colorImageView = context->GetColorImageView();
-    VkImageView depthImageView = context->GetDepthImageView();
+    VkCommandPool commandPoolToUse = commandPool->GetOrCreateCommandPool(std::this_thread::get_id());
+
     std::vector<VkImageView> swapChainImageViews = context->GetSwapChainImageViews();
-    for (VkImageView swapChainImageView : swapChainImageViews)
+    for (uint32_t swapChainImageIndex = 0; swapChainImageIndex < swapChainImageViews.size(); swapChainImageIndex++)
     {
-        VkFramebuffer frameBuffer;
-        VkImageView attachments[] =
-        {
-            colorImageView,
-            depthImageView,
-            swapChainImageView
-        };
-
-        VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass->GetRenderPass();
-        framebufferInfo.attachmentCount = 3;
-        framebufferInfo.pAttachments = attachments;
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
-        framebufferInfo.layers = 1;
-
-        ASSERT_VK_RESULT_SUCCESS(
-            vkCreateFramebuffer(context->GetLogicalDevice(), &framebufferInfo, nullptr, &frameBuffer),
-            "Failed to create frame buffer");
-
-        frameBuffers.push_back(frameBuffer);
+        std::unique_ptr<VulkanFrameBuffer> frameBuffer = std::make_unique<VulkanFrameBuffer>(
+            context.get(),
+            commandPoolToUse,
+            frameBufferImageAllocator);
+        frameBuffer->Create(
+            swapChainExtent.width,
+            swapChainExtent.height,
+            renderPass.get(),
+            swapChainImageIndex);
+        screenFrameBuffers.push_back(std::move(frameBuffer));
     }
 }
 
@@ -248,12 +255,11 @@ void VulkanDrawEngine::DestroyCommandBuffers()
 
 void VulkanDrawEngine::DestroyFrameBuffers()
 {
-    VkDevice logicalDevice = context->GetLogicalDevice();
-    for (VkFramebuffer frameBuffer : frameBuffers)
+    for (auto const &screenFrameBuffer : screenFrameBuffers)
     {
-        vkDestroyFramebuffer(logicalDevice, frameBuffer, nullptr);
+        screenFrameBuffer->Destroy();
     }
-    frameBuffers.clear();
+    screenFrameBuffers.clear();
 }
 
 void VulkanDrawEngine::EndFrame(uint32_t &imageIndex)
@@ -410,10 +416,14 @@ void VulkanDrawEngine::RecreateSwapChain()
 
     DestroyCommandBuffers();
     DestroyFrameBuffers();
+    commandPool->Destroy();
 
     context->RecreateSwapChain();
-    VkCommandPool commandPool = commandManager->GetOrCreateCommandPool(std::this_thread::get_id());
-    bufferManager->ResetCommandPool(commandPool);
+
+    commandPool->Create();
+    VkCommandPool commandPoolToUse = commandPool->GetOrCreateCommandPool(std::this_thread::get_id());
+
+    bufferManager->ResetCommandPool(commandPoolToUse);
     bufferManager->ResetScreenBuffers();
 
     CreateFrameBuffers();

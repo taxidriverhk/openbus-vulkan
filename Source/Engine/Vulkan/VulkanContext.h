@@ -30,9 +30,7 @@ public:
     VkInstance GetInstance() const { return instance; }
     VkPhysicalDevice GetPhysicalDevice() const { return physicalDevice; }
     VkDevice GetLogicalDevice() const { return logicalDevice; }
-    
-    VkImageView GetColorImageView() const { return colorImageView; }
-    VkImageView GetDepthImageView() const { return depthImageView; }
+
     VkFormat GetDepthImageFormat() const { return depthImageFormat; }
 
     VkSwapchainKHR GetSwapChain() const { return swapChain; }
@@ -55,22 +53,18 @@ private:
         VkImageView &imageView,
         VkDeviceMemory &deviceMemory);
 
-    void CreateColorImage();
-    void CreateDepthImage();
-    void CreateImageViews();
+    void CreateSwapChainImageViews();
     void CreateInstance();
     void CreateLogicalDevice();
     void CreateSwapChain();
     void CreateWindowSurface();
 
-    void DestroyColorImage();
-    void DestroyDepthImage();
-    void DestroyImageViews();
+    void DestroySwapChainImageViews();
     void DestroyOldSwapChain();
     void DestroySwapChain();
 
     void EnableDebugging();
-    VkFormat FindDepthImageFormat();
+    void FindDepthImageFormat();
     void FindGraphicsAndPresentQueues();
     void FindPhysicalDevice();
     VkSampleCountFlagBits GetMaxSampleCount();
