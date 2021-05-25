@@ -5,25 +5,6 @@
 
 #include "Engine/Vulkan/VulkanContext.h"
 
-struct VulkanInstanceBufferInput
-{
-    glm::mat4 transformation;
-};
-
-struct VulkanScreenBufferInput
-{
-    float screenWidth;
-    float screenHeight;
-};
-
-struct VulkanUniformBufferInput
-{
-    glm::mat4 view;
-    glm::mat4 projection;
-    glm::vec3 eyePosition;
-    glm::vec3 lightPosition;
-};
-
 class VulkanBuffer
 {
 public:
@@ -45,6 +26,7 @@ public:
         uint32_t size);
     void Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void *data, uint32_t size);
     void Update(void *data, uint32_t size);
+    void UpdateFast(void *data, uint32_t size);
     void Unload();
 
     static void CreateBuffer(
@@ -60,6 +42,7 @@ private:
 
     uint32_t size;
     bool loaded;
+    void *mappedMemory;
 
     VkBufferUsageFlags usage;
     VkMemoryPropertyFlags properties;

@@ -11,6 +11,7 @@ VulkanBuffer::VulkanBuffer(
       allocation(),
       buffer(),
       loaded(false),
+      mappedMemory(nullptr),
       size(0)
 {
 }
@@ -114,11 +115,32 @@ void VulkanBuffer::Update(void *data, uint32_t size)
     this->loaded = true;
 }
 
+void VulkanBuffer::UpdateFast(void *data, uint32_t size)
+{
+    // Faster method for updating buffer
+    // without having to map and unmap the buffer into CPU memory again
+    // (mapping is expensive, just need to unmap it at destroy time)
+    // But this method could have problem with animation
+    if (mappedMemory == nullptr)
+    {
+        vmaMapMemory(allocator, allocation, &mappedMemory);
+    }
+    memcpy(mappedMemory, data, size);
+
+    this->size = size;
+    this->loaded = true;
+}
+
 void VulkanBuffer::Unload()
 {
     if (!loaded)
     {
         return;
+    }
+
+    if (mappedMemory != nullptr)
+    {
+        vmaUnmapMemory(allocator, allocation);
     }
 
     context->WaitIdle();

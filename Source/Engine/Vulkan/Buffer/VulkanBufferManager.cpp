@@ -26,7 +26,6 @@ VulkanBufferManager::VulkanBufferManager(
       frameBufferSize(frameBufferSize),
       commandPool(commandPool),
       cubeMapBufferLoaded(false),
-      uniformBufferUpdated(true),
       entityBufferCache{},
       terrainBufferCache{},
       cubeMapBufferCache{}
@@ -140,7 +139,7 @@ void VulkanBufferManager::LoadIntoBuffer(
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             vertices.data(),
             static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
-        vertexBuffers.insert(std::make_pair(meshId, std::move(vertexBuffer)));
+        vertexBuffers[meshId] = std::move(vertexBuffer);
 
         std::shared_ptr<VulkanBuffer> indexBuffer = std::make_shared<VulkanBuffer>(
             context, commandPool, vmaAllocator);
@@ -149,7 +148,7 @@ void VulkanBufferManager::LoadIntoBuffer(
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             indices.data(),
             static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
-        indexBuffers.insert(std::make_pair(meshId, std::move(indexBuffer)));
+        indexBuffers[meshId] = std::move(indexBuffer);
 
         vertexBufferCount[meshId] = 1;
     }
@@ -170,7 +169,7 @@ void VulkanBufferManager::LoadIntoBuffer(
             imageToLoad->GetHeight(),
             descriptorPool,
             pipelines.staticPipeline->GetImageDescriptorSetLayout());
-        imageBuffers.insert(std::make_pair(imageId, std::move(diffuseImage)));
+        imageBuffers[imageId] = std::move(diffuseImage);
 
         imageBufferCount[imageId] = 1;
     }
@@ -179,33 +178,40 @@ void VulkanBufferManager::LoadIntoBuffer(
         imageBufferCount[imageId] = imageBufferCount[imageId] + 1;
     }
 
-    std::shared_ptr<VulkanBuffer> instanceBuffer = std::make_shared<VulkanBuffer>(
-        context, commandPool, vmaAllocator);
-    instanceBuffer->Load(
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        &instanceBufferInput,
-        sizeof(VulkanInstanceBufferInput));
-    instanceBuffer->CreateDescriptorSet(
-        descriptorPool,
-        pipelines.staticPipeline->GetInstanceDescriptorSetLayout(),
-        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        sizeof(VulkanInstanceBufferInput));
-    instanceBuffers.insert(std::make_pair(instanceId, std::move(instanceBuffer)));
+    for (uint32_t i = 0; i < frameBufferSize; i++)
+    {
+        std::shared_ptr<VulkanBuffer> instanceBuffer = std::make_shared<VulkanBuffer>(
+            context, commandPool, vmaAllocator);
+        instanceBuffer->Load(
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            &instanceBufferInput,
+            sizeof(VulkanInstanceBufferInput));
+        instanceBuffer->CreateDescriptorSet(
+            descriptorPool,
+            pipelines.staticPipeline->GetInstanceDescriptorSetLayout(),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            sizeof(VulkanInstanceBufferInput));
+        instanceBuffers[instanceId].push_back(std::move(instanceBuffer));
+    }
 
     VulkanEntityBufferIds bufferIds{};
     bufferIds.instanceBufferId = instanceId;
     bufferIds.vertexBufferId = meshId;
     bufferIds.indexBufferId = meshId;
     bufferIds.imageBufferId = imageId;
-    bufferIdCache.insert(std::make_pair(instanceId, bufferIds));
+    bufferIdCache[instanceId] = bufferIds;
 
     VulkanEntityBuffer entityBuffer{};
-    entityBuffer.instanceBuffer = instanceBuffers[bufferIds.instanceBufferId].get();
+    for (uint32_t i = 0; i < frameBufferSize; i++)
+    {
+        entityBuffer.instanceBuffers.push_back(
+            instanceBuffers[bufferIds.instanceBufferId][i].get());
+    }
     entityBuffer.vertexBuffer = vertexBuffers[bufferIds.vertexBufferId].get();
     entityBuffer.indexBuffer = indexBuffers[bufferIds.indexBufferId].get();
     entityBuffer.imageBuffer = imageBuffers[bufferIds.imageBufferId].get();
-    entityBufferCache.insert(std::make_pair(instanceId, entityBuffer));
+    entityBufferCache[instanceId] = entityBuffer;
 }
 
 void VulkanBufferManager::LoadScreenObjectBuffer(
@@ -222,7 +228,7 @@ void VulkanBufferManager::LoadScreenObjectBuffer(
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             vertices.data(),
             static_cast<uint32_t>(sizeof(ScreenObjectVertex) * vertices.size()));
-        screenObjectBuffers.insert(std::make_pair(screenObjectId, std::move(vertexBuffer)));
+        screenObjectBuffers[screenObjectId] = std::move(vertexBuffer);
 
         std::shared_ptr<VulkanImage> screenImage = std::make_shared<VulkanImage>(
             context, commandPool, imageVmaAllocator, VulkanImageType::Texture);
@@ -232,7 +238,7 @@ void VulkanBufferManager::LoadScreenObjectBuffer(
             image->GetHeight(),
             descriptorPool,
             pipelines.screenPipeline->GetImageDescriptorSetLayout());
-        imageBuffers.insert(std::make_pair(screenObjectId, std::move(screenImage)));
+        imageBuffers[screenObjectId] = std::move(screenImage);
     }
     else
     {
@@ -245,7 +251,7 @@ void VulkanBufferManager::LoadScreenObjectBuffer(
     VulkanScreenObjectBuffer screenObjectBuffer{};
     screenObjectBuffer.vertexBuffer = screenObjectBuffers[screenObjectId].get();
     screenObjectBuffer.imageBuffer = imageBuffers[screenObjectId].get();
-    screenObjectBufferCache.insert(std::make_pair(screenObjectId, screenObjectBuffer));
+    screenObjectBufferCache[screenObjectId] = screenObjectBuffer;
 }
 
 void VulkanBufferManager::LoadTerrainIntoBuffer(
@@ -263,7 +269,7 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             vertices.data(),
             static_cast<uint32_t>(sizeof(Vertex) * vertices.size()));
-        terrainVertexBuffers.insert(std::make_pair(terrainId, std::move(vertexBuffer)));
+        terrainVertexBuffers[terrainId] = std::move(vertexBuffer);
 
         std::shared_ptr<VulkanBuffer> indexBuffer = std::make_shared<VulkanBuffer>(
             context, commandPool, vmaAllocator);
@@ -272,7 +278,7 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             indices.data(),
             static_cast<uint32_t>(sizeof(uint32_t) * indices.size()));
-        terrainIndexBuffers.insert(std::make_pair(terrainId, std::move(indexBuffer)));
+        terrainIndexBuffers[terrainId] = std::move(indexBuffer);
 
         std::shared_ptr<VulkanImage> terrainImage = std::make_shared<VulkanImage>(
             context, commandPool, imageVmaAllocator, VulkanImageType::Texture);
@@ -282,7 +288,7 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
             texture->GetHeight(),
             descriptorPool,
             pipelines.staticPipeline->GetImageDescriptorSetLayout());
-        imageBuffers.insert(std::make_pair(terrainId, std::move(terrainImage)));
+        imageBuffers[terrainId] = std::move(terrainImage);
         imageBufferCount[terrainId] = 1;
     }
     else
@@ -298,7 +304,7 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
     terrainBuffer.vertexBuffer = terrainVertexBuffers[terrainId].get();
     terrainBuffer.indexBuffer = terrainIndexBuffers[terrainId].get();
     terrainBuffer.imageBuffer = imageBuffers[terrainId].get();
-    terrainBufferCache.insert(std::make_pair(terrainId, terrainBuffer));
+    terrainBufferCache[terrainId] = terrainBuffer;
 }
 
 void VulkanBufferManager::ResetCommandPool(VkCommandPool commandPool)
@@ -325,8 +331,11 @@ void VulkanBufferManager::UnloadBuffer(uint32_t instanceId)
         VulkanEntityBufferIds bufferIds = bufferIdCache[instanceId];
         
         uint32_t instanceBufferId = bufferIds.instanceBufferId;
-        std::shared_ptr<VulkanBuffer> instanceBuffer = instanceBuffers[instanceBufferId];
-        instanceBuffer->Unload();
+        std::vector<std::shared_ptr<VulkanBuffer>> &instanceBuffersToRemove = instanceBuffers[instanceBufferId];
+        for (auto const &instanceBufferToRemove : instanceBuffersToRemove)
+        {
+            instanceBufferToRemove->Unload();
+        }
         instanceBuffers.erase(instanceBufferId);
 
         uint32_t vertexBufferId = bufferIds.vertexBufferId;
@@ -392,25 +401,19 @@ void VulkanBufferManager::UnloadTerrainBuffer(uint32_t terrainId)
     }
 }
 
-void VulkanBufferManager::UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput input)
+void VulkanBufferManager::UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput &input, uint32_t imageIndex)
 {
     if (instanceBuffers.count(instanceId) == 0)
     {
         return;
     }
-    instanceBuffers[instanceId]->Update(&input, sizeof(VulkanInstanceBufferInput));
+
+    instanceBuffers[instanceId][imageIndex]->UpdateFast(&input, sizeof(VulkanInstanceBufferInput));
 }
 
-void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput input)
+void VulkanBufferManager::UpdateUniformBuffer(VulkanUniformBufferInput &input, uint32_t imageIndex)
 {
-    uniformBufferInput = input;
-    
-    for (uint32_t i = 0; i < frameBufferSize; i++)
-    {
-        uniformBuffers[i]->Update(&uniformBufferInput, sizeof(VulkanUniformBufferInput));
-    }
-
-    uniformBufferUpdated = true;
+    uniformBuffers[imageIndex]->UpdateFast(&input, sizeof(VulkanUniformBufferInput));
 }
 
 void VulkanBufferManager::CreateDescriptorPool()

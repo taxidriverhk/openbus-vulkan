@@ -441,6 +441,13 @@ void VulkanDrawEngine::SetFog(float density, float gradient)
 
 void VulkanDrawEngine::Submit(uint32_t &imageIndex)
 {
+    // Update the uniform and instance buffers before submission
+    bufferManager->UpdateUniformBuffer(uniformBufferInput, imageIndex);
+    for (auto [entityId, instanceBufferInput] : instanceBufferInputs)
+    {
+        bufferManager->UpdateInstanceBuffer(entityId, instanceBufferInput, imageIndex);
+    }
+
     VkDevice logicalDevice = context->GetLogicalDevice();
     VkQueue graphicsQueue = context->GetGraphicsQueue();
 
@@ -474,19 +481,16 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
     glm::vec3 front = ConvertToVulkanCoordinates(camera->GetFront());
     glm::vec3 up = ConvertToVulkanCoordinates(camera->GetUp());
 
-    VulkanUniformBufferInput input{};
-    input.projection = glm::perspective(
+    uniformBufferInput.projection = glm::perspective(
         camera->GetFieldOfView(),
         camera->GetAspect(),
         camera->GetZNear(),
         camera->GetZFar());
     // Conversion required for Vulkan depth range
-    input.projection[1][1] *= -1;
-    input.view = glm::lookAt(position, position + front, up);
-    input.lightPosition = { 100.0f, 100.0f, 100.0f };
-    input.eyePosition = position;
-
-    bufferManager->UpdateUniformBuffer(input);
+    uniformBufferInput.projection[1][1] *= -1;
+    uniformBufferInput.view = glm::lookAt(position, position + front, up);
+    uniformBufferInput.lightPosition = { 100.0f, 100.0f, 100.0f };
+    uniformBufferInput.eyePosition = position;
 }
 
 void VulkanDrawEngine::UpdateEntityTransformation(uint32_t entityId, EntityTransformation transformation)
@@ -496,7 +500,7 @@ void VulkanDrawEngine::UpdateEntityTransformation(uint32_t entityId, EntityTrans
         ConvertToVulkanCoordinates(transformation.translation),
         ConvertToVulkanCoordinates(transformation.scale),
         transformation.rotation.z);
-    bufferManager->UpdateInstanceBuffer(entityId, input);
+    instanceBufferInputs[entityId] = input;
 }
 
 void VulkanDrawEngine::UnloadEntity(uint32_t entityId)
@@ -509,6 +513,8 @@ void VulkanDrawEngine::UnloadEntity(uint32_t entityId)
         bufferManager->UnloadBuffer(entityId);
         bufferIds.erase(entityId);
     }
+
+    instanceBufferInputs.erase(entityId);
 
     MarkDataAsUpdated();
 }

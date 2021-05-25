@@ -158,7 +158,7 @@ struct VulkanScreenObjectBuffer
 
 struct VulkanEntityBuffer
 {
-    VulkanBuffer *instanceBuffer;
+    std::vector<VulkanBuffer *> instanceBuffers;
     VulkanBuffer *vertexBuffer;
     VulkanBuffer *indexBuffer;
     VulkanImage *imageBuffer;
@@ -188,6 +188,26 @@ struct VulkanDrawingBuffer
     std::vector<VulkanTerrainBuffer> terrainBuffers;
     std::vector<VulkanEntityBuffer> entityBuffers;
     std::vector<VulkanScreenObjectBuffer> screenObjectBuffers;
+};
+
+// Buffer input
+struct VulkanInstanceBufferInput
+{
+    glm::mat4 transformation;
+};
+
+struct VulkanScreenBufferInput
+{
+    float screenWidth;
+    float screenHeight;
+};
+
+struct VulkanUniformBufferInput
+{
+    glm::mat4 view;
+    glm::mat4 projection;
+    glm::vec3 eyePosition;
+    glm::vec3 lightPosition;
 };
 
 // Push constants

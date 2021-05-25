@@ -125,6 +125,10 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
 
+    // Uniform/instance buffers that are to be submitted in the next draw call
+    VulkanUniformBufferInput uniformBufferInput;
+    std::unordered_map<uint32_t, VulkanInstanceBufferInput> instanceBufferInputs;
+
     // Active frame that is in use by the GPU
     uint32_t currentInFlightFrame;
 };

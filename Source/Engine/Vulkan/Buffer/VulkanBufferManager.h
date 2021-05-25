@@ -58,8 +58,9 @@ public:
         std::vector<uint32_t> &indices,
         Material *material);
     void UnloadBuffer(uint32_t instanceId);
-    void UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput input);
-    void UpdateUniformBuffer(VulkanUniformBufferInput input);
+
+    void UpdateInstanceBuffer(uint32_t instanceId, VulkanInstanceBufferInput &input, uint32_t imageIndex);
+    void UpdateUniformBuffer(VulkanUniformBufferInput &input, uint32_t imageIndex);
 
     // Screen Object Buffering
     void LoadScreenObjectBuffer(
@@ -109,7 +110,7 @@ private:
     std::unique_ptr<VulkanImage> cubeMapImage;
 
     // Static scene buffers
-    std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> instanceBuffers;
+    std::unordered_map<uint32_t, std::vector<std::shared_ptr<VulkanBuffer>>> instanceBuffers;
 
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> vertexBuffers;
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> indexBuffers;
@@ -128,8 +129,6 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainIndexBuffers;
 
     // Uniform buffers
-    bool uniformBufferUpdated;
-    VulkanUniformBufferInput uniformBufferInput;
     VulkanScreenBufferInput screenBufferInput;
     std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers;
     std::vector<std::unique_ptr<VulkanBuffer>> screenBuffers;

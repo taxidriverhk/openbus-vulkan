@@ -92,7 +92,7 @@ void VulkanCommandManager::Record(
 
             for (const auto &entityBuffer : drawingBuffer.entityBuffers)
             {
-                VulkanBuffer *instanceBuffer = entityBuffer.instanceBuffer;
+                VulkanBuffer *instanceBuffer = entityBuffer.instanceBuffers[imageIndex];
                 VulkanBuffer *vertexBuffer = entityBuffer.vertexBuffer;
                 VulkanBuffer *indexBuffer = entityBuffer.indexBuffer;
                 VulkanImage *imageBuffer = entityBuffer.imageBuffer;
