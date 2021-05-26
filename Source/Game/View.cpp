@@ -2,12 +2,14 @@
 #include "Object/GameObjectSystem.h"
 #include "View.h"
 
-View::View(Camera *camera, GameObjectSystem *gameObjectSystem)
+View::View(Camera *camera, GameObjectSystem *gameObjectSystem, const GameSettings &gameSettings)
     : camera(camera),
       gameObjectSystem(gameObjectSystem),
       currentViewModeIndex(0),
-      viewableDistance(0.0f),
-      movementSpeed(50.0f),
+      viewableDistance(static_cast<float>(gameSettings.graphicsSettings.maxViewableDistance)),
+      movementSpeed(gameSettings.controlSettings.cameraMovementSpeed),
+      angleChangeSensitivity(gameSettings.controlSettings.cameraAngleChangeSensitivity),
+      zoomSensitivity(gameSettings.controlSettings.cameraZoomSensitivity),
       worldPosition{},
       front(0.0f, 1.0f, 0.0f),
       right(1.0f, 0.0f, 0.0f),
@@ -68,15 +70,15 @@ void View::Move(const ControlCommand &controlCommand, float deltaTime)
     switch (controlCommand.operation)
     {
     case ControlCommandOperation::CameraZoomIn:
-        zoom += 0.05f;
+        zoom += zoomSensitivity;
         break;
     case ControlCommandOperation::CameraZoomOut:
-        zoom -= 0.05f;
+        zoom -= zoomSensitivity;
         break;
     case ControlCommandOperation::CameraAngleChange:
     {
-        float intensityX = controlCommand.movement.deltaX * 0.2f,
-              intensityY = controlCommand.movement.deltaY * 0.2f;
+        float intensityX = controlCommand.movement.deltaX * angleChangeSensitivity,
+              intensityY = controlCommand.movement.deltaY * angleChangeSensitivity;
         if (VIEW_MODES[currentViewModeIndex] == ViewMode::Free)
         {
             yaw -= intensityX;

@@ -21,6 +21,8 @@ execute_process(COMMAND
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$<CONFIG>")
 
+add_compile_options (/bigobj)
+
 # Qt configuration
 set (CMAKE_AUTOMOC ON)
 set (CMAKE_AUTOUIC ON)

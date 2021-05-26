@@ -3,6 +3,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include "Config/SettingsConfig.h"
 #include "Control.h"
 
 class Camera;
@@ -18,7 +19,7 @@ enum class ViewMode : int
 class View
 {
 public:
-    View(Camera *camera, GameObjectSystem *gameObjectSystem);
+    View(Camera *camera, GameObjectSystem *gameObjectSystem, const GameSettings &gameSettings);
     ~View();
 
     glm::vec3 GetWorldPosition() const { return worldPosition; }
@@ -52,6 +53,8 @@ private:
     // Applicable to both free and third/first person modes
     float movementSpeed;
     float viewableDistance;
+    float angleChangeSensitivity;
+    float zoomSensitivity;
     float zoom;
 
     // Used for third/first person mode

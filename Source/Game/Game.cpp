@@ -46,8 +46,7 @@ void Game::Cleanup()
 void Game::InitializeComponents()
 {
     int screenWidth = gameSettings.graphicsSettings.screenWidth,
-        screenHeight = gameSettings.graphicsSettings.screenHeight,
-        maxDistance = gameSettings.graphicsSettings.maxViewableDistance;
+        screenHeight = gameSettings.graphicsSettings.screenHeight;
 
     controlManager = std::make_unique<ControlManager>();
 
@@ -55,8 +54,7 @@ void Game::InitializeComponents()
     gameObjectLoader = std::make_unique<GameObjectLoader>();
 
     camera = std::make_unique<Camera>(screenWidth, screenHeight);
-    view = std::make_unique<View>(camera.get(), gameObjectSystem.get());
-    view->SetViewableDistance(static_cast<float>(maxDistance));
+    view = std::make_unique<View>(camera.get(), gameObjectSystem.get(), gameSettings);
 
     std::string screenTitle = Util::FormatWindowTitle("Game Screen");
     screen = std::make_unique<Screen>(screenWidth, screenHeight, screenTitle);

@@ -1,5 +1,20 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
+
+struct KeyBindings
+{
+    std::unordered_map<std::string, std::string> keyControlBindings;
+};
+
+struct ControlSettings
+{
+    float cameraMovementSpeed;
+    float cameraAngleChangeSensitivity;
+    float cameraZoomSensitivity;
+};
+
 struct GraphicsSettings
 {
     bool enableFog;
@@ -16,6 +31,7 @@ struct MapLoadSettings
 
 struct GameSettings
 {
+    ControlSettings controlSettings;
     GraphicsSettings graphicsSettings;
     MapLoadSettings mapLoadSettings;
 };

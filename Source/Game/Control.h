@@ -168,6 +168,22 @@ namespace std
     };
 }
 
+class ControlCommandName
+{
+public:
+    static constexpr char *CAMERA_MOVE_LEFT = "CAMERA_MOVE_LEFT";
+    static constexpr char *CAMERA_MOVE_RIGHT = "CAMERA_MOVE_RIGHT";
+    static constexpr char *CAMERA_MOVE_FORWARD = "CAMERA_MOVE_FORWARD";
+    static constexpr char *CAMERA_MOVE_BACKWARD = "CAMERA_MOVE_BACKWARD";
+    static constexpr char *CAMERA_ROTATE_COUNTER_CLOCKWISE = "CAMERA_ROTATE_COUNTER_CLOCKWISE";
+    static constexpr char *CAMERA_ROTATE_CLOCKWISE = "CAMERA_ROTATE_CLOCKWISE";
+    static constexpr char *SWITCH_VIEW = "SWITCH_VIEW";
+    static constexpr char *TOGGLE_FRAMERATE_DISPLAY = "TOGGLE_FRAMERATE_DISPLAY";
+    static constexpr char *CAMERA_ZOOM_IN = "CAMERA_ZOOM_IN";
+    static constexpr char *CAMERA_ZOOM_OUT = "CAMERA_ZOOM_OUT";
+    static constexpr char *CAMERA_ANGLE_CHANGE = "CAMERA_ANGLE_CHANGE";
+};
+
 class ControlManager
 {
 public:
@@ -184,7 +200,8 @@ private:
 
     std::mutex commandMutex;
 
-    std::unordered_map<Control, ControlCommand> registeredControls;
+    std::unordered_map<char *, ControlCommand> registeredCommands;
+    std::unordered_map<Control, std::vector<ControlCommand>> registeredControls;
     std::unordered_set<ControlCommand> handledCommands;
     std::unordered_set<ControlCommand> commandSequence;
 };

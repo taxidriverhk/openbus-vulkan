@@ -146,17 +146,20 @@ void ControlManager::QueueEvents(std::list<sf::Event> &events)
         }
 
         // Put the command into the queue for the game thread to process
-        ControlCommand command = registeredControls[control];
-        command.movement = mouseMovement;
+        std::vector<ControlCommand> &commands = registeredControls[control];
         commandMutex.lock();
-        if (eventType != sf::Event::KeyReleased)
+        for (ControlCommand command : commands)
         {
-            commandSequence.insert(command);
-        }
-        else
-        {
-            handledCommands.erase(command);
-            commandSequence.erase(command);
+            command.movement = mouseMovement;
+            if (eventType != sf::Event::KeyReleased)
+            {
+                commandSequence.insert(command);
+            }
+            else
+            {
+                handledCommands.erase(command);
+                commandSequence.erase(command);
+            }
         }
         commandMutex.unlock();
     }
@@ -164,52 +167,102 @@ void ControlManager::QueueEvents(std::list<sf::Event> &events)
 
 void ControlManager::RegisterControls()
 {
+    // Register commands that can be mapped by devices (ex. keyboard, mouse, etc.)
+    // Each control command should be registered here so that the settings can map to the command correctly
+    registeredCommands.insert(
+        {
+            {
+                ControlCommandName::CAMERA_MOVE_LEFT,
+                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveLeft }
+            },
+            {
+                ControlCommandName::CAMERA_MOVE_RIGHT,
+                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveRight }
+            },
+            {
+                ControlCommandName::CAMERA_MOVE_FORWARD,
+                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveForward }
+            },
+            {
+                ControlCommandName::CAMERA_MOVE_BACKWARD,
+                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveBackward }
+            },
+            {
+                ControlCommandName::CAMERA_ROTATE_COUNTER_CLOCKWISE,
+                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraRotateCounterClockwise }
+            },
+            {
+                ControlCommandName::CAMERA_ROTATE_CLOCKWISE,
+                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraRotateClockwise }
+            },
+            {
+                ControlCommandName::SWITCH_VIEW,
+                ControlCommand{ ControlCommandType::Discrete, ControlCommandOperation::SwitchView }
+            },
+            {
+                ControlCommandName::TOGGLE_FRAMERATE_DISPLAY,
+                ControlCommand{ ControlCommandType::Discrete, ControlCommandOperation::ToggleFrameRateDisplay }
+            },
+            {
+                ControlCommandName::CAMERA_ZOOM_IN,
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraZoomIn }
+            },
+            {
+                ControlCommandName::CAMERA_ZOOM_OUT,
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraZoomOut }
+            },
+            {
+                ControlCommandName::CAMERA_ANGLE_CHANGE,
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraAngleChange }
+            }
+        });
+
     // TODO: should read from configuration, hard-coding the registered keys for now
     registeredControls.insert(
         {
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyA },
-                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveLeft }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_LEFT] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyD },
-                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveRight }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_RIGHT] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyW },
-                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveForward }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_FORWARD] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyS },
-                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraMoveBackward }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_BACKWARD] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyLeft },
-                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraRotateCounterClockwise }
+                { registeredCommands[ControlCommandName::CAMERA_ROTATE_COUNTER_CLOCKWISE] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyRight },
-                ControlCommand{ ControlCommandType::Continuous, ControlCommandOperation::CameraRotateClockwise }
+                { registeredCommands[ControlCommandName::CAMERA_ROTATE_CLOCKWISE] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyC },
-                ControlCommand{ ControlCommandType::Discrete, ControlCommandOperation::SwitchView }
+                { registeredCommands[ControlCommandName::SWITCH_VIEW] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyF },
-                ControlCommand{ ControlCommandType::Discrete, ControlCommandOperation::ToggleFrameRateDisplay }
+                { registeredCommands[ControlCommandName::TOGGLE_FRAMERATE_DISPLAY] }
             },
             {
                 Control{ ControlSource::Mouse, KeyModifier::None, KeyCode::Invalid, MouseAction::MouseWheelScrollUp, MouseMovementModifier::None },
-                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraZoomIn }
+                { registeredCommands[ControlCommandName::CAMERA_ZOOM_IN] }
             },
             {
                 Control{ ControlSource::Mouse, KeyModifier::None, KeyCode::Invalid, MouseAction::MouseWheelScrollDown, MouseMovementModifier::None },
-                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraZoomOut }
+                { registeredCommands[ControlCommandName::CAMERA_ZOOM_OUT] }
             },
             {
                 Control{ ControlSource::Mouse, KeyModifier::None, KeyCode::Invalid, MouseAction::MouseMove, MouseMovementModifier::MouseRightButton },
-                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraAngleChange }
+                { registeredCommands[ControlCommandName::CAMERA_ANGLE_CHANGE] }
             }
         }
     );

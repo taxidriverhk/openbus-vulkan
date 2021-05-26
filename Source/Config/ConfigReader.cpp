@@ -12,6 +12,7 @@ bool ConfigReader::registered = false;
 
 void ConfigReader::RegisterConfigMapping()
 {
+    // Static Object
     JsonParser::RegisterMapper(&Vector2DConfig::x, "x");
     JsonParser::RegisterMapper(&Vector2DConfig::y, "y");
     JsonParser::RegisterMapper(&Vector3DConfig::x, "x");
@@ -43,19 +44,26 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&MapInfoConfig::skyBoxImage, "skyBoxImage");
     JsonParser::RegisterMapper(&MapInfoConfig::blocks, "blocks");
 
+    // Game Object
     JsonParser::RegisterMapper(&VehicleConfig::name, "name");
     JsonParser::RegisterMapper(&VehicleConfig::mass, "mass");
     JsonParser::RegisterMapper(&VehicleConfig::chassisObject, "chassisObject");
     JsonParser::RegisterMapper(&VehicleConfig::wheelObjects, "wheelObjects");
 
+    // Settings
     JsonParser::RegisterMapper(&GraphicsSettings::enableFog, "enableFog");
     JsonParser::RegisterMapper(&GraphicsSettings::targetFrameRate, "targetFrameRate");
     JsonParser::RegisterMapper(&GraphicsSettings::maxViewableDistance, "maxViewableDistance");
     JsonParser::RegisterMapper(&GraphicsSettings::screenWidth, "screenWidth");
     JsonParser::RegisterMapper(&GraphicsSettings::screenHeight, "screenHeight");
 
+    JsonParser::RegisterMapper(&ControlSettings::cameraMovementSpeed, "cameraMovementSpeed");
+    JsonParser::RegisterMapper(&ControlSettings::cameraAngleChangeSensitivity, "cameraAngleChangeSensitivity");
+    JsonParser::RegisterMapper(&ControlSettings::cameraZoomSensitivity, "cameraZoomSensitivity");
+
     JsonParser::RegisterMapper(&MapLoadSettings::maxAdjacentBlocks, "maxAdjacentBlocks");
 
+    JsonParser::RegisterMapper(&GameSettings::controlSettings, "controlSettings");
     JsonParser::RegisterMapper(&GameSettings::graphicsSettings, "graphicsSettings");
     JsonParser::RegisterMapper(&GameSettings::mapLoadSettings, "mapLoadSettings");
 }
