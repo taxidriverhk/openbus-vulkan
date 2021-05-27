@@ -214,6 +214,22 @@ void ControlManager::RegisterControls()
             {
                 ControlCommandName::CAMERA_ANGLE_CHANGE,
                 ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::CameraAngleChange }
+            },
+            {
+                ControlCommandName::VEHICLE_ACCELERATE,
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::VehicleAccelerate }
+            },
+            {
+                ControlCommandName::VEHICLE_BRAKE,
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::VehicleBrake }
+            },
+            {
+                ControlCommandName::VEHICLE_STEER_LEFT,
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::VehicleSteerLeft }
+            },
+            {
+                ControlCommandName::VEHICLE_STEER_RIGHT,
+                ControlCommand{ ControlCommandType::NonHoldable, ControlCommandOperation::VehicleSteerRight }
             }
         });
 
@@ -222,19 +238,19 @@ void ControlManager::RegisterControls()
         {
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyA },
-                { registeredCommands[ControlCommandName::CAMERA_MOVE_LEFT] }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_LEFT], registeredCommands[ControlCommandName::VEHICLE_STEER_LEFT] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyD },
-                { registeredCommands[ControlCommandName::CAMERA_MOVE_RIGHT] }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_RIGHT], registeredCommands[ControlCommandName::VEHICLE_STEER_RIGHT] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyW },
-                { registeredCommands[ControlCommandName::CAMERA_MOVE_FORWARD] }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_FORWARD], registeredCommands[ControlCommandName::VEHICLE_ACCELERATE] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyS },
-                { registeredCommands[ControlCommandName::CAMERA_MOVE_BACKWARD] }
+                { registeredCommands[ControlCommandName::CAMERA_MOVE_BACKWARD], registeredCommands[ControlCommandName::VEHICLE_BRAKE] }
             },
             {
                 Control{ ControlSource::Keyboard, KeyModifier::None, KeyCode::KeyLeft },

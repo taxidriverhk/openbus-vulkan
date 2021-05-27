@@ -226,10 +226,6 @@ void Game::RunGameLoop()
     int targetFrameRate = gameSettings.graphicsSettings.targetFrameRate;
     float timePerFrame = 1 / static_cast<float>(targetFrameRate);
 
-    // TODO: test code to ensure that the game state logic is working
-    // spawn game object only after the mesh is loaded
-    std::list<GameObjectCommand> commands;
-
     float timeSinceLastUpdate = 0.0f;
     Timer timer;
     while (!ShouldQuit())
@@ -263,7 +259,7 @@ void Game::RunGameLoop()
             timeSinceLastUpdate -= timePerFrame;
 
             HandleInputCommands(timePerFrame);
-            UpdateState(timePerFrame, commands);
+            UpdateState(timePerFrame);
         }
 
         readyToRender = true;
@@ -275,31 +271,33 @@ void Game::HandleInputCommands(float deltaTime)
 {
     for (const ControlCommand &command : controlManager->PollCommands())
     {
-        switch (command.operation)
+        ControlCommandOperation operation = command.operation;
+        if (operation > ControlCommandOperation::CameraControlStart
+            && operation < ControlCommandOperation::CameraControlEnd)
         {
-        case ControlCommandOperation::CameraMoveForward:
-        case ControlCommandOperation::CameraMoveBackward:
-        case ControlCommandOperation::CameraMoveLeft:
-        case ControlCommandOperation::CameraMoveRight:
-        case ControlCommandOperation::CameraAngleChange:
-        case ControlCommandOperation::CameraRotateCounterClockwise:
-        case ControlCommandOperation::CameraRotateClockwise:
-        case ControlCommandOperation::CameraZoomIn:
-        case ControlCommandOperation::CameraZoomOut:
             view->Move(command, deltaTime);
-            break;
-        case ControlCommandOperation::SwitchView:
+        }
+        else if (operation == ControlCommandOperation::SwitchView)
+        {
             view->SwitchView();
-            break;
-        case ControlCommandOperation::ToggleFrameRateDisplay:
+        }
+        else if (operation == ControlCommandOperation::ToggleFrameRateDisplay)
+        {
             gameStartConfig.enableFrameRateDisplay = !gameStartConfig.enableFrameRateDisplay;
-            break;
+        }
+        else if (operation > ControlCommandOperation::UserObjectControlStart
+            && operation < ControlCommandOperation::UserObjectControlEnd)
+        {
+            if (view->GetViewMode() != ViewMode::Free)
+            {
+                gameObjectCommands.push_back(command);
+            }
         }
     }
 }
 
-void Game::UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands)
+void Game::UpdateState(float deltaTime)
 {
-    // TODO: populate the commands
-    gameObjectSystem->UpdateState(deltaTime, commands);
+    gameObjectSystem->UpdateState(deltaTime, gameObjectCommands);
+    gameObjectCommands.clear();
 }

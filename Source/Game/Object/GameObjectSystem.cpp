@@ -55,7 +55,7 @@ void GameObjectSystem::SetCurrentUserObject(uint32_t gameObjectId)
     currentUserObject = gameObjects[gameObjectId].get();
 }
 
-void GameObjectSystem::UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands)
+void GameObjectSystem::UpdateState(float deltaTime, const std::list<ControlCommand> &commands)
 {
     // Could use multi-threading/parallelism to update state of each game object
     // Except for user object/collision-enabled objects which have dependencies

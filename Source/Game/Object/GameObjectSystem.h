@@ -20,7 +20,7 @@ public:
     void DespawnGameObject(uint32_t gameObjectId);
     void SpawnGameObject(uint32_t gameObjectId, std::shared_ptr<BaseGameObject> gameObject);
     void SetCurrentUserObject(uint32_t gameObjectId);
-    void UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands);
+    void UpdateState(float deltaTime, const std::list<ControlCommand> &commands);
 
 private:
     BaseGameObject *currentUserObject;

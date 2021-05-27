@@ -50,11 +50,11 @@ void View::UpdateView()
               cosYaw = glm::cos(objectYawRadians);
         float sinPitch = glm::sin(objectPitchRadians),
               cosPitch = glm::cos(objectPitchRadians);
-        position.x += (distanceFromObject.x * sinYaw);
-        position.y += (distanceFromObject.y * cosYaw);
+        position.x -= (distanceFromObject.x * sinYaw);
+        position.y -= (distanceFromObject.y * cosYaw);
         position.z += distanceFromObject.z;
 
-        glm::vec3 objectFront = { sinYaw, -cosYaw, -sinPitch };
+        glm::vec3 objectFront = { -sinYaw, cosYaw, -sinPitch };
         objectFront = glm::normalize(objectFront);
         glm::vec3 objectRight = glm::cross(objectFront, up);
 

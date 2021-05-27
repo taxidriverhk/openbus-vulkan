@@ -45,7 +45,7 @@ private:
 
     void RunGameLoop();
     void HandleInputCommands(float deltaTime);
-    void UpdateState(float deltaTime, const std::list<GameObjectCommand> &commands);
+    void UpdateState(float deltaTime);
 
     GameSettings gameSettings;
     GameSessionConfig gameStartConfig;
@@ -56,6 +56,7 @@ private:
 
     std::atomic<bool> readyToRender;
 
+    std::list<ControlCommand> gameObjectCommands;
     std::unique_ptr<GameObjectSystem> gameObjectSystem;
     std::unique_ptr<GameObjectLoader> gameObjectLoader;
 

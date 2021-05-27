@@ -12,7 +12,7 @@ public:
 
     void Destroy() override;
     void Initialize() override;
-    void Update(float deltaTime, const std::list<GameObjectCommand> &commands) override;
+    void Update(float deltaTime, const std::list<ControlCommand> &commands) override;
 
     GameObjectTransform GetWorldTransform() const override;
     std::list<GameObjectEntity> GetEntities() const override;

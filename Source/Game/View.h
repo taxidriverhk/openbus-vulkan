@@ -23,6 +23,7 @@ public:
     ~View();
 
     glm::vec3 GetWorldPosition() const { return worldPosition; }
+    ViewMode GetViewMode() const { return VIEW_MODES[currentViewModeIndex]; }
 
     void SetMovementSpeed(float speed) { movementSpeed = speed; }
     void SetViewableDistance(float distance)

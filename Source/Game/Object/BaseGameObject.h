@@ -5,13 +5,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-enum class GameObjectCommand
-{
-    VehicleAccerlate,
-    VehicleBrake,
-    VehicleSteerLeft,
-    VehicleSteerRight
-};
+#include "Game/Control.h"
 
 struct GameObjectTransform
 {
@@ -30,7 +24,7 @@ class BaseGameObject
 public:
     virtual void Destroy() = 0;
     virtual void Initialize() = 0;
-    virtual void Update(float deltaTime, const std::list<GameObjectCommand> &commands) = 0;
+    virtual void Update(float deltaTime, const std::list<ControlCommand> &commands) = 0;
 
     virtual GameObjectTransform GetWorldTransform() const = 0;
     virtual std::list<GameObjectEntity> GetEntities() const = 0;

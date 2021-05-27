@@ -100,6 +100,7 @@ enum class ControlCommandType
 
 enum class ControlCommandOperation
 {
+    CameraControlStart, // Used for comparison only
     CameraMoveLeft,
     CameraMoveRight,
     CameraMoveForward,
@@ -109,8 +110,17 @@ enum class ControlCommandOperation
     CameraRotateClockwise,
     CameraZoomIn,
     CameraZoomOut,
+    CameraControlEnd,
+
     SwitchView,
-    ToggleFrameRateDisplay
+    ToggleFrameRateDisplay,
+
+    UserObjectControlStart,
+    VehicleAccelerate,
+    VehicleBrake,
+    VehicleSteerLeft,
+    VehicleSteerRight,
+    UserObjectControlEnd
 };
 
 struct Control
@@ -177,11 +187,17 @@ public:
     static constexpr char *CAMERA_MOVE_BACKWARD = "CAMERA_MOVE_BACKWARD";
     static constexpr char *CAMERA_ROTATE_COUNTER_CLOCKWISE = "CAMERA_ROTATE_COUNTER_CLOCKWISE";
     static constexpr char *CAMERA_ROTATE_CLOCKWISE = "CAMERA_ROTATE_CLOCKWISE";
-    static constexpr char *SWITCH_VIEW = "SWITCH_VIEW";
-    static constexpr char *TOGGLE_FRAMERATE_DISPLAY = "TOGGLE_FRAMERATE_DISPLAY";
     static constexpr char *CAMERA_ZOOM_IN = "CAMERA_ZOOM_IN";
     static constexpr char *CAMERA_ZOOM_OUT = "CAMERA_ZOOM_OUT";
     static constexpr char *CAMERA_ANGLE_CHANGE = "CAMERA_ANGLE_CHANGE";
+    
+    static constexpr char *SWITCH_VIEW = "SWITCH_VIEW";
+    static constexpr char *TOGGLE_FRAMERATE_DISPLAY = "TOGGLE_FRAMERATE_DISPLAY";
+    
+    static constexpr char *VEHICLE_ACCELERATE = "VEHICLE_ACCELERATE";
+    static constexpr char *VEHICLE_BRAKE = "VEHICLE_BRAKE";
+    static constexpr char *VEHICLE_STEER_LEFT = "VEHICLE_STEER_LEFT";
+    static constexpr char *VEHICLE_STEER_RIGHT = "VEHICLE_STEER_RIGHT";
 };
 
 class ControlManager
