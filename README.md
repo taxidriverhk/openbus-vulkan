@@ -9,6 +9,7 @@ Please stay tuned for any updates on this project.
 ## Requirements
 
 While the game performance highly depends on the map, vehicle and graphics settings, here are the minimum requirements that should meet in order to launch the game successfully.
+
 * **Operating System**: Windows 10
 
 * **Memory**: 8 GB
@@ -33,6 +34,7 @@ This project is configured with `CMake`, although the build only generates Windo
 * CMake - https://cmake.org - choose `Installer` under `Binary distributions`
 
 In addition to that, clone the following Git repositories and then put them under `<source-code-directory>/Library/shaderc/third_party`
+
 * https://github.com/KhronosGroup/glslang
 
 * https://github.com/KhronosGroup/SPIRV-Headers
