@@ -17,6 +17,7 @@ target_compile_definitions(OpenBus PUBLIC "APP_VERSION=\"v${VERSION_MAJOR}.${VER
 
 target_include_directories (OpenBus
     PUBLIC "${LIBRARY_DIR}/assimp/include"
+    PUBLIC "${LIBRARY_DIR}/bullet/include"
     PUBLIC "${LIBRARY_DIR}/glfw/include"
     PUBLIC "${LIBRARY_DIR}/glm"
     PUBLIC "${LIBRARY_DIR}/sfml/include"
@@ -27,15 +28,19 @@ target_include_directories (OpenBus
 
 target_link_directories (OpenBus
     PUBLIC "${LIBRARY_DIR}/assimp/lib"
+    PUBLIC "${LIBRARY_DIR}/bullet/lib/${CMAKE_BUILD_TYPE}"
 )
 
 target_link_libraries (OpenBus Vulkan::Vulkan)
+target_link_libraries (OpenBus
+    Bullet3Common Bullet3Dynamics Bullet3Collision
+    BulletDynamics BulletCollision
+    LinearMath)
+target_link_libraries (OpenBus assimp)
 target_link_libraries (OpenBus fmt::fmt)
 target_link_libraries (OpenBus plog)
+target_link_libraries (OpenBus sfml-graphics sfml-window)
 target_link_libraries (OpenBus shaderc)
-target_link_libraries (OpenBus assimp)
-target_link_libraries (OpenBus sfml-graphics)
-target_link_libraries (OpenBus sfml-window)
 
 # Qt configurations
 qt5_use_modules (OpenBus Widgets)
