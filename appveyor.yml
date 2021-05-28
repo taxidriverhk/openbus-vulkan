@@ -1,0 +1,77 @@
+version: 0.0.{build}
+image: Visual Studio 2019
+configuration: Release
+platform: x64
+init:
+- ps: >-
+    # Restart to ensure everything is clean
+
+    Start-Sleep -s 5
+install:
+- cmd: >-
+    rem QT and CMake are pre-installed by default, no need to install separately
+
+
+    rem Install Vulkan
+
+    if not exist "C:\downloads\" mkdir "C:\downloads\"
+
+    if not exist "C:\downloads\vulkan-sdk.exe" curl --output "C:\downloads\vulkan-sdk.exe" --url "https://sdk.lunarg.com/sdk/download/1.2.170.0/windows/VulkanSDK-1.2.170.0-Installer.exe"
+
+
+    C:\downloads\vulkan-sdk.exe /S
+
+
+    rem Setting environment variables
+
+    set SFML_DIR=%APPVEYOR_BUILD_FOLDER%\Library\sfml\lib\cmake\SFML
+
+    set VULKAN_SDK=C:\VulkanSDK\1.2.170.0
+
+    set VK_SDK_PATH=C:\VulkanSDK\1.2.170.0
+
+    set VULKAN_INCLUDE_DIRS=C:\VulkanSDK\1.2.170.0\Include
+
+    set VULKAN_LIB_LIST=C:\VulkanSDK\1.2.170.0\Lib
+
+
+    set QTDIR=C:\Qt\5.15.2\msvc2019_64
+
+    set CMAKE_PREFIX_PATH=%QTDIR%
+
+
+    set PATH=%PATH%;%QTDIR%\bin;C:\VulkanSDK\1.2.170.0\Bin;
+
+
+    set PYTHON_INCLUDE_PATH=C:\Python36-x64\include
+
+    set PYTHON_LIBRARIES=C:\Python36-x64\lib
+
+    set PYTHON_EXECUTABLE=C:\Python36-x64
+
+    set PYTHON_INCLUDE_DIR=C:\Python36-x64\include
+
+
+    rem Pulling glslang and SPIRV-Tools required for compiling shaderc
+
+    git clone https://github.com/KhronosGroup/glslang.git "%APPVEYOR_BUILD_FOLDER%\Library\shaderc\third_party\glslang"
+
+    git clone https://github.com/KhronosGroup/SPIRV-Tools.git "%APPVEYOR_BUILD_FOLDER%\Library\shaderc\third_party\SPIRV-Tools"
+
+    git clone https://github.com/KhronosGroup/SPIRV-Headers.git "%APPVEYOR_BUILD_FOLDER%\Library\shaderc\third_party\SPIRV-Headers"
+cache: C:\downloads\vulkan-sdk.exe
+before_build:
+- cmd: >-
+    mkdir build
+
+    cd build
+
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE:FILEPATH=C:\Python36-x64\python.exe
+build:
+  project: build\Source\OpenBus.vcxproj
+  verbosity: minimal
+after_build:
+- cmd: 7z a "%APPVEYOR_BUILD_FOLDER%\OpenBus-%APPVEYOR_REPO_COMMIT:~0,15%.zip" %APPVEYOR_BUILD_FOLDER%\bin\%CONFIGURATION%\*
+artifacts:
+- path: '*.zip'
+  name: Release
