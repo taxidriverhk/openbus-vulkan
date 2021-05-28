@@ -10,14 +10,16 @@ Please stay tuned for any updates on this project.
 
 While the game performance highly depends on the map, vehicle and graphics settings, here are the minimum requirements that should meet in order to launch the game successfully.
 * **Operating System**: Windows 10
+
 * **Memory**: 8 GB
+
 * **Disk Space**: 1 GB (without any addons)
 
 ## Installation
 
 This game is highly portable, to launch the game, simply extract the binaries into any directory of your choice. Put in whatever addons you have in appropriate sub-directories, then you can enjoy the game.
 
-This is [a sample map and vehicle package]() that you could use to try out how the game works.
+This is [a sample map and vehicle package](https://1drv.ms/u/s!AjxD9FDQGclqlrNF5E0lRrs11Yu9tQ?e=gb2Ege) that you could use to try out how the game works.
 
 ## Development
 
