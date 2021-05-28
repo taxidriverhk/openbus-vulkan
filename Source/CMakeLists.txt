@@ -18,7 +18,6 @@ target_compile_definitions(OpenBus PUBLIC "APP_VERSION=\"v${VERSION_MAJOR}.${VER
 target_include_directories (OpenBus
     PUBLIC "${LIBRARY_DIR}/assimp/include"
     PUBLIC "${LIBRARY_DIR}/bullet/include"
-    PUBLIC "${LIBRARY_DIR}/glfw/include"
     PUBLIC "${LIBRARY_DIR}/glm"
     PUBLIC "${LIBRARY_DIR}/sfml/include"
     PUBLIC "${LIBRARY_DIR}/stb"

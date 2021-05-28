@@ -45,7 +45,6 @@ set (LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Library")
 # Include sub-projects.
 add_subdirectory ("${SOURCE_DIR}")
 add_subdirectory ("${LIBRARY_DIR}/fmt")
-add_subdirectory ("${LIBRARY_DIR}/glfw")
 add_subdirectory ("${LIBRARY_DIR}/glm")
 add_subdirectory ("${LIBRARY_DIR}/plog")
 add_subdirectory ("${LIBRARY_DIR}/shaderc")
