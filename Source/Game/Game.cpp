@@ -50,8 +50,9 @@ void Game::InitializeComponents()
 
     controlManager = std::make_unique<ControlManager>();
 
-    gameObjectSystem = std::make_unique<GameObjectSystem>();
-    gameObjectLoader = std::make_unique<GameObjectLoader>();
+    physicsSystem = std::make_unique<PhysicsSystem>();
+    gameObjectSystem = std::make_unique<GameObjectSystem>(physicsSystem.get());
+    gameObjectLoader = std::make_unique<GameObjectLoader>(physicsSystem.get());
 
     camera = std::make_unique<Camera>(screenWidth, screenHeight);
     view = std::make_unique<View>(camera.get(), gameObjectSystem.get(), gameSettings);

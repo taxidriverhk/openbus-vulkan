@@ -10,12 +10,14 @@
 #include "Engine/Entity.h"
 #include "Engine/Image.h"
 #include "Engine/Material.h"
+#include "Game/Physics/PhysicsSystem.h"
 #include "BaseGameObject.h"
 #include "GameObjectLoader.h"
 #include "VehicleGameObject.h"
 
-GameObjectLoader::GameObjectLoader()
-    : shouldTerminate(false),
+GameObjectLoader::GameObjectLoader(PhysicsSystem *physics)
+    : physics(physics),
+      shouldTerminate(false),
       readyToBuffer(false),
       gameObjectEntityIdCount(0)
 {
@@ -113,7 +115,10 @@ bool GameObjectLoader::LoadVehicleConfig(
     GameObjectTransform originTransform{};
     originTransform.worldPosition = translation;
     originTransform.rotation = rotation;
-    std::shared_ptr<BaseGameObject> vehicleGameObject = std::make_unique<VehicleGameObject>(chassisEntity->id, originTransform);
+    std::shared_ptr<BaseGameObject> vehicleGameObject = std::make_unique<VehicleGameObject>(
+        chassisEntity->id,
+        originTransform,
+        physics);
 
     vehicleObject.id = chassisEntity->id;
     vehicleObject.object = vehicleGameObject;

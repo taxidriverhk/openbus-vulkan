@@ -1,9 +1,13 @@
+#include <btBulletDynamicsCommon.h>
+
+#include "Game/Physics/PhysicsSystem.h"
 #include "VehicleGameObject.h"
 
-VehicleGameObject::VehicleGameObject(uint32_t bodyEntityId, const GameObjectTransform &originTransform)
+VehicleGameObject::VehicleGameObject(uint32_t bodyEntityId, const GameObjectTransform &originTransform, PhysicsSystem *physics)
     : baseTransform(originTransform),
       origin(originTransform.worldPosition),
       bodyEntityId(bodyEntityId),
+      physics(physics),
       angle(0.0f),
       speed(0)
 {
@@ -19,11 +23,21 @@ void VehicleGameObject::Destroy()
 
 void VehicleGameObject::Initialize()
 {
+    btRigidBody::btRigidBodyConstructionInfo chassisInfo(100.0, nullptr, nullptr);
+    btRaycastVehicle::btVehicleTuning tuning;
+    btDynamicsWorld *world = physics->GetDynamicsWorld();
 
+    chassis = std::make_unique<btRigidBody>(chassisInfo);
+    raycaster = std::make_unique<btDefaultVehicleRaycaster>(world);
+    vehicle = std::make_unique<btRaycastVehicle>(tuning, chassis.get(), raycaster.get());
+
+    world->addVehicle(vehicle.get());
 }
 
 void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> &commands)
 {
+    // Do not call stepSimulation as the game object system will make the call
+    // This function should simply need to apply whatever input (ex. throttle) the user gives
     // TODO: just some test code to move object
     // will be removed once this is integrated with bullet physics
     for (const ControlCommand &command : commands)
@@ -56,6 +70,7 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
 
 GameObjectTransform VehicleGameObject::GetWorldTransform() const
 {
+    // TODO: get the transform from bullet physics model
     return baseTransform;
 }
 

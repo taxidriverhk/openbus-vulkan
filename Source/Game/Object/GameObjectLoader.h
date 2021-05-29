@@ -11,6 +11,7 @@
 struct Entity;
 class HandledThread;
 class BaseGameObject;
+class PhysicsSystem;
 
 enum class GameObjectType
 {
@@ -50,7 +51,7 @@ struct GameObjectLoadResult
 class GameObjectLoader
 {
 public:
-    GameObjectLoader();
+    GameObjectLoader(PhysicsSystem *physics);
     ~GameObjectLoader();
 
     bool IsReadyToBuffer() const { return readyToBuffer; }
@@ -70,6 +71,8 @@ private:
         const GameObjectLoadRequest &loadRequest,
         GameObjectLoadResult &vehicleObject,
         std::list<std::unique_ptr<Entity>> &entities);
+
+    PhysicsSystem *physics;
 
     uint32_t gameObjectEntityIdCount;
 

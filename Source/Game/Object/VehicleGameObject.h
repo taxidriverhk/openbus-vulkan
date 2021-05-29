@@ -1,14 +1,22 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "BaseGameObject.h"
 
+class PhysicsSystem;
+class btRaycastVehicle;
+class btRigidBody;
+struct btVehicleRaycaster;
+
 class VehicleGameObject : public BaseGameObject
 {
 public:
-    VehicleGameObject(uint32_t bodyEntityId, const GameObjectTransform &originTransform);
+    VehicleGameObject(uint32_t bodyEntityId, const GameObjectTransform &originTransform, PhysicsSystem *physics);
     ~VehicleGameObject();
+
+    btRaycastVehicle *GetVehicle() const { return vehicle.get(); }
 
     void Destroy() override;
     void Initialize() override;
@@ -20,9 +28,16 @@ public:
 private:
     // TODO: just some test code to show how can a game object contain multiple entities
     uint32_t bodyEntityId;
+    std::vector<uint32_t> wheelEntityIds;
+
     float angle;
     float speed;
     glm::vec3 origin;
     GameObjectTransform baseTransform;
-    std::vector<uint32_t> wheelEntityIds;
+
+    PhysicsSystem *physics;
+
+    std::unique_ptr<btRigidBody> chassis;
+    std::unique_ptr<btVehicleRaycaster> raycaster;
+    std::unique_ptr<btRaycastVehicle> vehicle;
 };

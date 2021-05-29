@@ -1,7 +1,8 @@
 #include "GameObjectSystem.h"
 
-GameObjectSystem::GameObjectSystem()
-    : currentUserObject(nullptr)
+GameObjectSystem::GameObjectSystem(PhysicsSystem *physics)
+    : physics(physics),
+      currentUserObject(nullptr)
 {
 }
 
@@ -65,4 +66,5 @@ void GameObjectSystem::UpdateState(float deltaTime, const std::list<ControlComma
     {
         gameObject->Update(deltaTime, commands);
     }
+    physics->StepSimulation(deltaTime);
 }

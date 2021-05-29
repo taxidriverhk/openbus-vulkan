@@ -13,6 +13,7 @@ class HandledThread;
 class ControlManager;
 class GameObjectSystem;
 class GameObjectLoader;
+class PhysicsSystem;
 class Map;
 class MapLoader;
 class Camera;
@@ -57,6 +58,7 @@ private:
     std::atomic<bool> readyToRender;
 
     std::list<ControlCommand> gameObjectCommands;
+    std::unique_ptr<PhysicsSystem> physicsSystem;
     std::unique_ptr<GameObjectSystem> gameObjectSystem;
     std::unique_ptr<GameObjectLoader> gameObjectLoader;
 
