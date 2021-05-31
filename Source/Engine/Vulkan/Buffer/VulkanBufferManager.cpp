@@ -180,6 +180,7 @@ void VulkanBufferManager::LoadIntoBuffer(
             pipelines.staticPipeline->GetImageDescriptorSetLayout());
         texture->Create();
         texture->AddImage(diffuseImage, 0);
+        texture->AddImage(cubeMapImage, 1);
 
         textureBuffers[imageId] = std::move(texture);
         textureBufferCount[imageId] = 1;

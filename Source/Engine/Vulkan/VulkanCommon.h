@@ -52,12 +52,19 @@ static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_UNIFORM_DESCRIPTOR
     }
 };
 
-static constexpr int STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT = 1;
+static constexpr int STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDING_COUNT = 2;
 static constexpr VkDescriptorSetLayoutBinding STATIC_PIPELINE_IMAGE_DESCRIPTOR_LAYOUT_BINDINGS[] =
 {
     // Texture sampler (diffuse only for now)
     {
         0,
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        1,
+        VK_SHADER_STAGE_FRAGMENT_BIT,
+        nullptr
+    },
+    {
+        1,
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         1,
         VK_SHADER_STAGE_FRAGMENT_BIT,

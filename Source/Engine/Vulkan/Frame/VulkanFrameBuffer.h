@@ -20,6 +20,8 @@ public:
     ~VulkanFrameBuffer();
 
     VkFramebuffer GetFrameBuffer() const { return frameBuffer; }
+    VulkanImage *GetColorImage() const { return imageAttachments[0].get(); }
+    VulkanImage *GetDepthImage() const { return imageAttachments[1].get(); }
 
     void Create(
         uint32_t width,

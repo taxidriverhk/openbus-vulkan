@@ -28,8 +28,6 @@ void VulkanFrameBuffer::Create(
     int swapChainImageIndex)
 {
     // Create one color image and depth image by default, no pixels will be sent obviously
-    // TODO: may add ability to optionally define descript pool and layout
-    // so that those images can be used in a shader later (ex. shadow, reflection, etc.)
     std::vector<uint8_t *> blankImagePixels;
     std::unique_ptr<VulkanImage> colorImage = std::make_unique<VulkanImage>(
         context,
