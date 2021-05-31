@@ -6,6 +6,9 @@
 #include "BaseGameObject.h"
 
 class PhysicsSystem;
+
+class btCollisionShape;
+class btMotionState;
 class btRaycastVehicle;
 class btRigidBody;
 struct btVehicleRaycaster;
@@ -37,7 +40,12 @@ private:
 
     PhysicsSystem *physics;
 
+    std::unique_ptr<btMotionState> chassisMotionState;
+    std::unique_ptr<btCollisionShape> chassisShape;
     std::unique_ptr<btRigidBody> chassis;
+
+    std::unique_ptr<btCollisionShape> wheelShape;
+
     std::unique_ptr<btVehicleRaycaster> raycaster;
     std::unique_ptr<btRaycastVehicle> vehicle;
 };

@@ -26,6 +26,13 @@ std::list<GameObjectEntity> GameObjectSystem::GetRenderingEntities() const
 
 void GameObjectSystem::Cleanup()
 {
+    // Cleans up any game objects that were not removed
+    // Should not rely on this function to despawn game objects while in game
+    // This function is only used when the game session ends
+    for (const auto &[objectId, gameObject] : gameObjects)
+    {
+        gameObject->Destroy();
+    }
     gameObjects.clear();
 }
 
