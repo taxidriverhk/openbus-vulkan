@@ -4,6 +4,7 @@
 
 Screen::Screen(const int &width, const int &height, const std::string &title)
       : resized(false),
+        isActive(false),
         width(width),
         height(height),
         title(title)
@@ -44,6 +45,23 @@ std::list<sf::Event> Screen::PollEvent()
             width = newSize.x;
             height = newSize.y;
             resized = true;
+            isActive = true;
+        }
+            break;
+        case sf::Event::GainedFocus:
+        {
+            if (!isActive)
+            {
+                isActive = true;
+            }
+        }
+            break;
+        case sf::Event::LostFocus:
+        {
+            if (isActive)
+            {
+                isActive = false;
+            }
         }
             break;
         case sf::Event::KeyPressed:
@@ -69,6 +87,7 @@ bool Screen::ShouldClose()
 void Screen::Show()
 {
     window->setVisible(true);
+    isActive = true;
 }
 
 void Screen::Wait()

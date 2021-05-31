@@ -407,10 +407,13 @@ void VulkanDrawEngine::RecreateSwapChain()
     // Do nothing when the window is minimized
     // TODO: this loop may block the entire game,
     // need to have a fix (ex. auto-pause the game)
-    while (newWidth == 0 || newHeight == 0)
+    while (newWidth == 0
+        || newHeight == 0
+        || !screen->IsActive())
     {
         newWidth = screen->GetWidth();
         newHeight = screen->GetHeight();
+        screen->PollEvent();
     }
     context->WaitIdle();
 

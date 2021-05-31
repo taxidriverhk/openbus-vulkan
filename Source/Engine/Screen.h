@@ -15,6 +15,7 @@ public:
     sf::WindowBase *GetWindow() { return window.get(); }
     int GetWidth() const { return width; }
     int GetHeight() const { return height; }
+    bool IsActive() const { return isActive; }
     bool IsResized() const { return resized; }
     void ResetResizeState() { resized = false; }
 
@@ -30,6 +31,7 @@ private:
     int height;
     std::string title;
 
+    bool isActive;
     bool resized;
 
     sf::Event lastEvent;

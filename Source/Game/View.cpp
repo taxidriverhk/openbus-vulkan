@@ -84,16 +84,16 @@ void View::Move(const ControlCommand &controlCommand, float deltaTime)
             yaw -= intensityX;
             pitch += intensityY;
 
-            pitch = std::clamp(pitch, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
-            yaw = std::clamp(yaw, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
+            pitch = std::clamp(pitch, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_PITCH_ANGLE);
+            yaw = std::clamp(yaw, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_YAW_ANGLE);
         }
         else
         {
             followYaw += intensityX;
             followPitch += intensityY;
 
-            followYaw = std::clamp(followYaw, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
-            followPitch = std::clamp(followPitch, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_ANGLE);
+            followYaw = std::clamp(followYaw, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_YAW_ANGLE);
+            followPitch = std::clamp(followPitch, MIN_ALLOWABLE_ANGLE, MAX_ALLOWABLE_PITCH_ANGLE);
         }
     }
         break;

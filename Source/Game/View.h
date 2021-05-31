@@ -40,7 +40,8 @@ public:
 private:
     static constexpr float MAX_ALLOWABLE_ZOOM = 50.0f;
     static constexpr float MIN_ALLOWABLE_ZOOM = 1.0f;
-    static constexpr float MAX_ALLOWABLE_ANGLE = 89.0f;
+    static constexpr float MAX_ALLOWABLE_YAW_ANGLE = 359.0f;
+    static constexpr float MAX_ALLOWABLE_PITCH_ANGLE = 89.0f;
     static constexpr float MIN_ALLOWABLE_ANGLE = -89.0f;
 
     static constexpr int VIEW_MODE_COUNT = 3;
