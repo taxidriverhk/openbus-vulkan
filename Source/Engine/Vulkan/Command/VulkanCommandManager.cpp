@@ -6,6 +6,7 @@
 #include "Engine/Vulkan/VulkanRenderPass.h"
 #include "Engine/Vulkan/Buffer/VulkanBuffer.h"
 #include "Engine/Vulkan/Image/VulkanImage.h"
+#include "Engine/Vulkan/Image/VulkanTexture.h"
 #include "Engine/Vulkan/Pipeline/VulkanPipeline.h"
 #include "VulkanCommandPool.h"
 #include "VulkanCommandManager.h"
@@ -95,7 +96,7 @@ void VulkanCommandManager::Record(
                 VulkanBuffer *instanceBuffer = entityBuffer.instanceBuffers[imageIndex];
                 VulkanBuffer *vertexBuffer = entityBuffer.vertexBuffer;
                 VulkanBuffer *indexBuffer = entityBuffer.indexBuffer;
-                VulkanImage *imageBuffer = entityBuffer.imageBuffer;
+                VulkanTexture *textureBuffer = entityBuffer.textureBuffer;
 
                 // Bind vertex buffer
                 VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
@@ -106,7 +107,7 @@ void VulkanCommandManager::Record(
                 // Bind uniform descriptor set
                 uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, staticPipeline->GetPipelineLayout());
                 // Bind image sampler descriptor set
-                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, staticPipeline->GetPipelineLayout());
+                textureBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, staticPipeline->GetPipelineLayout());
                 // Bind instance descriptor set
                 instanceBuffer->BindDescriptorSet(secondaryCommandBuffer, 2, staticPipeline->GetPipelineLayout());
 
@@ -143,7 +144,7 @@ void VulkanCommandManager::Record(
                 // Bind uniform descriptor set
                 uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, cubeMapPipeline->GetPipelineLayout());
                 // Bind cubemap descriptor set
-                cubeMapBuffer.imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
+                cubeMapBuffer.textureBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, cubeMapPipeline->GetPipelineLayout());
                 // Draw the cube map
                 uint32_t indexCount = cubeMapIndexBuffer->Size() / sizeof(uint32_t);
                 vkCmdDrawIndexed(secondaryCommandBuffer, indexCount, 1, 0, 0, 0);
@@ -176,7 +177,7 @@ void VulkanCommandManager::Record(
             {
                 VulkanBuffer *vertexBuffer = terrainBuffer.vertexBuffer;
                 VulkanBuffer *indexBuffer = terrainBuffer.indexBuffer;
-                VulkanImage *imageBuffer = terrainBuffer.imageBuffer;
+                VulkanTexture *textureBuffer = terrainBuffer.textureBuffer;
 
                 // Bind vertex buffer
                 VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
@@ -187,7 +188,7 @@ void VulkanCommandManager::Record(
                 // Bind uniform descriptor set
                 uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, terrainPipeline->GetPipelineLayout());
                 // Bind image sampler descriptor set
-                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, terrainPipeline->GetPipelineLayout());
+                textureBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, terrainPipeline->GetPipelineLayout());
 
                 uint32_t indexCount = indexBuffer->Size() / sizeof(uint32_t);
                 vkCmdDrawIndexed(secondaryCommandBuffer, indexCount, 1, 0, 0, 0);
@@ -218,7 +219,7 @@ void VulkanCommandManager::Record(
             for (const auto &screenObjectBuffer : drawingBuffer.screenObjectBuffers)
             {
                 VulkanBuffer *vertexBuffer = screenObjectBuffer.vertexBuffer;
-                VulkanImage *imageBuffer = screenObjectBuffer.imageBuffer;
+                VulkanTexture *textureBuffer = screenObjectBuffer.textureBuffer;
 
                 // Bind vertex buffer
                 VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
@@ -227,7 +228,7 @@ void VulkanCommandManager::Record(
                 // Bind uniform descriptor set
                 screenBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, screenPipeline->GetPipelineLayout());
                 // Bind image sampler descriptor set
-                imageBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, screenPipeline->GetPipelineLayout());
+                textureBuffer->BindDescriptorSet(secondaryCommandBuffer, 1, screenPipeline->GetPipelineLayout());
 
                 uint32_t vertexCount = vertexBuffer->Size() / sizeof(ScreenObjectVertex);
                 vkCmdDraw(secondaryCommandBuffer, vertexCount, 1, 0, 0);

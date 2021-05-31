@@ -133,6 +133,7 @@ static constexpr VkFormat DEPTH_IMAGE_FORMATS[] =
 
 class VulkanBuffer;
 class VulkanImage;
+class VulkanTexture;
 class VulkanPipeline;
 
 // Drawing Buffers
@@ -140,20 +141,20 @@ struct VulkanCubeMapBuffer
 {
     VulkanBuffer *vertexBuffer;
     VulkanBuffer *indexBuffer;
-    VulkanImage *imageBuffer;
+    VulkanTexture *textureBuffer;
 };
 
 struct VulkanTerrainBuffer
 {
     VulkanBuffer *vertexBuffer;
     VulkanBuffer *indexBuffer;
-    VulkanImage *imageBuffer;
+    VulkanTexture *textureBuffer;
 };
 
 struct VulkanScreenObjectBuffer
 {
     VulkanBuffer *vertexBuffer;
-    VulkanImage *imageBuffer;
+    VulkanTexture *textureBuffer;
 };
 
 struct VulkanEntityBuffer
@@ -161,7 +162,7 @@ struct VulkanEntityBuffer
     std::vector<VulkanBuffer *> instanceBuffers;
     VulkanBuffer *vertexBuffer;
     VulkanBuffer *indexBuffer;
-    VulkanImage *imageBuffer;
+    VulkanTexture *textureBuffer;
 };
 
 struct VulkanEntityBufferIds
@@ -169,7 +170,7 @@ struct VulkanEntityBufferIds
     uint32_t instanceBufferId;
     uint32_t vertexBufferId;
     uint32_t indexBufferId;
-    uint32_t imageBufferId;
+    uint32_t textureBufferId;
 };
 
 struct VulkanDrawingPipelines

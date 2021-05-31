@@ -2,7 +2,8 @@
 #include "VulkanRenderPass.h"
 
 VulkanRenderPass::VulkanRenderPass(VulkanContext *context)
-    : context(context)
+    : context(context),
+      renderPass(VK_NULL_HANDLE)
 {
 }
 

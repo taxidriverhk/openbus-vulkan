@@ -10,6 +10,7 @@
 #include "Engine/Vulkan/VulkanRenderPass.h"
 #include "Engine/Vulkan/Command/VulkanCommand.h"
 #include "Engine/Vulkan/Image/VulkanImage.h"
+#include "Engine/Vulkan/Image/VulkanTexture.h"
 #include "Engine/Vulkan/Pipeline/VulkanPipeline.h"
 #include "VulkanBuffer.h"
 #include "VulkanBufferManager.h"
@@ -105,16 +106,21 @@ void VulkanBufferManager::LoadCubeMapBuffer(
     {
         imagePixels.push_back(image->GetPixels());
     }
-    cubeMapImage = std::make_unique<VulkanImage>(
+    cubeMapImage = std::make_shared<VulkanImage>(
         context, commandPool, imageVmaAllocator, VulkanImageType::CubeMap);
     cubeMapImage->Load(
         imagePixels,
         images[0]->GetWidth(),
-        images[0]->GetHeight(),
+        images[0]->GetHeight());
+
+    cubeMapTexture = std::make_unique<VulkanTexture>(
+        context,
         descriptorPool,
         pipelines.cubeMapPipeline->GetImageDescriptorSetLayout());
+    cubeMapTexture->Create();
+    cubeMapTexture->AddImage(cubeMapImage, 0);
 
-    cubeMapBufferCache.imageBuffer = cubeMapImage.get();
+    cubeMapBufferCache.textureBuffer = cubeMapTexture.get();
     cubeMapBufferCache.vertexBuffer = cubeMapVertexBuffer.get();
     cubeMapBufferCache.indexBuffer = cubeMapIndexBuffer.get();
 
@@ -157,7 +163,7 @@ void VulkanBufferManager::LoadIntoBuffer(
         vertexBufferCount[meshId] = vertexBufferCount[meshId] + 1;
     }
 
-    if (imageBuffers.count(imageId) == 0)
+    if (textureBuffers.count(imageId) == 0)
     {
         // TODO: only load the diffuse image for now
         std::shared_ptr<VulkanImage> diffuseImage = std::make_shared<VulkanImage>(
@@ -166,16 +172,21 @@ void VulkanBufferManager::LoadIntoBuffer(
         diffuseImage->Load(
             std::vector<uint8_t *>({ imageToLoad->GetPixels() }),
             imageToLoad->GetWidth(),
-            imageToLoad->GetHeight(),
+            imageToLoad->GetHeight());
+
+        std::unique_ptr<VulkanTexture> texture = std::make_unique<VulkanTexture>(
+            context,
             descriptorPool,
             pipelines.staticPipeline->GetImageDescriptorSetLayout());
-        imageBuffers[imageId] = std::move(diffuseImage);
+        texture->Create();
+        texture->AddImage(diffuseImage, 0);
 
-        imageBufferCount[imageId] = 1;
+        textureBuffers[imageId] = std::move(texture);
+        textureBufferCount[imageId] = 1;
     }
     else
     {
-        imageBufferCount[imageId] = imageBufferCount[imageId] + 1;
+        textureBufferCount[imageId] = textureBufferCount[imageId] + 1;
     }
 
     for (uint32_t i = 0; i < frameBufferSize; i++)
@@ -199,7 +210,7 @@ void VulkanBufferManager::LoadIntoBuffer(
     bufferIds.instanceBufferId = instanceId;
     bufferIds.vertexBufferId = meshId;
     bufferIds.indexBufferId = meshId;
-    bufferIds.imageBufferId = imageId;
+    bufferIds.textureBufferId = imageId;
     bufferIdCache[instanceId] = bufferIds;
 
     VulkanEntityBuffer entityBuffer{};
@@ -210,7 +221,7 @@ void VulkanBufferManager::LoadIntoBuffer(
     }
     entityBuffer.vertexBuffer = vertexBuffers[bufferIds.vertexBufferId].get();
     entityBuffer.indexBuffer = indexBuffers[bufferIds.indexBufferId].get();
-    entityBuffer.imageBuffer = imageBuffers[bufferIds.imageBufferId].get();
+    entityBuffer.textureBuffer = textureBuffers[bufferIds.textureBufferId].get();
     entityBufferCache[instanceId] = entityBuffer;
 }
 
@@ -235,10 +246,17 @@ void VulkanBufferManager::LoadScreenObjectBuffer(
         screenImage->Load(
             std::vector<uint8_t *>({ image->GetPixels() }),
             image->GetWidth(),
-            image->GetHeight(),
+            image->GetHeight());
+
+        std::unique_ptr<VulkanTexture> screenTexture = std::make_unique<VulkanTexture>(
+            context,
             descriptorPool,
             pipelines.screenPipeline->GetImageDescriptorSetLayout());
-        imageBuffers[screenObjectId] = std::move(screenImage);
+        screenTexture->Create();
+        screenTexture->AddImage(screenImage, 0);
+
+        textureBuffers[screenObjectId] = std::move(screenTexture);
+        textureBufferCount[screenObjectId] = 1;
     }
     else
     {
@@ -250,7 +268,7 @@ void VulkanBufferManager::LoadScreenObjectBuffer(
 
     VulkanScreenObjectBuffer screenObjectBuffer{};
     screenObjectBuffer.vertexBuffer = screenObjectBuffers[screenObjectId].get();
-    screenObjectBuffer.imageBuffer = imageBuffers[screenObjectId].get();
+    screenObjectBuffer.textureBuffer = textureBuffers[screenObjectId].get();
     screenObjectBufferCache[screenObjectId] = screenObjectBuffer;
 }
 
@@ -285,11 +303,17 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
         terrainImage->Load(
             std::vector<uint8_t *>({ texture->GetPixels() }),
             texture->GetWidth(),
-            texture->GetHeight(),
+            texture->GetHeight());
+
+        std::unique_ptr<VulkanTexture> terrainTexture = std::make_unique<VulkanTexture>(
+            context,
             descriptorPool,
-            pipelines.staticPipeline->GetImageDescriptorSetLayout());
-        imageBuffers[terrainId] = std::move(terrainImage);
-        imageBufferCount[terrainId] = 1;
+            pipelines.terrainPipeline->GetImageDescriptorSetLayout());
+        terrainTexture->Create();
+        terrainTexture->AddImage(terrainImage, 0);
+
+        textureBuffers[terrainId] = std::move(terrainTexture);
+        textureBufferCount[terrainId] = 1;
     }
     else
     {
@@ -303,7 +327,7 @@ void VulkanBufferManager::LoadTerrainIntoBuffer(
     VulkanTerrainBuffer terrainBuffer{};
     terrainBuffer.vertexBuffer = terrainVertexBuffers[terrainId].get();
     terrainBuffer.indexBuffer = terrainIndexBuffers[terrainId].get();
-    terrainBuffer.imageBuffer = imageBuffers[terrainId].get();
+    terrainBuffer.textureBuffer = textureBuffers[terrainId].get();
     terrainBufferCache[terrainId] = terrainBuffer;
 }
 
@@ -351,14 +375,7 @@ void VulkanBufferManager::UnloadBuffer(uint32_t instanceId)
             indexBuffers.erase(vertexBufferId);
         }
 
-        uint32_t imageBufferId = bufferIds.imageBufferId;
-        imageBufferCount[imageBufferId] = imageBufferCount[imageBufferId] - 1;
-        if (imageBufferCount[imageBufferId] == 0)
-        {
-            std::shared_ptr<VulkanImage> imageBuffer = imageBuffers[imageBufferId];
-            imageBuffer->Unload();
-            imageBuffers.erase(imageBufferId);
-        }
+        DestroyTextureBuffer(bufferIds.textureBufferId);
 
         bufferIdCache.erase(instanceId);
         entityBufferCache.erase(instanceId);
@@ -373,9 +390,7 @@ void VulkanBufferManager::UnloadScreenObjectBuffer(uint32_t screenObjectId)
         vertexBuffer->Unload();
         screenObjectBuffers.erase(screenObjectId);
 
-        std::shared_ptr<VulkanImage> imageBuffer = imageBuffers[screenObjectId];
-        imageBuffer->Unload();
-        imageBuffers.erase(screenObjectId);
+        DestroyTextureBuffer(screenObjectId);
 
         screenObjectBufferCache.erase(screenObjectId);
     }
@@ -393,9 +408,7 @@ void VulkanBufferManager::UnloadTerrainBuffer(uint32_t terrainId)
         indexBuffer->Unload();
         terrainIndexBuffers.erase(terrainId);
 
-        std::shared_ptr<VulkanImage> imageBuffer = imageBuffers[terrainId];
-        imageBuffer->Unload();
-        imageBuffers.erase(terrainId);
+        DestroyTextureBuffer(terrainId);
 
         terrainBufferCache.erase(terrainId);
     }
@@ -493,6 +506,7 @@ void VulkanBufferManager::DestroyCubeMapBuffer()
         return;
     }
 
+    cubeMapTexture->Destroy();
     cubeMapImage->Unload();
     cubeMapIndexBuffer->Unload();
     cubeMapVertexBuffer->Unload();
@@ -514,4 +528,20 @@ void VulkanBufferManager::DestroyUniformBuffers()
         uniformBuffer->Unload();
     }
     uniformBuffers.clear();
+}
+
+void VulkanBufferManager::DestroyTextureBuffer(uint32_t textureBufferId)
+{
+    textureBufferCount[textureBufferId] = textureBufferCount[textureBufferId] - 1;
+    if (textureBufferCount[textureBufferId] == 0)
+    {
+        const auto &textureBuffer = textureBuffers[textureBufferId];
+        const auto &images = textureBuffer->GetImages();
+        for (const auto &image : images)
+        {
+            image->Unload();
+        }
+        textureBuffer->Destroy();
+        textureBuffers.erase(textureBufferId);
+    }
 }

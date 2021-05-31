@@ -15,6 +15,7 @@ struct Vertex;
 class VulkanBuffer;
 class VulkanContext;
 class VulkanImage;
+class VulkanTexture;
 class VulkanRenderPass;
 
 class VulkanBufferManager
@@ -85,6 +86,8 @@ private:
     void DestroyScreenBuffers();
     void DestroyUniformBuffers();
 
+    void DestroyTextureBuffer(uint32_t textureBufferId);
+
     uint32_t frameBufferSize;
     VulkanContext *context;
     VulkanRenderPass *renderPass;
@@ -107,7 +110,8 @@ private:
     bool cubeMapBufferLoaded;
     std::unique_ptr<VulkanBuffer> cubeMapVertexBuffer;
     std::unique_ptr<VulkanBuffer> cubeMapIndexBuffer;
-    std::unique_ptr<VulkanImage> cubeMapImage;
+    std::unique_ptr<VulkanTexture> cubeMapTexture;
+    std::shared_ptr<VulkanImage> cubeMapImage;
 
     // Static scene buffers
     std::unordered_map<uint32_t, std::vector<std::shared_ptr<VulkanBuffer>>> instanceBuffers;
@@ -115,9 +119,6 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> vertexBuffers;
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> indexBuffers;
     std::unordered_map<uint32_t, uint32_t> vertexBufferCount;
-
-    std::unordered_map<uint32_t, std::shared_ptr<VulkanImage>> imageBuffers;
-    std::unordered_map<uint32_t, uint32_t> imageBufferCount;
 
     std::unordered_map<uint32_t, VulkanEntityBufferIds> bufferIdCache;
 
@@ -127,6 +128,10 @@ private:
     // Terrain buffers
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainVertexBuffers;
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> terrainIndexBuffers;
+
+    // Image buffers that are used by both scene and terrain pipelines
+    std::unordered_map<uint32_t, std::unique_ptr<VulkanTexture>> textureBuffers;
+    std::unordered_map<uint32_t, uint32_t> textureBufferCount;
 
     // Uniform buffers
     VulkanScreenBufferInput screenBufferInput;

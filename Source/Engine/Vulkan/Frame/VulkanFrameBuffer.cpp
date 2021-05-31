@@ -36,13 +36,13 @@ void VulkanFrameBuffer::Create(
         commandPool,
         allocator,
         VulkanImageType::Color);
-    colorImage->Load(blankImagePixels, width, height, VK_NULL_HANDLE, VK_NULL_HANDLE);
+    colorImage->Load(blankImagePixels, width, height);
     std::unique_ptr<VulkanImage> depthImage = std::make_unique<VulkanImage>(
         context,
         commandPool,
         allocator,
         VulkanImageType::Depth);
-    depthImage->Load(blankImagePixels, width, height, VK_NULL_HANDLE, VK_NULL_HANDLE);
+    depthImage->Load(blankImagePixels, width, height);
 
     imageAttachments.push_back(std::move(colorImage));
     imageAttachments.push_back(std::move(depthImage));

@@ -27,13 +27,10 @@ public:
     VkImageView GetImageView() { return imageView; }
     VkSampler GetSampler() { return sampler; }
 
-    void BindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setNumber, VkPipelineLayout layout);
     void Load(
         std::vector<uint8_t *> imagePixels,
         uint32_t width,
-        uint32_t height,
-        VkDescriptorPool descriptorPool,
-        VkDescriptorSetLayout descriptorSetLayout);
+        uint32_t height);
     void Unload();
     void UpdateImagePixels(
         std::vector<uint8_t *> imagePixels,
@@ -47,7 +44,6 @@ private:
         uint32_t imageHeight);
     void CreateImageView();
     void CreateSampler();
-    void CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
 
     VkCommandBuffer BeginSingleUseCommandBuffer();
     void CopyDataToImageBuffer(
@@ -80,6 +76,4 @@ private:
     VkImageView imageView;
     VkSampler sampler;
     VmaAllocation allocation;
-
-    VkDescriptorSet descriptorSet;
 };
