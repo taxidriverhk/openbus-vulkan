@@ -23,6 +23,9 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$<CONFIG>")
 
 add_compile_options (/bigobj)
 
+# Bullet configuration
+set (BULLET_VERSION "2.83")
+
 # Qt configuration
 set (CMAKE_AUTOMOC ON)
 set (CMAKE_AUTOUIC ON)
@@ -44,6 +47,7 @@ set (LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Library")
 
 # Include sub-projects.
 add_subdirectory ("${SOURCE_DIR}")
+add_subdirectory ("${LIBRARY_DIR}/bullet")
 add_subdirectory ("${LIBRARY_DIR}/fmt")
 add_subdirectory ("${LIBRARY_DIR}/glm")
 add_subdirectory ("${LIBRARY_DIR}/plog")
