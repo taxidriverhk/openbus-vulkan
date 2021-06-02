@@ -328,7 +328,7 @@ void VulkanDrawEngine::LoadEntity(const Entity &entity)
     std::shared_ptr<Mesh> mesh = entity.mesh;
     glm::vec3 translation = ConvertToVulkanCoordinates(entity.translation);
     glm::vec3 scale = ConvertToVulkanCoordinates(entity.scale);
-    float rotationAngles = entity.rotation.z;
+    glm::vec3 rotations = ConvertToVulkanCoordinates(entity.rotation);
 
     std::vector<Vertex> &vertices = mesh->vertices;
     std::vector<Vertex> transformedVertices(vertices.size());
@@ -342,7 +342,7 @@ void VulkanDrawEngine::LoadEntity(const Entity &entity)
             return ConvertToVulkanVertex(vertex);
         });
 
-    glm::mat4 translatedMatrix = ComputeTransformationMatrix(translation, scale, rotationAngles);
+    glm::mat4 translatedMatrix = ComputeTransformationMatrix(translation, scale, rotations);
 
     VulkanInstanceBufferInput instanceBufferInput{};
     instanceBufferInput.transformation = translatedMatrix;
@@ -499,10 +499,11 @@ void VulkanDrawEngine::UpdateCamera(Camera *camera)
 void VulkanDrawEngine::UpdateEntityTransformation(uint32_t entityId, EntityTransformation transformation)
 {
     VulkanInstanceBufferInput input{};
+    glm::vec3 rotations = ConvertToVulkanCoordinates(transformation.rotation);
     input.transformation = ComputeTransformationMatrix(
         ConvertToVulkanCoordinates(transformation.translation),
         ConvertToVulkanCoordinates(transformation.scale),
-        transformation.rotation.z);
+        rotations);
     instanceBufferInputs[entityId] = input;
 }
 

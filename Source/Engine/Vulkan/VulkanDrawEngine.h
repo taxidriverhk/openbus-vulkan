@@ -8,6 +8,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include "vk_mem_alloc.hpp"
 
 #include "Engine/DrawEngine.h"
@@ -68,13 +69,16 @@ private:
     inline static glm::mat4 ComputeTransformationMatrix(
         const glm::vec3 &translation,
         const glm::vec3 &scale,
-        float rotationAngles
+        const glm::vec3 &rotationAngles
     )
     {
         glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
-        glm::mat4 translatedMatrix = glm::translate(identitiyMatrix, translation);
-        translatedMatrix = glm::rotate(translatedMatrix, glm::radians<float>(rotationAngles), glm::vec3(0, 1, 0));
-        return glm::scale(translatedMatrix, scale);
+        glm::mat4 transformationMatrix = glm::translate(identitiyMatrix, translation);
+        glm::mat4 rotationMatrixX = glm::eulerAngleX(glm::radians<float>(rotationAngles.x));
+        glm::mat4 rotationMatrixY = glm::eulerAngleY(glm::radians<float>(rotationAngles.y));
+        glm::mat4 rotationMatrixZ = glm::eulerAngleX(glm::radians<float>(rotationAngles.z));
+        transformationMatrix = transformationMatrix * rotationMatrixZ * rotationMatrixY * rotationMatrixX;
+        return glm::scale(transformationMatrix, scale);
     }
 
     void CreateCommandBuffers();

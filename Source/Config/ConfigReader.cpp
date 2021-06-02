@@ -49,6 +49,9 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&VehicleConfig::mass, "mass");
     JsonParser::RegisterMapper(&VehicleConfig::chassisObject, "chassisObject");
     JsonParser::RegisterMapper(&VehicleConfig::wheelObjects, "wheelObjects");
+    JsonParser::RegisterMapper(&VehicleConfig::boundingBoxDimensions, "boundingBoxDimensions");
+    JsonParser::RegisterMapper(&VehicleConfig::centerOfMass, "centerOfMass");
+    JsonParser::RegisterMapper(&VehicleConfig::maximumWheelRadius, "maximumWheelRadius");
 
     // Settings
     JsonParser::RegisterMapper(&GraphicsSettings::enableFog, "enableFog");

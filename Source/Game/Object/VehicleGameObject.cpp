@@ -3,14 +3,26 @@
 #include "Game/Physics/PhysicsSystem.h"
 #include "VehicleGameObject.h"
 
-VehicleGameObject::VehicleGameObject(uint32_t bodyEntityId, const GameObjectTransform &originTransform, PhysicsSystem *physics)
-    : baseTransform(originTransform),
-      origin(originTransform.worldPosition),
-      bodyEntityId(bodyEntityId),
-      physics(physics),
-      angle(0.0f),
-      speed(0)
+VehicleGameObject::VehicleGameObject(const VehicleGameObjectConstructionInfo &info, PhysicsSystem *physics)
+    : physics(physics),
+      brakeForce(0.0f),
+      engineForce(0.0f),
+      steering(0.0f),
+      wheelRadius(0.5f)
 {
+    mass = info.mass;
+    boundingBoxSize = info.boundingBoxSize;
+    bodyEntityId = info.chassisEntityId;
+    baseTransform = info.chassisStartTransform;
+    centerOfMass = info.centerOfMass;
+
+    for (uint32_t i = 0; i < info.wheels.size(); i++)
+    {
+        const VehicleGameObjectConstructionInfo::WheelInfo &wheelInfo = info.wheels[i];
+        wheelEntityIds.push_back(wheelInfo.entityId);
+        wheelTransforms.push_back(wheelInfo.transform);
+        wheelRadius = wheelInfo.radius;
+    }
 }
 
 VehicleGameObject::~VehicleGameObject()
@@ -26,50 +38,57 @@ void VehicleGameObject::Destroy()
 
 void VehicleGameObject::Initialize()
 {
-    chassisMotionState = std::make_unique<btDefaultMotionState>(btTransform(btQuaternion(0, 0, 0, 1), btVector3(origin.x, origin.y, origin.z)));
-    chassisShape = std::make_unique<btBoxShape>(btVector3(3, 5, 2));
-
-    btVector3 localInertia{};
-    chassisShape->calculateLocalInertia(800.0f, localInertia);
-
-    btRigidBody::btRigidBodyConstructionInfo chassisInfo(800.0, chassisMotionState.get(), chassisShape.get(), localInertia);
-    btRaycastVehicle::btVehicleTuning tuning;
     btDynamicsWorld *world = physics->GetDynamicsWorld();
 
+    btVector3 halfExtent(boundingBoxSize.x / 2, boundingBoxSize.y / 2, boundingBoxSize.z / 2);
+    chassisBoxShape = std::make_unique<btBoxShape>(halfExtent);
+    
+    btTransform chassisLocalTransform;
+    chassisLocalTransform.setIdentity();
+    chassisLocalTransform.setOrigin(btVector3(centerOfMass.x, centerOfMass.y, centerOfMass.z));
+    chassisShape = std::make_unique<btCompoundShape>();
+    chassisShape->addChildShape(chassisLocalTransform, chassisBoxShape.get());
+
+    btVector3 localInertia(0, 0, 0);
+    chassisShape->calculateLocalInertia(mass, localInertia);
+
+    const glm::vec3 &startPosition = baseTransform.worldPosition;
+    btTransform startTransform;
+    startTransform.setIdentity();
+    startTransform.setOrigin(btVector3(startPosition.x, startPosition.y, startPosition.z));
+    chassisMotionState = std::make_unique<btDefaultMotionState>(startTransform);
+
+    btRigidBody::btRigidBodyConstructionInfo chassisInfo(mass, chassisMotionState.get(), chassisShape.get(), localInertia);
     chassis = std::make_unique<btRigidBody>(chassisInfo);
-    chassis->setActivationState(DISABLE_DEACTIVATION);
     world->addRigidBody(chassis.get());
 
+    btRaycastVehicle::btVehicleTuning tuning;
     raycaster = std::make_unique<btDefaultVehicleRaycaster>(world);
     vehicle = std::make_unique<btRaycastVehicle>(tuning, chassis.get(), raycaster.get());
+    chassis->setActivationState(DISABLE_DEACTIVATION);
+    world->addAction(vehicle.get());
 
     // Ensure that the z-axis is the up axis
     vehicle->setCoordinateSystem(0, 2, 1);
 
-    // TODO: hard-coded valeues for the wheels
-    float wheelRadius = 0.5f;
-    float suspensionRestLength = 2;
+    float suspensionRestLength = 0.5f;
     btVector3 wheelDirectionCS0(0, 0, -1); // direction to the ground (-z-axis)
     btVector3 wheelAxleCS(1, 0, 0); // which axis does the wheel rotate about
-    btVector3 connectionPointCS0(-3, 5 - wheelRadius, 0.5f); // position of the wheel relative to vehicle's origin
-    wheelShape = std::make_unique<btCylinderShapeX>(btVector3(0.4f, wheelRadius, wheelRadius));
-
-    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, true);
-    vehicle->addWheel(connectionPointCS0 * btVector3(-1, 1, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, true);
-    vehicle->addWheel(connectionPointCS0 * btVector3(1, -1, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, false);
-    vehicle->addWheel(connectionPointCS0 * btVector3(-1, -1, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, false);
-
-    for (int i = 0; i < vehicle->getNumWheels(); i++)
+    for (uint32_t i = 0; i < wheelTransforms.size(); i++)
     {
+        // Translation relative to the origin of the chassis
+        bool isFrontWheel = i < 2 ? true : false;
+        const glm::vec3 &connectionPoint = wheelTransforms[i].worldPosition;
+        btVector3 connectionPointCS0(connectionPoint.x, connectionPoint.y, connectionPoint.z);
+        vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+
         btWheelInfo &wheel = vehicle->getWheelInfo(i);
-        wheel.m_suspensionStiffness = 20.f;
+        wheel.m_suspensionStiffness = 25.f;
         wheel.m_wheelsDampingRelaxation = 2.3f;
         wheel.m_wheelsDampingCompression = 4.4f;
-        wheel.m_frictionSlip = 1000;
+        wheel.m_frictionSlip = 1.2f;
         wheel.m_rollInfluence = 0.1f;
     }
-
-    world->addVehicle(vehicle.get());
 }
 
 void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> &commands)
@@ -78,42 +97,72 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
     // This function should simply need to apply whatever input (ex. throttle) the user gives
     // TODO: just some test code to move object
     // will be removed once this is integrated with bullet physics
-    float engineForce = 1000;
-    float brakeForce = 100;
+    float maxEngineForce = 1000;
+    float maxBrakeForce = 100;
 
     for (const ControlCommand &command : commands)
     {
         switch (command.operation)
         {
         case ControlCommandOperation::VehicleAccelerate:
-            vehicle->applyEngineForce(engineForce, 2);
-            vehicle->applyEngineForce(engineForce, 3);
+            engineForce = maxEngineForce;
+            brakeForce = 0;
             break;
         case ControlCommandOperation::VehicleBrake:
-            vehicle->setBrake(brakeForce, 2);
-            vehicle->setBrake(brakeForce, 3);
+            engineForce = 0;
+            brakeForce = maxBrakeForce;
             break;
         case ControlCommandOperation::VehicleSteerLeft:
-            vehicle->setSteeringValue(-1, 0);
-            vehicle->setSteeringValue(-1, 1);
+            steering += 0.05f;
             break;
         case ControlCommandOperation::VehicleSteerRight:
-            vehicle->setSteeringValue(1, 0);
-            vehicle->setSteeringValue(1, 1);
+            steering -= 0.05f;
             break;
         }
     }
 
+    steering = std::clamp(steering, -MAX_STEERING_VALUE, MAX_STEERING_VALUE);
+    vehicle->setSteeringValue(steering, 0);
+    vehicle->setSteeringValue(steering, 1);
+    vehicle->setBrake(brakeForce, 2);
+    vehicle->setBrake(brakeForce, 3);
+    vehicle->applyEngineForce(engineForce, 2);
+    vehicle->applyEngineForce(engineForce, 3);
+
     const btTransform &transform = vehicle->getChassisWorldTransform();
     const btVector3 &origin = transform.getOrigin();
+    const btQuaternion &chassisRotation = transform.getRotation();
+    btScalar bodyYaw, bodyPitch, bodyRoll;
+    chassisRotation.getEulerZYX(bodyYaw, bodyPitch, bodyRoll);
+
     baseTransform.worldPosition = { origin.getX(), origin.getY(), origin.getZ() };
+    baseTransform.worldPosition += centerOfMass;
+    baseTransform.rotation =
+    {
+        bodyRoll * SIMD_DEGS_PER_RAD,
+        bodyPitch * SIMD_DEGS_PER_RAD,
+        bodyYaw * SIMD_DEGS_PER_RAD
+    };
 
-    const btTransform &wheelTransform = vehicle->getWheelTransformWS(0);
-    const btQuaternion &wheelRotation = wheelTransform.getRotation();
-    float wheelAngleX, wheelAngleY, wheelAngleZ;
-    wheelRotation.getEulerZYX(wheelAngleZ, wheelAngleY, wheelAngleX);
+    float speed = vehicle->getCurrentSpeedKmHour();
 
-    baseTransform.rotation.z = 0;
+    for (uint32_t i = 0; i < wheelTransforms.size(); i++)
+    {
+        const btTransform &wheelTransform = vehicle->getWheelTransformWS(i);
+        const btVector3 &wheelPosition = wheelTransform.getOrigin();
+        
+        const btQuaternion &wheelRotation = wheelTransform.getRotation();
+        btScalar wheelYaw, wheelPitch, wheelRoll;
+        wheelRotation.getEulerZYX(wheelYaw, wheelPitch, wheelRoll);
+
+        wheelTransforms[i].worldPosition = { wheelPosition.getX(), wheelPosition.getY(), wheelPosition.getZ() };
+        wheelTransforms[i].rotation =
+        {
+            wheelRoll * SIMD_DEGS_PER_RAD,
+            wheelPitch * SIMD_DEGS_PER_RAD,
+            wheelYaw * SIMD_DEGS_PER_RAD
+        };
+    }
 }
 
 GameObjectTransform VehicleGameObject::GetWorldTransform() const
@@ -123,8 +172,20 @@ GameObjectTransform VehicleGameObject::GetWorldTransform() const
 
 std::list<GameObjectEntity> VehicleGameObject::GetEntities() const
 {
+    std::list<GameObjectEntity> entities;
+
     GameObjectEntity vehicleEntity{};
     vehicleEntity.entityId = bodyEntityId;
     vehicleEntity.transform = baseTransform;
-    return std::list<GameObjectEntity>({ vehicleEntity });
+    entities.push_back(vehicleEntity);
+
+    for (uint32_t i = 0; i < wheelEntityIds.size(); i++)
+    {
+        GameObjectEntity wheelEntity{};
+        wheelEntity.entityId = wheelEntityIds[i];
+        wheelEntity.transform = wheelTransforms[i];
+        entities.push_back(wheelEntity);
+    }
+
+    return entities;
 }

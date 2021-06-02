@@ -18,15 +18,15 @@ PhysicsSystem::PhysicsSystem()
     world->setGravity(btVector3(0.0f, 0.0f, GRAVITY));
 
     // TODO: test code to make sure the basic setup is working on a flat ground
-    groundShape = std::make_unique<btBoxShape>(btVector3(5000.0f, 5000.f, 3.0f));
-    groundMotionState = std::make_unique<btDefaultMotionState>(
-        btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
-    btRigidBody::btRigidBodyConstructionInfo groundInfo(0, groundMotionState.get(), groundShape.get());
+    groundShape = std::make_unique<btBoxShape>(btVector3(500.0f, 500.f, 1.0f));
 
+    btTransform groundTransform;
+    groundTransform.setIdentity();
+    groundTransform.setOrigin(btVector3(0, 0, 3));
+    groundMotionState = std::make_unique<btDefaultMotionState>(groundTransform);
+
+    btRigidBody::btRigidBodyConstructionInfo groundInfo(0, groundMotionState.get(), groundShape.get());
     std::unique_ptr<btRigidBody> groundSurface = std::make_unique<btRigidBody>(groundInfo);
-    groundSurface->setFriction(1.0f);
-    groundSurface->setRestitution(0.9f);
-    groundSurface->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
 
     groundSurfaces[999] = std::move(groundSurface);
     world->addRigidBody(groundSurfaces[999].get());

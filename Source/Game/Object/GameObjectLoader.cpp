@@ -66,13 +66,16 @@ bool GameObjectLoader::LoadVehicleConfig(
     std::list<std::unique_ptr<Entity>> &entities)
 {
     VehicleConfig vehicleConfig{};
-    if (!ConfigReader::ReadConfig(loadRequest.configFilePath, vehicleConfig))
+    if (!ConfigReader::ReadConfig(loadRequest.configFilePath, vehicleConfig)
+        || vehicleConfig.wheelObjects.size() == 0)
     {
         return false;
     }
 
     // TODO: may modify this part of code as the vehicle game object can become more complex
     std::string vehicleConfigDirectory = FileSystem::GetParentDirectory(loadRequest.configFilePath);
+
+    // Load the chassis object
     std::string chassisObjectFilePath = FileSystem::GetGameObjectFile(vehicleConfigDirectory, vehicleConfig.chassisObject);
     StaticObjectConfig chassisObjectConfig{};
     if (!ConfigReader::ReadConfig(chassisObjectFilePath, chassisObjectConfig))
@@ -80,49 +83,139 @@ bool GameObjectLoader::LoadVehicleConfig(
         return false;
     }
 
-    std::string chassisMeshFilePath = FileSystem::GetModelFile(vehicleConfigDirectory, chassisObjectConfig.mesh);
-    std::string chassisTextureFilePath = FileSystem::GetTextureFile(vehicleConfigDirectory, chassisObjectConfig.diffuseMaterial);
-    
-    uint32_t meshId = Identifier::GenerateIdentifier(chassisMeshFilePath);
-    uint32_t materialId = Identifier::GenerateIdentifier(chassisTextureFilePath);
-    
-    Mesh chassisMesh{};
-    chassisMesh.id = meshId;
-    if (!meshLoader.LoadFromFile(chassisMeshFilePath, chassisMesh))
+    // Load the wheel objects (assume all wheels use the same model for now)
+    std::string &wheelObject = vehicleConfig.wheelObjects[0].object;
+    std::string wheelObjectFilePath = FileSystem::GetGameObjectFile(vehicleConfigDirectory, wheelObject);
+    StaticObjectConfig wheelObjectConfig{};
+    if (!ConfigReader::ReadConfig(wheelObjectFilePath, wheelObjectConfig))
     {
         return false;
     }
 
+    // Load the chassis and wheel meshes for rendering
+    std::string chassisMeshFilePath = FileSystem::GetModelFile(vehicleConfigDirectory, chassisObjectConfig.mesh);
+    std::string chassisTextureFilePath = FileSystem::GetTextureFile(vehicleConfigDirectory, chassisObjectConfig.diffuseMaterial);
+    std::string wheelMeshFilePath = FileSystem::GetModelFile(vehicleConfigDirectory, wheelObjectConfig.mesh);
+    std::string wheelTextureFilePath = FileSystem::GetTextureFile(vehicleConfigDirectory, wheelObjectConfig.diffuseMaterial);
+
+    uint32_t meshId = Identifier::GenerateIdentifier(chassisMeshFilePath);
+    uint32_t materialId = Identifier::GenerateIdentifier(chassisTextureFilePath);
+    uint32_t wheelMeshId = Identifier::GenerateIdentifier(wheelMeshFilePath);
+    uint32_t wheelMaterialId = Identifier::GenerateIdentifier(wheelTextureFilePath);
+    
+    Mesh chassisMesh{};
+    chassisMesh.id = meshId;
+    Mesh wheelMesh{};
+    wheelMesh.id = wheelMeshId;
+
+    if (!meshLoader.LoadFromFile(chassisMeshFilePath, chassisMesh)
+        || !meshLoader.LoadFromFile(wheelMeshFilePath, wheelMesh))
+    {
+        return false;
+    }
+
+    // Load the textures for the meshes
     Material chassisMaterial{};
     chassisMaterial.id = materialId;
     std::shared_ptr<Image> diffuseImage = std::make_shared<Image>();
-    if (!diffuseImage->Load(chassisTextureFilePath, ImageColor::ColorWithAlpha))
+    Material wheelMaterial{};
+    wheelMaterial.id = wheelMaterialId;
+    std::shared_ptr<Image> wheelImage = std::make_shared<Image>();
+    if (!diffuseImage->Load(chassisTextureFilePath, ImageColor::ColorWithAlpha)
+        || !wheelImage->Load(wheelTextureFilePath, ImageColor::ColorWithAlpha))
     {
         return false;
     }
     chassisMaterial.diffuseImage = diffuseImage;
     chassisMesh.material = std::make_shared<Material>(chassisMaterial);
+    wheelMaterial.diffuseImage = wheelImage;
+    wheelMesh.material = std::make_shared<Material>(wheelMaterial);
 
+    // Initialize the transformations for both the chassis and the wheels
     const glm::vec3 &translation = loadRequest.position;
     const glm::vec3 &rotation = loadRequest.rotation;
+    glm::vec3 centerOfMass =
+    {
+        vehicleConfig.centerOfMass.x,
+        vehicleConfig.centerOfMass.y,
+        vehicleConfig.centerOfMass.z
+    };
+
+    uint32_t chassisEntityId = Identifier::GenerateIdentifier(IdentifierType::GameObjectEntity, ++gameObjectEntityIdCount);
     std::unique_ptr<Entity> chassisEntity = std::make_unique<Entity>();
-    chassisEntity->id = Identifier::GenerateIdentifier(IdentifierType::GameObjectEntity, ++gameObjectEntityIdCount);
+    chassisEntity->id = chassisEntityId;
     chassisEntity->translation = translation;
     chassisEntity->rotation = rotation;
     chassisEntity->scale = { 1.0f, 1.0f, 1.0f };
     chassisEntity->mesh = std::make_shared<Mesh>(chassisMesh);
+    entities.push_back(std::move(chassisEntity));
 
     GameObjectTransform originTransform{};
     originTransform.worldPosition = translation;
     originTransform.rotation = rotation;
-    std::shared_ptr<BaseGameObject> vehicleGameObject = std::make_unique<VehicleGameObject>(
-        chassisEntity->id,
-        originTransform,
-        physics);
 
-    vehicleObject.id = chassisEntity->id;
+    VehicleGameObjectConstructionInfo createInfo{};
+    createInfo.chassisEntityId = chassisEntityId;
+    createInfo.chassisStartTransform = originTransform;
+    createInfo.boundingBoxSize =
+    {
+        vehicleConfig.boundingBoxDimensions.x,
+        vehicleConfig.boundingBoxDimensions.y,
+        vehicleConfig.boundingBoxDimensions.z
+    };
+    createInfo.centerOfMass =
+    {
+        vehicleConfig.centerOfMass.x,
+        vehicleConfig.centerOfMass.y,
+        vehicleConfig.centerOfMass.z
+    };
+    createInfo.mass = vehicleConfig.mass;
+
+    size_t wheelCount = vehicleConfig.wheelObjects.size();
+    for (uint32_t i = 0; i < wheelCount; i++)
+    {
+        EntityConfig &wheelEntityConfig = vehicleConfig.wheelObjects[i];
+        glm::vec3 wheelWorldPosition =
+        {
+            translation.x + wheelEntityConfig.position.x,
+            translation.y + wheelEntityConfig.position.y,
+            translation.z + wheelEntityConfig.position.z,
+        };
+        glm::vec3 wheelTranslation =
+        {
+            wheelEntityConfig.position.x,
+            wheelEntityConfig.position.y,
+            wheelEntityConfig.position.z,
+        };
+        glm::vec3 wheelRotation =
+        {
+            wheelEntityConfig.rotation.x,
+            wheelEntityConfig.rotation.y,
+            wheelEntityConfig.rotation.z
+        };
+
+        uint32_t wheelEntityId = Identifier::GenerateIdentifier(IdentifierType::GameObjectEntity, ++gameObjectEntityIdCount);
+        std::unique_ptr<Entity> wheelEntity = std::make_unique<Entity>();
+        wheelEntity->id = wheelEntityId;
+        wheelEntity->translation = wheelWorldPosition;
+        wheelEntity->rotation = wheelRotation;
+        wheelEntity->scale = { 1.0f, 1.0f, 1.0f };
+        wheelEntity->mesh = std::make_shared<Mesh>(wheelMesh);
+        entities.push_back(std::move(wheelEntity));
+
+        VehicleGameObjectConstructionInfo::WheelInfo wheelInfo{};
+        wheelInfo.entityId = wheelEntityId;
+        wheelInfo.transform.worldPosition = wheelTranslation;
+        wheelInfo.transform.rotation = wheelRotation;
+        wheelInfo.radius = vehicleConfig.maximumWheelRadius;
+        createInfo.wheels.push_back(wheelInfo);
+    }
+    
+    std::shared_ptr<BaseGameObject> vehicleGameObject = std::make_unique<VehicleGameObject>(createInfo, physics);
+
+    vehicleObject.id = chassisEntityId;
     vehicleObject.object = vehicleGameObject;
-    entities.push_back(std::move(chassisEntity));
+    vehicleObject.isUserObject = loadRequest.isUserObject;
 
     return true;
 }
