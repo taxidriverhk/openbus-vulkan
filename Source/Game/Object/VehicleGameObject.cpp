@@ -121,13 +121,24 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
         }
     }
 
+    float speed = vehicle->getCurrentSpeedKmHour();
+
     steering = std::clamp(steering, -MAX_STEERING_VALUE, MAX_STEERING_VALUE);
     vehicle->setSteeringValue(steering, 0);
     vehicle->setSteeringValue(steering, 1);
     vehicle->setBrake(brakeForce, 2);
     vehicle->setBrake(brakeForce, 3);
-    vehicle->applyEngineForce(engineForce, 2);
-    vehicle->applyEngineForce(engineForce, 3);
+
+    if (speed > MAX_SPEED_KMHR)
+    {
+        vehicle->applyEngineForce(0, 2);
+        vehicle->applyEngineForce(0, 3);
+    }
+    else
+    {
+        vehicle->applyEngineForce(engineForce, 2);
+        vehicle->applyEngineForce(engineForce, 3);
+    }
 
     const btTransform &transform = vehicle->getChassisWorldTransform();
     const btVector3 &origin = transform.getOrigin();
@@ -143,8 +154,6 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
         bodyPitch * SIMD_DEGS_PER_RAD,
         bodyYaw * SIMD_DEGS_PER_RAD
     };
-
-    float speed = vehicle->getCurrentSpeedKmHour();
 
     for (uint32_t i = 0; i < wheelTransforms.size(); i++)
     {

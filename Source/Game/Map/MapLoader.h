@@ -10,6 +10,7 @@
 #include "Engine/Entity.h"
 #include "Engine/Mesh.h"
 #include "Engine/Terrain.h"
+#include "Game/Physics/Collision.h"
 #include "Map.h"
 
 class HandledThread;
@@ -33,6 +34,13 @@ struct MapBlockResources
     }
 };
 
+// Used to load the collision surfaces into the physics world
+struct MapBlockSurfaces
+{
+    uint32_t blockId;
+    std::vector<CollisionMesh> collisionMeshes;
+};
+
 class MapLoader
 {
 public:
@@ -40,11 +48,16 @@ public:
     ~MapLoader();
 
     int GetProgress() const { return loadProgress; }
+
     bool IsReadyToBuffer() const { return readyToBuffer; }
+    bool IsReadyToAdd() const { return readyToAdd; }
 
     void AddBlocksToLoad();
     std::unordered_set<MapBlockPosition> GetAdjacentBlocks();
+    
     MapBlockResources PollLoadedResources();
+    MapBlockSurfaces PollLoadedSurfaces();
+    
     void StartLoadBlocksThread();
     void TerminateLoadBlocksThread();
 
@@ -64,8 +77,12 @@ private:
     TerrainLoader terrainLoader;
 
     int loadProgress;
+
     std::atomic<bool> readyToBuffer;
     std::list<MapBlockResources> loadedResources;
+
+    std::atomic<bool> readyToAdd;
+    std::list<MapBlockSurfaces> loadedSurfaces;
 
     bool shouldTerminate;
     std::mutex loadQueueMutex;

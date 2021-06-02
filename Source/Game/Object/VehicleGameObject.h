@@ -49,7 +49,8 @@ public:
     std::list<GameObjectEntity> GetEntities() const override;
 
 private:
-    static constexpr float MAX_STEERING_VALUE = 1.0f;
+    static constexpr float MAX_STEERING_VALUE = 0.25f;
+    static constexpr float MAX_SPEED_KMHR = 50.0f;
 
     PhysicsSystem *physics;
 

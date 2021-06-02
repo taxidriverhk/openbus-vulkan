@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <optional>
 
 #include "Common/FileSystem.h"
@@ -16,6 +17,7 @@ MapLoader::MapLoader(Map *map, const MapLoadSettings &mapLoadSettings)
     staticEntityIdCount(0),
     loadProgress(0),
     readyToBuffer(false),
+    readyToAdd(false),
     shouldTerminate(false),
     firstBlockLoaded(false),
     map(map),
@@ -94,6 +96,18 @@ MapBlockResources MapLoader::PollLoadedResources()
     return result;
 }
 
+MapBlockSurfaces MapLoader::PollLoadedSurfaces()
+{
+    MapBlockSurfaces result{};
+    if (readyToAdd)
+    {
+        result = loadedSurfaces.front();
+        loadedSurfaces.pop_front();
+        readyToAdd = false;
+    }
+    return result;
+}
+
 void MapLoader::StartLoadBlocksThread()
 {
     loadBlockThread = std::make_unique<HandledThread>([&]()
@@ -133,8 +147,6 @@ void MapLoader::StartLoadBlocksThread()
                         continue;
                     }
 
-                    // TODO: add code to load surface and collision meshes into the physics system
-
                     Logger::Log(LogLevel::Info, "Loading resources for block ({}, {})",
                         mapBlockPositionValue.x, mapBlockPositionValue.y);
                     std::string mapBaseDirectory = FileSystem::GetParentDirectory(map->GetConfigFilePath());
@@ -153,6 +165,9 @@ void MapLoader::StartLoadBlocksThread()
 
                     MapBlockResources mapBlockResource;
                     mapBlockResource.blockId = blockId;
+
+                    MapBlockSurfaces mapBlockSurface;
+                    mapBlockSurface.blockId = blockId;
 
                     // Load the terrain from height map with texture
                     Terrain &terrain = mapBlockResource.terrain;
@@ -249,9 +264,28 @@ void MapLoader::StartLoadBlocksThread()
                     MapBlock loadedMapBlock{};
                     loadedMapBlock.id = blockId;
                     loadedMapBlock.position = mapBlockPositionValue;
-                    map->AddLoadedBlock(loadedMapBlock);
                     loadedResources.push_back(mapBlockResource);
+
+                    // TODO: copy the collision mesh into the surface as well
+                    // only the terrain vertices are copied into the surface for now
+                    CollisionMesh terrainCollisionMesh;
+                    terrainCollisionMesh.vertices.resize(terrain.vertices.size());
+                    terrainCollisionMesh.indices.resize(terrain.indices.size());
+                    std::transform(
+                        terrain.vertices.begin(),
+                        terrain.vertices.end(),
+                        terrainCollisionMesh.vertices.begin(),
+                        [&](Vertex &vertex)
+                        {
+                            return vertex.position;
+                        });
+                    std::copy(terrain.indices.begin(), terrain.indices.end(), terrainCollisionMesh.indices.begin());
+                    mapBlockSurface.collisionMeshes.push_back(terrainCollisionMesh);
+                    loadedSurfaces.push_back(mapBlockSurface);
+
+                    map->AddLoadedBlock(loadedMapBlock);
                     readyToBuffer = true;
+                    readyToAdd = true;
                 }
             }
         },

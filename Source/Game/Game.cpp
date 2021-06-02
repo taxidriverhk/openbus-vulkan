@@ -178,6 +178,8 @@ void Game::RunMainLoop()
             for (uint32_t blockId : mapBlockIdsToUnload)
             {
                 renderer->UnloadBlock(blockId);
+                // TODO: could be not thread-safe, should let game thread make this call
+                physicsSystem->RemoveSurface(blockId);
             }
 
             // TODO: also check to see if there are requests to remove game objects from the graphics context
@@ -250,6 +252,13 @@ void Game::RunGameLoop()
         else
         {
 
+        }
+
+        // Load collision meshes into the physics world
+        if (mapLoader->IsReadyToAdd())
+        {
+            MapBlockSurfaces mapBlockSurface = mapLoader->PollLoadedSurfaces();
+            physicsSystem->AddSurface(mapBlockSurface.blockId, mapBlockSurface.collisionMeshes);
         }
 
         timeSinceLastUpdate += timer.DeltaTime();

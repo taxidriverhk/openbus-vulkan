@@ -3,6 +3,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include "Collision.h"
+
 class btBoxShape;
 class btBroadphaseInterface;
 class btCollisionDispatcher;
@@ -22,7 +24,9 @@ public:
 
     btDynamicsWorld *GetDynamicsWorld() const { return world.get(); }
 
-    void AddSurface();
+    void AddSurface(uint32_t blockId, const std::vector<CollisionMesh> &collisionMeshes);
+    void RemoveSurface(uint32_t blockId);
+
     void StepSimulation(float deltaTime);
 
 private:
@@ -35,10 +39,6 @@ private:
 
     std::unique_ptr<btDynamicsWorld> world;
 
-    // TODO: test shape
-    std::unique_ptr<btBoxShape> groundShape;
-    std::unique_ptr<btMotionState> groundMotionState;
-
-    // Entity ID to collision surfaces (ex. terrain, road, etc.)
-    std::unordered_map<uint32_t, std::unique_ptr<btRigidBody>> groundSurfaces;
+    // Map block ID to collision surfaces (ex. terrain, road, etc.)
+    std::unordered_map<uint32_t, std::vector<std::unique_ptr<CollisionBody>>> groundCollisionSurfaces;
 };
