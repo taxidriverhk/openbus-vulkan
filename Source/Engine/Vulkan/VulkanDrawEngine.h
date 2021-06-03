@@ -81,6 +81,20 @@ private:
         return glm::scale(transformationMatrix, scale);
     }
 
+    inline static glm::mat4 ComputeTransformationMatrix(
+        const glm::vec3 &translation,
+        const glm::vec3 &scale,
+        const glm::vec3 &rotationAxis,
+        float rotationAngle
+    )
+    {
+        glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
+        glm::mat4 transformationMatrix = glm::translate(identitiyMatrix, translation);
+        glm::mat4 rotationMatrix = glm::rotate(identitiyMatrix, glm::radians<float>(rotationAngle), rotationAxis);
+        transformationMatrix = transformationMatrix * rotationMatrix;
+        return glm::scale(transformationMatrix, scale);
+    }
+
     void CreateCommandBuffers();
     void CreateFrameBuffers();
     void CreateSynchronizationObjects();

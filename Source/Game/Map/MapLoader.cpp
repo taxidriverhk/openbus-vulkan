@@ -277,7 +277,7 @@ void MapLoader::StartLoadBlocksThread()
                         terrainCollisionMesh.vertices.begin(),
                         [&](Vertex &vertex)
                         {
-                            return vertex.position;
+                            return glm::vec3{ vertex.position.x, -vertex.position.y, vertex.position.z };
                         });
                     std::copy(terrain.indices.begin(), terrain.indices.end(), terrainCollisionMesh.indices.begin());
                     mapBlockSurface.collisionMeshes.push_back(terrainCollisionMesh);

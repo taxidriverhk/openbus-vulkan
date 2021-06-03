@@ -1,4 +1,5 @@
 #include <btBulletDynamicsCommon.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Game/Physics/PhysicsSystem.h"
 #include "VehicleGameObject.h"
@@ -10,17 +11,22 @@ VehicleGameObject::VehicleGameObject(const VehicleGameObjectConstructionInfo &in
       steering(0.0f),
       wheelRadius(0.5f)
 {
+    int entityIndex = 0;
+    entities.resize(1 + info.wheels.size());
+    wheelIndices.resize(info.wheels.size());
+
     mass = info.mass;
     boundingBoxSize = info.boundingBoxSize;
-    bodyEntityId = info.chassisEntityId;
-    baseTransform = info.chassisStartTransform;
     centerOfMass = info.centerOfMass;
+
+    bodyEntityIndex = entityIndex;
+    entities[entityIndex++] = { info.chassisEntityId, info.chassisStartTransform };
 
     for (uint32_t i = 0; i < info.wheels.size(); i++)
     {
         const VehicleGameObjectConstructionInfo::WheelInfo &wheelInfo = info.wheels[i];
-        wheelEntityIds.push_back(wheelInfo.entityId);
-        wheelTransforms.push_back(wheelInfo.transform);
+        wheelIndices[i] = entityIndex;
+        entities[entityIndex++] = { wheelInfo.entityId, wheelInfo.transform };
         wheelRadius = wheelInfo.radius;
     }
 }
@@ -52,7 +58,7 @@ void VehicleGameObject::Initialize()
     btVector3 localInertia(0, 0, 0);
     chassisShape->calculateLocalInertia(mass, localInertia);
 
-    const glm::vec3 &startPosition = baseTransform.worldPosition;
+    const glm::vec3 &startPosition = entities[bodyEntityIndex].transform.translation;
     btTransform startTransform;
     startTransform.setIdentity();
     startTransform.setOrigin(btVector3(startPosition.x, startPosition.y, startPosition.z));
@@ -74,11 +80,11 @@ void VehicleGameObject::Initialize()
     float suspensionRestLength = 0.5f;
     btVector3 wheelDirectionCS0(0, 0, -1); // direction to the ground (-z-axis)
     btVector3 wheelAxleCS(1, 0, 0); // which axis does the wheel rotate about
-    for (uint32_t i = 0; i < wheelTransforms.size(); i++)
+    for (uint32_t i = 0; i < wheelIndices.size(); i++)
     {
         // Translation relative to the origin of the chassis
         bool isFrontWheel = i < 2 ? true : false;
-        const glm::vec3 &connectionPoint = wheelTransforms[i].worldPosition;
+        const glm::vec3 &connectionPoint = entities[wheelIndices[i]].transform.translation;
         btVector3 connectionPointCS0(connectionPoint.x, connectionPoint.y, connectionPoint.z);
         vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
 
@@ -113,10 +119,10 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
             brakeForce = maxBrakeForce;
             break;
         case ControlCommandOperation::VehicleSteerLeft:
-            steering += 0.05f;
+            steering += 0.01f;
             break;
         case ControlCommandOperation::VehicleSteerRight:
-            steering -= 0.05f;
+            steering -= 0.01f;
             break;
         }
     }
@@ -141,60 +147,38 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
     }
 
     const btTransform &transform = vehicle->getChassisWorldTransform();
-    const btVector3 &origin = transform.getOrigin();
+    const btVector3 &chassisOrigin = transform.getOrigin();
     const btQuaternion &chassisRotation = transform.getRotation();
-    btScalar bodyYaw, bodyPitch, bodyRoll;
-    chassisRotation.getEulerZYX(bodyYaw, bodyPitch, bodyRoll);
+    const btVector3 &chassisRotationAxis = chassisRotation.getAxis();
 
-    baseTransform.worldPosition = { origin.getX(), origin.getY(), origin.getZ() };
-    baseTransform.worldPosition += centerOfMass;
-    baseTransform.rotation =
-    {
-        bodyRoll * SIMD_DEGS_PER_RAD,
-        bodyPitch * SIMD_DEGS_PER_RAD,
-        bodyYaw * SIMD_DEGS_PER_RAD
-    };
+    entities[bodyEntityIndex].transform.mode = EntityTransformationMode::Quaternion;
+    
+    entities[bodyEntityIndex].transform.translation = { chassisOrigin.x(), chassisOrigin.y(), chassisOrigin.z() };
+    entities[bodyEntityIndex].transform.translation += centerOfMass;
+    
+    entities[bodyEntityIndex].transform.rotationAxis = { chassisRotationAxis.x(), chassisRotationAxis.y(), chassisRotationAxis.z() };
+    entities[bodyEntityIndex].transform.angle = chassisRotation.getAngle() * SIMD_DEGS_PER_RAD;
 
-    for (uint32_t i = 0; i < wheelTransforms.size(); i++)
+    for (uint32_t i = 0; i < wheelIndices.size(); i++)
     {
         const btTransform &wheelTransform = vehicle->getWheelTransformWS(i);
-        const btVector3 &wheelPosition = wheelTransform.getOrigin();
-        
+        const btVector3 &wheelOrigin = wheelTransform.getOrigin();
         const btQuaternion &wheelRotation = wheelTransform.getRotation();
-        btScalar wheelYaw, wheelPitch, wheelRoll;
-        wheelRotation.getEulerZYX(wheelYaw, wheelPitch, wheelRoll);
+        const btVector3 &wheelRotationAxis = wheelRotation.getAxis();
 
-        wheelTransforms[i].worldPosition = { wheelPosition.getX(), wheelPosition.getY(), wheelPosition.getZ() };
-        wheelTransforms[i].rotation =
-        {
-            wheelRoll * SIMD_DEGS_PER_RAD,
-            wheelPitch * SIMD_DEGS_PER_RAD,
-            wheelYaw * SIMD_DEGS_PER_RAD
-        };
+        entities[wheelIndices[i]].transform.mode = EntityTransformationMode::Quaternion;
+        entities[wheelIndices[i]].transform.translation = { wheelOrigin.x(), wheelOrigin.y(), wheelOrigin.z() };
+        entities[wheelIndices[i]].transform.rotationAxis = { wheelRotationAxis.x(), wheelRotationAxis.y(), wheelRotationAxis.z() };
+        entities[wheelIndices[i]].transform.angle = wheelRotation.getAngle() * SIMD_DEGS_PER_RAD;
     }
 }
 
-GameObjectTransform VehicleGameObject::GetWorldTransform() const
+EntityTransformation VehicleGameObject::GetWorldTransform() const
 {
-    return baseTransform;
+    return entities[bodyEntityIndex].transform;
 }
 
-std::list<GameObjectEntity> VehicleGameObject::GetEntities() const
+std::vector<GameObjectEntity> VehicleGameObject::GetEntities() const
 {
-    std::list<GameObjectEntity> entities;
-
-    GameObjectEntity vehicleEntity{};
-    vehicleEntity.entityId = bodyEntityId;
-    vehicleEntity.transform = baseTransform;
-    entities.push_back(vehicleEntity);
-
-    for (uint32_t i = 0; i < wheelEntityIds.size(); i++)
-    {
-        GameObjectEntity wheelEntity{};
-        wheelEntity.entityId = wheelEntityIds[i];
-        wheelEntity.transform = wheelTransforms[i];
-        entities.push_back(wheelEntity);
-    }
-
     return entities;
 }

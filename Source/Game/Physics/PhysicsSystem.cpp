@@ -55,9 +55,9 @@ void PhysicsSystem::AddSurface(uint32_t blockId, const std::vector<CollisionMesh
             const glm::vec3 &p3 = vertices[indices[i + 2]];
 
             triangleMesh->addTriangle(
-                btVector3(p1.x, -p1.y, p1.z),
-                btVector3(p2.x, -p2.y, p2.z),
-                btVector3(p3.x, -p3.y, p3.z));
+                btVector3(p1.x, p1.y, p1.z),
+                btVector3(p2.x, p2.y, p2.z),
+                btVector3(p3.x, p3.y, p3.z));
         }
 
         collisionBody->mesh = std::move(triangleMesh);

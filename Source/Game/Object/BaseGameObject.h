@@ -1,22 +1,18 @@
 #pragma once
 
 #include <list>
+#include <vector>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include "Engine/Entity.h"
 #include "Game/Control.h"
-
-struct GameObjectTransform
-{
-    glm::vec3 worldPosition;
-    glm::vec3 rotation;
-};
 
 struct GameObjectEntity
 {
     uint32_t entityId;
-    GameObjectTransform transform;
+    EntityTransformation transform;
 };
 
 class BaseGameObject
@@ -26,6 +22,6 @@ public:
     virtual void Initialize() = 0;
     virtual void Update(float deltaTime, const std::list<ControlCommand> &commands) = 0;
 
-    virtual GameObjectTransform GetWorldTransform() const = 0;
-    virtual std::list<GameObjectEntity> GetEntities() const = 0;
+    virtual EntityTransformation GetWorldTransform() const = 0;
+    virtual std::vector<GameObjectEntity> GetEntities() const = 0;
 };

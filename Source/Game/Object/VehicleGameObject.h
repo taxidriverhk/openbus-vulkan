@@ -20,11 +20,11 @@ struct VehicleGameObjectConstructionInfo
     {
         uint32_t entityId;
         float radius;
-        GameObjectTransform transform;
+        EntityTransformation transform;
     };
 
     uint32_t chassisEntityId;
-    GameObjectTransform chassisStartTransform;
+    EntityTransformation chassisStartTransform;
     std::vector<WheelInfo> wheels;
 
     glm::vec3 boundingBoxSize;
@@ -45,8 +45,8 @@ public:
     void Initialize() override;
     void Update(float deltaTime, const std::list<ControlCommand> &commands) override;
 
-    GameObjectTransform GetWorldTransform() const override;
-    std::list<GameObjectEntity> GetEntities() const override;
+    EntityTransformation GetWorldTransform() const override;
+    std::vector<GameObjectEntity> GetEntities() const override;
 
 private:
     static constexpr float MAX_STEERING_VALUE = 0.25f;
@@ -65,11 +65,9 @@ private:
     glm::vec3 boundingBoxSize;
     glm::vec3 centerOfMass;
 
-    uint32_t bodyEntityId;
-    std::vector<uint32_t> wheelEntityIds;
-
-    GameObjectTransform baseTransform;
-    std::vector<GameObjectTransform> wheelTransforms;
+    int bodyEntityIndex;
+    std::vector<int> wheelIndices;
+    std::vector<GameObjectEntity> entities;
 
     // Bullet physics related variables
     std::unique_ptr<btMotionState> chassisMotionState;

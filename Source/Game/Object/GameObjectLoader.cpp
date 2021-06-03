@@ -150,8 +150,8 @@ bool GameObjectLoader::LoadVehicleConfig(
     chassisEntity->mesh = std::make_shared<Mesh>(chassisMesh);
     entities.push_back(std::move(chassisEntity));
 
-    GameObjectTransform originTransform{};
-    originTransform.worldPosition = translation;
+    EntityTransformation originTransform{};
+    originTransform.translation = translation;
     originTransform.rotation = rotation;
 
     VehicleGameObjectConstructionInfo createInfo{};
@@ -205,7 +205,7 @@ bool GameObjectLoader::LoadVehicleConfig(
 
         VehicleGameObjectConstructionInfo::WheelInfo wheelInfo{};
         wheelInfo.entityId = wheelEntityId;
-        wheelInfo.transform.worldPosition = wheelTranslation;
+        wheelInfo.transform.translation = wheelTranslation;
         wheelInfo.transform.rotation = wheelRotation;
         wheelInfo.radius = vehicleConfig.maximumWheelRadius;
         createInfo.wheels.push_back(wheelInfo);

@@ -143,11 +143,7 @@ void Game::RenderScene()
 {
     for (const auto &renderingEntity : gameObjectSystem->GetRenderingEntities())
     {
-        EntityTransformation entityTransformation{};
-        entityTransformation.translation = renderingEntity.transform.worldPosition;
-        entityTransformation.rotation = renderingEntity.transform.rotation;
-        entityTransformation.scale = { 1.0f, 1.0f, 1.0f };
-        renderer->MoveEntity(renderingEntity.entityId, entityTransformation);
+        renderer->MoveEntity(renderingEntity.entityId, renderingEntity.transform);
     }
 
     renderer->DrawScene();

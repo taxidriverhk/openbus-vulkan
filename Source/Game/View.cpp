@@ -39,12 +39,12 @@ void View::UpdateView()
     else if (VIEW_MODES[currentViewModeIndex] == ViewMode::FirstPerson
         || VIEW_MODES[currentViewModeIndex] == ViewMode::ThirdPerson)
     {
-        const GameObjectTransform transform = gameObjectSystem->GetCurrentUserObject()->GetWorldTransform();
+        const EntityTransformation transform = gameObjectSystem->GetCurrentUserObject()->GetWorldTransform();
         const glm::vec3 &rotation = transform.rotation;
 
         float objectYawRadians = glm::radians<float>(rotation.z - followYaw);
-        float objectPitchRadians = glm::radians<float>(rotation.x - followPitch);
-        glm::vec3 position = transform.worldPosition;
+        float objectPitchRadians = glm::radians<float>(-followPitch);
+        glm::vec3 position = transform.translation;
 
         float sinYaw = glm::sin(objectYawRadians),
               cosYaw = glm::cos(objectYawRadians);
