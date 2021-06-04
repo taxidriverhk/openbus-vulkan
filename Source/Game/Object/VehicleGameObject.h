@@ -19,8 +19,21 @@ struct VehicleGameObjectConstructionInfo
     struct WheelInfo
     {
         uint32_t entityId;
-        float radius;
         EntityTransformation transform;
+
+        glm::vec3 axle;
+        glm::vec3 direction;
+
+        bool isTurnable;
+        bool hasTorque;
+        float radius;
+
+        float suspensionRestLength;
+        float suspensionStiffness;
+        float wheelsDampingRelaxation;
+        float wheelsDampingCompression;
+        float frictionSlip;
+        float rollInfluence;
     };
 
     uint32_t chassisEntityId;
@@ -31,6 +44,12 @@ struct VehicleGameObjectConstructionInfo
     glm::vec3 centerOfMass;
 
     float mass;
+
+    float maxSpeed;
+    float engineForce;
+    float brakeForce;
+    float steeringForce;
+    float steeringAngle;
 };
 
 class VehicleGameObject : public BaseGameObject
@@ -49,21 +68,41 @@ public:
     std::vector<GameObjectEntity> GetEntities() const override;
 
 private:
-    static constexpr float MAX_STEERING_VALUE = 0.25f;
-    static constexpr float MAX_SPEED_KMHR = 50.0f;
+    struct Wheel
+    {
+        glm::vec3 axle;
+        glm::vec3 direction;
+
+        bool isTurnable;
+        bool hasTorque;
+        float radius;
+
+        float suspensionRestLength;
+        float suspensionStiffness;
+        float wheelsDampingRelaxation;
+        float wheelsDampingCompression;
+        float frictionSlip;
+        float rollInfluence;
+    };
 
     PhysicsSystem *physics;
 
     // TODO: just some test code to show how can a game object contain multiple entities
-    float mass;
-    float wheelRadius;
-
-    float steering;
+    float maxSpeed;
     float engineForce;
     float brakeForce;
+    float steeringForce;
+    float steeringAngle;
 
+    float currentSteeringAngle;
+    float currentEngineForce;
+    float currentBrakeForce;
+
+    float mass;
     glm::vec3 boundingBoxSize;
     glm::vec3 centerOfMass;
+
+    std::vector<Wheel> wheels;
 
     int bodyEntityIndex;
     std::vector<int> wheelIndices;

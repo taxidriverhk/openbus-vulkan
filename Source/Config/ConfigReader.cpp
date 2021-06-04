@@ -45,13 +45,30 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&MapInfoConfig::blocks, "blocks");
 
     // Game Object
+    JsonParser::RegisterMapper(&WheelConfig::object, "object");
+    JsonParser::RegisterMapper(&WheelConfig::axle, "axle");
+    JsonParser::RegisterMapper(&WheelConfig::direction, "direction");
+    JsonParser::RegisterMapper(&WheelConfig::isTurnable, "isTurnable");
+    JsonParser::RegisterMapper(&WheelConfig::hasTorque, "hasTorque");
+    JsonParser::RegisterMapper(&WheelConfig::radius, "radius");
+    JsonParser::RegisterMapper(&WheelConfig::suspensionRestLength, "suspensionRestLength");
+    JsonParser::RegisterMapper(&WheelConfig::suspensionStiffness, "suspensionStiffness");
+    JsonParser::RegisterMapper(&WheelConfig::wheelsDampingRelaxation, "wheelsDampingRelaxation");
+    JsonParser::RegisterMapper(&WheelConfig::wheelsDampingCompression, "wheelsDampingCompression");
+    JsonParser::RegisterMapper(&WheelConfig::frictionSlip, "frictionSlip");
+    JsonParser::RegisterMapper(&WheelConfig::rollInfluence, "rollInfluence");
+
     JsonParser::RegisterMapper(&VehicleConfig::name, "name");
     JsonParser::RegisterMapper(&VehicleConfig::mass, "mass");
     JsonParser::RegisterMapper(&VehicleConfig::chassisObject, "chassisObject");
-    JsonParser::RegisterMapper(&VehicleConfig::wheelObjects, "wheelObjects");
+    JsonParser::RegisterMapper(&VehicleConfig::wheels, "wheels");
     JsonParser::RegisterMapper(&VehicleConfig::boundingBoxDimensions, "boundingBoxDimensions");
     JsonParser::RegisterMapper(&VehicleConfig::centerOfMass, "centerOfMass");
-    JsonParser::RegisterMapper(&VehicleConfig::maximumWheelRadius, "maximumWheelRadius");
+    JsonParser::RegisterMapper(&VehicleConfig::engineForce, "engineForce");
+    JsonParser::RegisterMapper(&VehicleConfig::brakeForce, "brakeForce");
+    JsonParser::RegisterMapper(&VehicleConfig::steeringForce, "steeringForce");
+    JsonParser::RegisterMapper(&VehicleConfig::steeringAngle, "steeringAngle");
+    JsonParser::RegisterMapper(&VehicleConfig::maxSpeed, "maxSpeed");
 
     // Settings
     JsonParser::RegisterMapper(&GraphicsSettings::enableFog, "enableFog");

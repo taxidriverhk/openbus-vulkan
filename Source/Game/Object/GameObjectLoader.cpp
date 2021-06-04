@@ -67,7 +67,7 @@ bool GameObjectLoader::LoadVehicleConfig(
 {
     VehicleConfig vehicleConfig{};
     if (!ConfigReader::ReadConfig(loadRequest.configFilePath, vehicleConfig)
-        || vehicleConfig.wheelObjects.size() == 0)
+        || vehicleConfig.wheels.size() == 0)
     {
         return false;
     }
@@ -84,7 +84,7 @@ bool GameObjectLoader::LoadVehicleConfig(
     }
 
     // Load the wheel objects (assume all wheels use the same model for now)
-    std::string &wheelObject = vehicleConfig.wheelObjects[0].object;
+    std::string &wheelObject = vehicleConfig.wheels[0].object.object;
     std::string wheelObjectFilePath = FileSystem::GetGameObjectFile(vehicleConfigDirectory, wheelObject);
     StaticObjectConfig wheelObjectConfig{};
     if (!ConfigReader::ReadConfig(wheelObjectFilePath, wheelObjectConfig))
@@ -170,11 +170,18 @@ bool GameObjectLoader::LoadVehicleConfig(
         vehicleConfig.centerOfMass.z
     };
     createInfo.mass = vehicleConfig.mass;
+    createInfo.maxSpeed = vehicleConfig.maxSpeed;
+    createInfo.engineForce = vehicleConfig.engineForce;
+    createInfo.brakeForce = vehicleConfig.brakeForce;
+    createInfo.steeringForce = vehicleConfig.steeringForce;
+    createInfo.steeringAngle = vehicleConfig.steeringAngle;
 
-    size_t wheelCount = vehicleConfig.wheelObjects.size();
+    size_t wheelCount = vehicleConfig.wheels.size();
     for (uint32_t i = 0; i < wheelCount; i++)
     {
-        EntityConfig &wheelEntityConfig = vehicleConfig.wheelObjects[i];
+        WheelConfig &wheelConfig = vehicleConfig.wheels[i];
+        EntityConfig &wheelEntityConfig = wheelConfig.object;
+
         glm::vec3 wheelWorldPosition =
         {
             translation.x + wheelEntityConfig.position.x,
@@ -207,7 +214,21 @@ bool GameObjectLoader::LoadVehicleConfig(
         wheelInfo.entityId = wheelEntityId;
         wheelInfo.transform.translation = wheelTranslation;
         wheelInfo.transform.rotation = wheelRotation;
-        wheelInfo.radius = vehicleConfig.maximumWheelRadius;
+        
+        wheelInfo.isTurnable = wheelConfig.isTurnable;
+        wheelInfo.hasTorque = wheelConfig.hasTorque;
+        wheelInfo.radius = wheelConfig.radius;
+
+        wheelInfo.axle = { wheelConfig.axle.x, wheelConfig.axle.y, wheelConfig.axle.z };
+        wheelInfo.direction = { wheelConfig.direction.x, wheelConfig.direction.y, wheelConfig.direction.z };
+
+        wheelInfo.suspensionRestLength = wheelConfig.suspensionRestLength;
+        wheelInfo.suspensionStiffness = wheelConfig.suspensionStiffness;
+        wheelInfo.wheelsDampingRelaxation = wheelConfig.wheelsDampingRelaxation;
+        wheelInfo.wheelsDampingCompression = wheelConfig.wheelsDampingCompression;
+        wheelInfo.frictionSlip = wheelConfig.frictionSlip;
+        wheelInfo.rollInfluence = wheelConfig.rollInfluence;
+
         createInfo.wheels.push_back(wheelInfo);
     }
     

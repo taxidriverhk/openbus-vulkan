@@ -6,18 +6,23 @@
 
 VehicleGameObject::VehicleGameObject(const VehicleGameObjectConstructionInfo &info, PhysicsSystem *physics)
     : physics(physics),
-      brakeForce(0.0f),
-      engineForce(0.0f),
-      steering(0.0f),
-      wheelRadius(0.5f)
+      currentBrakeForce(0.0f),
+      currentEngineForce(0.0f),
+      currentSteeringAngle(0.0f)
 {
     int entityIndex = 0;
     entities.resize(1 + info.wheels.size());
     wheelIndices.resize(info.wheels.size());
+    wheels.resize(info.wheels.size());
 
     mass = info.mass;
     boundingBoxSize = info.boundingBoxSize;
     centerOfMass = info.centerOfMass;
+    engineForce = info.engineForce;
+    brakeForce = info.brakeForce;
+    steeringForce = info.steeringForce;
+    steeringAngle = info.steeringAngle;
+    maxSpeed = info.maxSpeed;
 
     bodyEntityIndex = entityIndex;
     entities[entityIndex++] = { info.chassisEntityId, info.chassisStartTransform };
@@ -27,7 +32,18 @@ VehicleGameObject::VehicleGameObject(const VehicleGameObjectConstructionInfo &in
         const VehicleGameObjectConstructionInfo::WheelInfo &wheelInfo = info.wheels[i];
         wheelIndices[i] = entityIndex;
         entities[entityIndex++] = { wheelInfo.entityId, wheelInfo.transform };
-        wheelRadius = wheelInfo.radius;
+        
+        wheels[i].axle = wheelInfo.axle;
+        wheels[i].direction = wheelInfo.direction;
+        wheels[i].radius = wheelInfo.radius;
+        wheels[i].isTurnable = wheelInfo.isTurnable;
+        wheels[i].hasTorque = wheelInfo.hasTorque;
+        wheels[i].suspensionRestLength = wheelInfo.suspensionRestLength;
+        wheels[i].suspensionStiffness = wheelInfo.suspensionStiffness;
+        wheels[i].wheelsDampingRelaxation = wheelInfo.wheelsDampingRelaxation;
+        wheels[i].wheelsDampingCompression = wheelInfo.wheelsDampingCompression;
+        wheels[i].frictionSlip = wheelInfo.frictionSlip;
+        wheels[i].rollInfluence = wheelInfo.rollInfluence;
     }
 }
 
@@ -77,23 +93,30 @@ void VehicleGameObject::Initialize()
     // Ensure that the z-axis is the up axis
     vehicle->setCoordinateSystem(0, 2, 1);
 
-    float suspensionRestLength = 0.5f;
-    btVector3 wheelDirectionCS0(0, 0, -1); // direction to the ground (-z-axis)
-    btVector3 wheelAxleCS(1, 0, 0); // which axis does the wheel rotate about
     for (uint32_t i = 0; i < wheelIndices.size(); i++)
     {
         // Translation relative to the origin of the chassis
         bool isFrontWheel = i < 2 ? true : false;
         const glm::vec3 &connectionPoint = entities[wheelIndices[i]].transform.translation;
-        btVector3 connectionPointCS0(connectionPoint.x, connectionPoint.y, connectionPoint.z);
-        vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+        const Wheel &wheelInfo = wheels[i];
 
-        btWheelInfo &wheel = vehicle->getWheelInfo(i);
-        wheel.m_suspensionStiffness = 25.f;
-        wheel.m_wheelsDampingRelaxation = 2.3f;
-        wheel.m_wheelsDampingCompression = 4.4f;
-        wheel.m_frictionSlip = 1.2f;
-        wheel.m_rollInfluence = 0.1f;
+        btVector3 connectionPointCS0(connectionPoint.x, connectionPoint.y, connectionPoint.z);
+        btVector3 wheelDirectionCS0(wheelInfo.direction.x, wheelInfo.direction.y, wheelInfo.direction.z);
+        btVector3 wheelAxleCS(wheelInfo.axle.x, wheelInfo.axle.y, wheelInfo.axle.z);
+
+        btWheelInfo &wheel = vehicle->addWheel(
+            connectionPointCS0,
+            wheelDirectionCS0,
+            wheelAxleCS,
+            wheelInfo.suspensionRestLength,
+            wheelInfo.radius,
+            tuning,
+            wheelInfo.isTurnable);
+        wheel.m_suspensionStiffness = wheelInfo.suspensionStiffness;
+        wheel.m_wheelsDampingRelaxation = wheelInfo.wheelsDampingRelaxation;
+        wheel.m_wheelsDampingCompression = wheelInfo.wheelsDampingCompression;
+        wheel.m_frictionSlip = wheelInfo.frictionSlip;
+        wheel.m_rollInfluence = wheelInfo.rollInfluence;
     }
 }
 
@@ -101,49 +124,48 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
 {
     // Do not call stepSimulation as the game object system will make the call
     // This function should simply need to apply whatever input (ex. throttle) the user gives
-    // TODO: just some test code to move object
-    // will be removed once this is integrated with bullet physics
-    float maxEngineForce = 1000;
-    float maxBrakeForce = 100;
-
     for (const ControlCommand &command : commands)
     {
         switch (command.operation)
         {
         case ControlCommandOperation::VehicleAccelerate:
-            engineForce = maxEngineForce;
+            currentEngineForce = engineForce;
             brakeForce = 0;
             break;
         case ControlCommandOperation::VehicleBrake:
-            engineForce = 0;
-            brakeForce = maxBrakeForce;
+            currentEngineForce = 0;
+            currentBrakeForce = brakeForce;
             break;
         case ControlCommandOperation::VehicleSteerLeft:
-            steering += 0.01f;
+            currentSteeringAngle += steeringForce;
             break;
         case ControlCommandOperation::VehicleSteerRight:
-            steering -= 0.01f;
+            currentSteeringAngle -= steeringForce;
             break;
         }
     }
 
     float speed = vehicle->getCurrentSpeedKmHour();
 
-    steering = std::clamp(steering, -MAX_STEERING_VALUE, MAX_STEERING_VALUE);
-    vehicle->setSteeringValue(steering, 0);
-    vehicle->setSteeringValue(steering, 1);
-    vehicle->setBrake(brakeForce, 2);
-    vehicle->setBrake(brakeForce, 3);
-
-    if (speed > MAX_SPEED_KMHR)
+    currentSteeringAngle = std::clamp(currentSteeringAngle, -steeringAngle, steeringAngle);
+    for (uint32_t i = 0; i < wheels.size(); i++)
     {
-        vehicle->applyEngineForce(0, 2);
-        vehicle->applyEngineForce(0, 3);
-    }
-    else
-    {
-        vehicle->applyEngineForce(engineForce, 2);
-        vehicle->applyEngineForce(engineForce, 3);
+        if (wheels[i].hasTorque)
+        {
+            if (speed > maxSpeed)
+            {
+                vehicle->applyEngineForce(0, i);
+            }
+            else
+            {
+                vehicle->applyEngineForce(currentEngineForce, i);
+            }
+            vehicle->setBrake(currentBrakeForce, i);
+        }
+        if (wheels[i].isTurnable)
+        {
+            vehicle->setSteeringValue(currentSteeringAngle, i);
+        }
     }
 
     const btTransform &transform = vehicle->getChassisWorldTransform();
@@ -161,6 +183,8 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
 
     for (uint32_t i = 0; i < wheelIndices.size(); i++)
     {
+        vehicle->updateWheelTransform(i, true);
+
         const btTransform &wheelTransform = vehicle->getWheelTransformWS(i);
         const btVector3 &wheelOrigin = wheelTransform.getOrigin();
         const btQuaternion &wheelRotation = wheelTransform.getRotation();
