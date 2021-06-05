@@ -8,6 +8,12 @@ struct KeyBindings
     std::unordered_map<std::string, std::string> keyControlBindings;
 };
 
+struct GeneralSettings
+{
+    bool showDebugInfo;
+    int debugInfoUpdateFrameRate;
+};
+
 struct ControlSettings
 {
     float cameraMovementSpeed;
@@ -31,6 +37,7 @@ struct MapLoadSettings
 
 struct GameSettings
 {
+    GeneralSettings generalSettings;
     ControlSettings controlSettings;
     GraphicsSettings graphicsSettings;
     MapLoadSettings mapLoadSettings;

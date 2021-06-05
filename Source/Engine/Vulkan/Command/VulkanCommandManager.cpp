@@ -240,8 +240,39 @@ void VulkanCommandManager::Record(
 
             EndCommand(secondaryCommandBuffer);
         });
-
     screenCommandFuture.get();
+
+    // Line segments for debugging purpose
+    std::future<void> lineCommandFuture = std::async(std::launch::async, [&]()
+        {
+            VulkanBuffer *lineBuffer = drawingBuffer.lineBuffer.vertexBuffer;
+            if (lineBuffer != nullptr && lineBuffer->IsLoaded())
+            {
+                secondaryCommandMutex.lock();
+                VkCommandBuffer secondaryCommandBuffer = BeginSecondaryCommand(imageIndex, framebuffer);
+                secondaryCommandMutex.unlock();
+
+                VulkanPipeline *linePipeline = pipelines.linePipeline;
+                BindPipeline(secondaryCommandBuffer, linePipeline);
+
+                // Bind vertex buffer
+                VkBuffer vertexBuffers[] = { lineBuffer->GetBuffer() };
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(secondaryCommandBuffer, 0, 1, vertexBuffers, offsets);
+                // Bind uniform descriptor set
+                uniformBuffer->BindDescriptorSet(secondaryCommandBuffer, 0, linePipeline->GetPipelineLayout());
+
+                uint32_t vertexCount = lineBuffer->Size() / sizeof(LineSegmentVertex);
+                vkCmdDraw(secondaryCommandBuffer, vertexCount, 1, 0, 0);
+
+                secondaryCommandMutex.lock();
+                secondaryCommandBuffers.push_back(secondaryCommandBuffer);
+                secondaryCommandMutex.unlock();
+
+                EndCommand(secondaryCommandBuffer);
+            }
+        });
+    lineCommandFuture.get();
 
     vkCmdExecuteCommands(
         primaryCommandBuffer,
@@ -352,7 +383,6 @@ VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t ima
     auto &secondaryCommandBuffer = secondaryCommandBuffers[threadId][imageIndex];
     if (secondaryCommandBuffer.activeBuffersInUse < secondaryCommandBuffer.commandBuffers.size())
     {
-        Logger::Log(LogLevel::Debug, "Secondary command buffer is already created and can be reused");
         int currentIndex = secondaryCommandBuffer.activeBuffersInUse;
         secondaryCommandBuffer.activeBuffersInUse++;
         return secondaryCommandBuffer.commandBuffers[currentIndex].get();
@@ -360,7 +390,6 @@ VulkanCommand * VulkanCommandManager::RequestSecondaryCommandBuffer(uint32_t ima
     // Allocate extra command buffer for the thread in case all existing command buffers are in use
     else
     {
-        Logger::Log(LogLevel::Debug, "Secondary command buffer is either not created or already in use");
         std::unique_ptr<VulkanCommand> commandBuffer = std::make_unique<VulkanCommand>(context, commandPoolToUse);
         commandBuffer->Create(VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 

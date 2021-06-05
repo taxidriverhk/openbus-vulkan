@@ -41,6 +41,9 @@ public:
         std::vector<uint32_t> &indices,
         std::vector<Image *> &images);
 
+    // Line Buffering
+    void LoadLineBuffer(std::vector<LineSegmentVertex> &lines);
+
     // Terrain Buffering
     void LoadTerrainIntoBuffer(
         uint32_t terrainId,
@@ -77,13 +80,17 @@ private:
     static constexpr uint32_t MAX_DESCRIPTOR_SETS = 3 * 8192U;
     // Only used for buffer ID generation, not a real limit
     static constexpr uint32_t MAX_VERTEX_BUFFERS = 20000;
+    // Reserve more space for frequently updated vertex buffers (ex. screen object, debug draw, etc.)
+    static constexpr uint32_t MAX_VERTEX_BUFFER_CAPACITY = 5000 * sizeof(ScreenObjectVertex);
 
     void CreateDescriptorPool();
     void CreateMemoryAllocator();
+    void CreateLineBuffer();
     void CreateScreenBuffers();
     void CreateUniformBuffers();
     void DestroyCubeMapBuffer();
     void DestroyScreenBuffers();
+    void DestroyLineBuffer();
     void DestroyUniformBuffers();
 
     void DestroyTextureBuffer(uint32_t textureBufferId);
@@ -121,6 +128,9 @@ private:
     std::unordered_map<uint32_t, uint32_t> vertexBufferCount;
 
     std::unordered_map<uint32_t, VulkanEntityBufferIds> bufferIdCache;
+
+    // Line segment buffer (a huge buffer for all line segments)
+    std::unique_ptr<VulkanBuffer> lineVertexBuffer;
 
     // Screen object buffers
     std::unordered_map<uint32_t, std::shared_ptr<VulkanBuffer>> screenObjectBuffers;

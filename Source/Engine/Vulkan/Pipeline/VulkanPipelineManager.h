@@ -23,6 +23,7 @@ private:
 
     std::unique_ptr<VulkanPipeline> staticPipeline;
     std::unique_ptr<VulkanPipeline> cubeMapPipeline;
+    std::unique_ptr<VulkanPipeline> linePipeline;
     std::unique_ptr<VulkanPipeline> terrainPipeline;
     std::unique_ptr<VulkanPipeline> screenPipeline;
 };

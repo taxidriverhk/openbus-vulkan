@@ -130,7 +130,7 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
         {
         case ControlCommandOperation::VehicleAccelerate:
             currentEngineForce = engineForce;
-            brakeForce = 0;
+            currentBrakeForce = 0;
             break;
         case ControlCommandOperation::VehicleBrake:
             currentEngineForce = 0;
@@ -183,7 +183,7 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
 
     for (uint32_t i = 0; i < wheelIndices.size(); i++)
     {
-        vehicle->updateWheelTransform(i, true);
+        vehicle->updateWheelTransform(i, false);
 
         const btTransform &wheelTransform = vehicle->getWheelTransformWS(i);
         const btVector3 &wheelOrigin = wheelTransform.getOrigin();
@@ -194,6 +194,12 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
         entities[wheelIndices[i]].transform.translation = { wheelOrigin.x(), wheelOrigin.y(), wheelOrigin.z() };
         entities[wheelIndices[i]].transform.rotationAxis = { wheelRotationAxis.x(), wheelRotationAxis.y(), wheelRotationAxis.z() };
         entities[wheelIndices[i]].transform.angle = wheelRotation.getAngle() * SIMD_DEGS_PER_RAD;
+    }
+
+    if (physics->IsDebugDrawingEnabled())
+    {
+        physics->GetDynamicsWorld()->debugDrawObject(transform, chassisShape.get(), btVector3(1, 0, 0));
+        vehicle->debugDraw(physics->GetDebugDrawer());
     }
 }
 

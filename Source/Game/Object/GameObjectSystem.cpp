@@ -65,6 +65,7 @@ void GameObjectSystem::SetCurrentUserObject(uint32_t gameObjectId)
 
 void GameObjectSystem::UpdateState(float deltaTime, const std::list<ControlCommand> &commands)
 {
+    physics->ResetDebugDrawing();
     // Could use multi-threading/parallelism to update state of each game object
     // Except for user object/collision-enabled objects which have dependencies
 

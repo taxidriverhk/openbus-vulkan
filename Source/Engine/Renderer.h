@@ -26,6 +26,7 @@ public:
     void Initialize(Screen *screen);
     
     void LoadBackground(const std::string &skyBoxImageFilePath, bool enableFog);
+    void DrawDebugLines(std::vector<LineSegmentVertex> &lines);
 
     void AddEntity(const Entity &entity);
     void MoveEntity(uint32_t entityId, EntityTransformation transformation);

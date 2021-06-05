@@ -71,6 +71,9 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&VehicleConfig::maxSpeed, "maxSpeed");
 
     // Settings
+    JsonParser::RegisterMapper(&GeneralSettings::showDebugInfo, "showDebugInfo");
+    JsonParser::RegisterMapper(&GeneralSettings::debugInfoUpdateFrameRate, "debugInfoUpdateFrameRate");
+
     JsonParser::RegisterMapper(&GraphicsSettings::enableFog, "enableFog");
     JsonParser::RegisterMapper(&GraphicsSettings::targetFrameRate, "targetFrameRate");
     JsonParser::RegisterMapper(&GraphicsSettings::maxViewableDistance, "maxViewableDistance");
@@ -83,6 +86,7 @@ void ConfigReader::RegisterConfigMapping()
 
     JsonParser::RegisterMapper(&MapLoadSettings::maxAdjacentBlocks, "maxAdjacentBlocks");
 
+    JsonParser::RegisterMapper(&GameSettings::generalSettings, "generalSettings");
     JsonParser::RegisterMapper(&GameSettings::controlSettings, "controlSettings");
     JsonParser::RegisterMapper(&GameSettings::graphicsSettings, "graphicsSettings");
     JsonParser::RegisterMapper(&GameSettings::mapLoadSettings, "mapLoadSettings");

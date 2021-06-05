@@ -4,6 +4,7 @@ class Camera;
 struct CubeMap;
 struct EntityTransformation;
 struct Entity;
+struct LineSegmentVertex;
 struct Terrain;
 struct ScreenMesh;
 
@@ -17,6 +18,7 @@ public:
     virtual void Initialize() = 0;
     virtual void LoadCubeMap(CubeMap &cubemap) = 0;
     virtual void LoadEntity(const Entity &entity) = 0;
+    virtual void LoadLineSegments(std::vector<LineSegmentVertex> &lines) = 0;
     virtual void LoadScreenObject(ScreenMesh &screenMesh) = 0;
     virtual void LoadTerrain(Terrain &terrain) = 0;
     virtual void SetFog(float density, float gradient) = 0;

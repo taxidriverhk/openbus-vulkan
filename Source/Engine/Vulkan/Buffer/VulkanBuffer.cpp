@@ -9,9 +9,13 @@ VulkanBuffer::VulkanBuffer(
       commandPool(commandPool),
       allocator(allocator),
       allocation(),
+      descriptorSet(VK_NULL_HANDLE),
+      properties(VK_NULL_HANDLE),
+      usage(VK_NULL_HANDLE),
       buffer(),
       loaded(false),
       mappedMemory(nullptr),
+      capacity(0),
       size(0)
 {
 }
@@ -59,16 +63,23 @@ void VulkanBuffer::CreateDescriptorSet(
     vkUpdateDescriptorSets(context->GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-void VulkanBuffer::Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void *data, uint32_t size)
+void VulkanBuffer::Load(
+    VkBufferUsageFlags usage,
+    VkMemoryPropertyFlags properties,
+    void *data,
+    uint32_t size,
+    uint32_t reservedSize)
 {
     if (loaded)
     {
         return;
     }
 
-    VulkanBuffer::CreateBuffer(allocator, usage, properties, size, buffer, allocation);
+    this->capacity = std::max(size, reservedSize);
+    VulkanBuffer::CreateBuffer(allocator, usage, properties, capacity, buffer, allocation);
     this->usage = usage;
     this->properties = properties;
+    this->loaded = true;
 
     // No data to load, only buffer allocation is done
     if (!data)
@@ -81,9 +92,9 @@ void VulkanBuffer::Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properti
 
 void VulkanBuffer::Update(void *data, uint32_t size)
 {
-    // If the new size is greater than the old size, then the
+    // If the new size is greater than the capacity, then the
     // buffer must be destroyed and created again
-    if (this->size != 0 && size > this->size)
+    if (this->size != 0 && size > this->capacity)
     {
         Unload();
         Load(usage, properties, data, size);
@@ -117,6 +128,13 @@ void VulkanBuffer::Update(void *data, uint32_t size)
 
 void VulkanBuffer::UpdateFast(void *data, uint32_t size)
 {
+    if (this->size != 0 && size > this->capacity)
+    {
+        Unload();
+        Load(usage, properties, data, size);
+        return;
+    }
+
     // Faster method for updating buffer
     // without having to map and unmap the buffer into CPU memory again
     // (mapping is expensive, just need to unmap it at destroy time)
@@ -191,14 +209,14 @@ void VulkanBuffer::CreateBuffer(
     VmaAllocator &allocator,
     VkBufferUsageFlags usage,
     VkMemoryPropertyFlags properties,
-    VkDeviceSize size,
+    VkDeviceSize capacity,
     VkBuffer &buffer,
     VmaAllocation &allocation)
 {
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.usage = usage;
-    bufferCreateInfo.size = size;
+    bufferCreateInfo.size = capacity;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo allocationInfo{};

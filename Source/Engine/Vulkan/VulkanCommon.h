@@ -20,6 +20,8 @@ static constexpr char *STATIC_PIPELINE_VERTEX_SHADER = "shaders/static_vertex_sh
 static constexpr char *STATIC_PIPELINE_FRAGMENT_SHADER = "shaders/static_fragment_shader.glsl";
 static constexpr char *CUBEMAP_PIPELINE_VERTEX_SHADER = "shaders/cubemap_vertex_shader.glsl";
 static constexpr char *CUBEMAP_PIPELINE_FRAGMENT_SHADER = "shaders/cubemap_fragment_shader.glsl";
+static constexpr char *LINE_PIPELINE_VERTEX_SHADER = "shaders/line_vertex_shader.glsl";
+static constexpr char *LINE_PIPELINE_FRAGMENT_SHADER = "shaders/line_fragment_shader.glsl";
 static constexpr char *TERRAIN_PIPELINE_VERTEX_SHADER = "shaders/terrain_vertex_shader.glsl";
 static constexpr char *TERRAIN_PIPELINE_FRAGMENT_SHADER = "shaders/terrain_fragment_shader.glsl";
 static constexpr char *SCREEN_PIPELINE_VERTEX_SHADER = "shaders/screen_vertex_shader.glsl";
@@ -108,6 +110,23 @@ static constexpr VkVertexInputAttributeDescription VERTEX_INPUT_ATTRIBUTE_DESCRI
     }
 };
 
+static constexpr int LINE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT = 2;
+static constexpr VkVertexInputAttributeDescription LINE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTIONS[] =
+{
+    {
+        0,                                          // location
+        0,                                          // binding
+        VK_FORMAT_R32G32B32_SFLOAT,                 // format
+        offsetof(LineSegmentVertex, color)          // offset
+    },
+    {
+        1,
+        0,
+        VK_FORMAT_R32G32B32_SFLOAT,
+        offsetof(LineSegmentVertex, position)
+    }
+};
+
 static constexpr int SCREEN_OBJECT_INPUT_ATTRIBUTE_DESCRIPTION_COUNT = 3;
 static constexpr VkVertexInputAttributeDescription SCREEN_OBJECT_INPUT_ATTRIBUTE_DESCRIPTIONS[] =
 {
@@ -151,6 +170,11 @@ struct VulkanCubeMapBuffer
     VulkanTexture *textureBuffer;
 };
 
+struct VulkanLineBuffer
+{
+    VulkanBuffer *vertexBuffer;
+};
+
 struct VulkanTerrainBuffer
 {
     VulkanBuffer *vertexBuffer;
@@ -185,6 +209,7 @@ struct VulkanDrawingPipelines
     VulkanPipeline *staticPipeline;
     VulkanPipeline *cubeMapPipeline;
     VulkanPipeline *terrainPipeline;
+    VulkanPipeline *linePipeline;
     VulkanPipeline *screenPipeline;
 };
 
@@ -192,6 +217,7 @@ struct VulkanDrawingBuffer
 {
     VulkanBuffer *uniformBuffer;
     VulkanBuffer *screenBuffer;
+    VulkanLineBuffer lineBuffer;
     VulkanCubeMapBuffer cubeMapBuffer;
     std::vector<VulkanTerrainBuffer> terrainBuffers;
     std::vector<VulkanEntityBuffer> entityBuffers;

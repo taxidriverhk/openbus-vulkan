@@ -242,6 +242,8 @@ void VulkanContext::CreateLogicalDevice()
 
     VkPhysicalDeviceFeatures physicalDeviceFeatures{};
     physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
+    physicalDeviceFeatures.fillModeNonSolid = VK_TRUE;
+    physicalDeviceFeatures.wideLines = VK_TRUE;
 
     VkDeviceCreateInfo logicalDeviceCreateInfo{};
     logicalDeviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

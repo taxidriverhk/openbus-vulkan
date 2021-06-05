@@ -47,6 +47,11 @@ struct VulkanPipelineConfig
     bool depthTestEnable;
     VkCullModeFlags cullMode;
     VkFrontFace frontFace;
+
+    VkPrimitiveTopology topology;
+    VkPolygonMode polygonMode;
+
+    bool enableColorBlending;
 };
 
 class VulkanPipeline

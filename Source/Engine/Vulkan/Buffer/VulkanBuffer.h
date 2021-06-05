@@ -24,7 +24,12 @@ public:
         VkDescriptorSetLayout descriptorSetLayout,
         VkDescriptorType type,
         uint32_t size);
-    void Load(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void *data, uint32_t size);
+    void Load(
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        void *data,
+        uint32_t size,
+        uint32_t reservedSize = 0);
     void Update(void *data, uint32_t size);
     void UpdateFast(void *data, uint32_t size);
     void Unload();
@@ -33,7 +38,7 @@ public:
         VmaAllocator &allocator,
         VkBufferUsageFlags usage,
         VkMemoryPropertyFlags properties,
-        VkDeviceSize size,
+        VkDeviceSize capacity,
         VkBuffer &buffer,
         VmaAllocation &allocation);
 
@@ -41,6 +46,7 @@ private:
     void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     uint32_t size;
+    uint32_t capacity;
     bool loaded;
     void *mappedMemory;
 

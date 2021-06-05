@@ -36,6 +36,7 @@ public:
     void Initialize() override;
     void LoadCubeMap(CubeMap &cubeMap) override;
     void LoadEntity(const Entity &entity) override;
+    void LoadLineSegments(std::vector<LineSegmentVertex> &lines) override;
     void LoadScreenObject(ScreenMesh &screenMesh) override;
     void LoadTerrain(Terrain &terrain) override;
     void SetFog(float density, float gradient) override;

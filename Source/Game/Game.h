@@ -4,11 +4,14 @@
 #include <memory>
 #include <thread>
 
+#include "Common/Identifier.h"
 #include "Config/GameConfig.h"
 #include "Config/SettingsConfig.h"
+#include "Engine/Text.h"
 #include "Object/BaseGameObject.h"
 
 struct GameObjectLoadRequest;
+
 class HandledThread;
 class ControlManager;
 class GameObjectSystem;
@@ -35,9 +38,13 @@ public:
     void Start(const GameSessionConfig &startConfig);
 
 private:
+    static constexpr uint32_t DEBUG_INFO_ENTITY_ID = static_cast<uint32_t>(IdentifierType::DebugInfo);
+
     void InitializeComponents();
     void InitializeSettings(const GameSessionConfig &startConfig);
     void InitializeState(const GameSessionConfig &startConfig);
+
+    void PrepareDebugInfo();
 
     bool ShouldQuit();
 

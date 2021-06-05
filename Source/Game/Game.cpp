@@ -37,6 +37,8 @@ void Game::Cleanup()
     gameObjectLoader->TerminateLoadGameObjectThread();
     Logger::Log(LogLevel::Info, "Cleaning up game objects");
     gameObjectSystem->Cleanup();
+    Logger::Log(LogLevel::Info, "Cleaning up debug objects");
+    renderer->RemoveText(DEBUG_INFO_ENTITY_ID);
     Logger::Log(LogLevel::Info, "Cleaning up graphics context");
     renderer->Cleanup();
     Logger::Log(LogLevel::Info, "Closing screen");
@@ -47,10 +49,13 @@ void Game::InitializeComponents()
 {
     int screenWidth = gameSettings.graphicsSettings.screenWidth,
         screenHeight = gameSettings.graphicsSettings.screenHeight;
+    bool showDebugInfo = gameSettings.generalSettings.showDebugInfo;
 
     controlManager = std::make_unique<ControlManager>();
 
     physicsSystem = std::make_unique<PhysicsSystem>();
+    physicsSystem->EnableDebugDrawing(showDebugInfo);
+
     gameObjectSystem = std::make_unique<GameObjectSystem>(physicsSystem.get());
     gameObjectLoader = std::make_unique<GameObjectLoader>(physicsSystem.get());
 
@@ -92,6 +97,29 @@ void Game::AddUserGameObject(const GameObjectLoadRequest &request)
     GameObjectLoadRequest requestWithCurrentPosition(request);
     requestWithCurrentPosition.position = view->GetWorldPosition();
     gameObjectLoader->AddGameObjectToLoad(requestWithCurrentPosition);
+}
+
+void Game::PrepareDebugInfo()
+{
+    // Printing debug info can drastically slow the game performance
+    // Only enable this feature if you need to troubleshoot issues
+    glm::vec3 worldPosition = camera->GetPosition();
+
+    Text debugText{};
+    debugText.id = DEBUG_INFO_ENTITY_ID;
+    debugText.color = { 1, 0, 0 };
+    debugText.fontSize = 12;
+    debugText.fontName = "arial";
+    debugText.position = { 0, 0 };
+    debugText.lines =
+    {
+        "Camera Position: " + Util::Format3DPoint(worldPosition.x, worldPosition.y, worldPosition.z)
+    };
+    renderer->PutText(debugText);
+
+    DebugSegments &physicsDebugDrawing = physicsSystem->GetDebugDrawing();
+    // TODO: draw the dynamic segments for now
+    renderer->DrawDebugLines(physicsDebugDrawing.dynamicSegments);
 }
 
 void Game::SetShouldEndGame(const bool &shouldEndGame)
@@ -156,6 +184,13 @@ void Game::RunMainLoop()
     renderer->LoadBackground(map->GetSkyBoxImageFilePath(), gameSettings.graphicsSettings.enableFog);
     screen->Show();
 
+    bool showDebugInfo = gameSettings.generalSettings.showDebugInfo;
+    int targetHudUpdateFrameRate = gameSettings.generalSettings.debugInfoUpdateFrameRate;
+    float hudTimePerFrame = 1 / static_cast<float>(targetHudUpdateFrameRate);
+
+    float timeSinceLastHudUpdate = 0.0f;
+    Timer timer;
+
     Logger::Log(LogLevel::Info, "Entering the rendering loop");
     while (!ShouldQuit())
     {
@@ -181,6 +216,15 @@ void Game::RunMainLoop()
             // TODO: also check to see if there are requests to remove game objects from the graphics context
 
         }
+
+        // Render any debug information if enabled in a limited rate
+        timeSinceLastHudUpdate += timer.DeltaTime();
+        if (showDebugInfo && timeSinceLastHudUpdate > hudTimePerFrame)
+        {
+            PrepareDebugInfo();
+            timeSinceLastHudUpdate -= hudTimePerFrame;
+        }
+
         // Load the resources into buffer if found
         if (mapLoader->IsReadyToBuffer())
         {

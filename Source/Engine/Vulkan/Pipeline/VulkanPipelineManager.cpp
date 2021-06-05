@@ -37,6 +37,16 @@ void VulkanPipelineManager::Create()
     cubeMapVertexShader.Load();
     cubeMapFragmentShader.Load();
 
+    VulkanShader lineVertexShader(context, VulkanShaderType::Vertex);
+    VulkanShader lineFragmentShader(context, VulkanShaderType::Fragment);
+    if (!lineVertexShader.Compile(LINE_PIPELINE_VERTEX_SHADER)
+        || !lineFragmentShader.Compile(LINE_PIPELINE_FRAGMENT_SHADER))
+    {
+        throw std::runtime_error("Failed to compile line shader code");
+    }
+    lineVertexShader.Load();
+    lineFragmentShader.Load();
+
     VulkanShader terrainVertexShader(context, VulkanShaderType::Vertex);
     VulkanShader terrainFragmentShader(context, VulkanShaderType::Fragment);
     if (!terrainVertexShader.Compile(TERRAIN_PIPELINE_VERTEX_SHADER)
@@ -62,7 +72,10 @@ void VulkanPipelineManager::Create()
     staticPipelineConfig.fragmentShader = &staticFragmentShader;
     staticPipelineConfig.cullMode = VK_CULL_MODE_BACK_BIT;
     staticPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    staticPipelineConfig.polygonMode = VK_POLYGON_MODE_FILL;
+    staticPipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     staticPipelineConfig.depthTestEnable = true;
+    staticPipelineConfig.enableColorBlending = true;
 
     staticPipelineConfig.descriptorLayoutConfigs.resize(3);
     staticPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
@@ -91,7 +104,10 @@ void VulkanPipelineManager::Create()
     cubeMapPipelineConfig.fragmentShader = &cubeMapFragmentShader;
     cubeMapPipelineConfig.cullMode = VK_CULL_MODE_NONE;
     cubeMapPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    cubeMapPipelineConfig.polygonMode = VK_POLYGON_MODE_FILL;
+    cubeMapPipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     cubeMapPipelineConfig.depthTestEnable = true;
+    cubeMapPipelineConfig.enableColorBlending = true;
 
     cubeMapPipelineConfig.descriptorLayoutConfigs.resize(2);
     cubeMapPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
@@ -108,12 +124,37 @@ void VulkanPipelineManager::Create()
     cubeMapPipeline = std::make_unique<VulkanPipeline>(context, renderPass);
     cubeMapPipeline->Create(cubeMapPipelineConfig);
 
+    VulkanPipelineConfig linePipelineConfig{};
+    linePipelineConfig.vertexShader = &lineVertexShader;
+    linePipelineConfig.fragmentShader = &lineFragmentShader;
+    linePipelineConfig.cullMode = VK_CULL_MODE_NONE;
+    linePipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    linePipelineConfig.polygonMode = VK_POLYGON_MODE_LINE;
+    linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    linePipelineConfig.depthTestEnable = true;
+    linePipelineConfig.enableColorBlending = true;
+
+    linePipelineConfig.descriptorLayoutConfigs.resize(1);
+    linePipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
+    linePipelineConfig.descriptorLayoutConfigs[0].bindingCount = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDING_COUNT;
+    linePipelineConfig.descriptorLayoutConfigs[0].bindings = STATIC_PIPELINE_UNIFORM_DESCRIPTOR_LAYOUT_BINDINGS;
+
+    linePipelineConfig.vertexLayoutConfig.vertexSize = sizeof(LineSegmentVertex);
+    linePipelineConfig.vertexLayoutConfig.descriptionCount = LINE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_COUNT;
+    linePipelineConfig.vertexLayoutConfig.descriptions = LINE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTIONS;
+
+    linePipeline = std::make_unique<VulkanPipeline>(context, renderPass);
+    linePipeline->Create(linePipelineConfig);
+
     VulkanPipelineConfig terrainPipelineConfig{};
     terrainPipelineConfig.vertexShader = &terrainVertexShader;
     terrainPipelineConfig.fragmentShader = &terrainFragmentShader;
     terrainPipelineConfig.cullMode = VK_CULL_MODE_BACK_BIT;
     terrainPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    terrainPipelineConfig.polygonMode = VK_POLYGON_MODE_FILL;
+    terrainPipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     terrainPipelineConfig.depthTestEnable = true;
+    terrainPipelineConfig.enableColorBlending = true;
 
     terrainPipelineConfig.descriptorLayoutConfigs.resize(2);
     terrainPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
@@ -139,7 +180,10 @@ void VulkanPipelineManager::Create()
     screenPipelineConfig.fragmentShader = &screenFragmentShader;
     screenPipelineConfig.cullMode = VK_CULL_MODE_NONE;
     screenPipelineConfig.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    screenPipelineConfig.polygonMode = VK_POLYGON_MODE_FILL;
+    screenPipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     screenPipelineConfig.depthTestEnable = false;
+    screenPipelineConfig.enableColorBlending = true;
 
     screenPipelineConfig.descriptorLayoutConfigs.resize(2);
     screenPipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
@@ -160,6 +204,8 @@ void VulkanPipelineManager::Create()
     staticFragmentShader.Unload();
     cubeMapVertexShader.Unload();
     cubeMapFragmentShader.Unload();
+    lineVertexShader.Unload();
+    lineFragmentShader.Unload();
     terrainVertexShader.Unload();
     terrainFragmentShader.Unload();
     screenVertexShader.Unload();
@@ -170,6 +216,7 @@ void VulkanPipelineManager::Destroy()
 {
     cubeMapPipeline->Destroy();
     staticPipeline->Destroy();
+    linePipeline->Destroy();
     terrainPipeline->Destroy();
     screenPipeline->Destroy();
 }
@@ -179,6 +226,7 @@ VulkanDrawingPipelines VulkanPipelineManager::GetDrawingPipelines() const
     VulkanDrawingPipelines drawingPipelines{};
     drawingPipelines.staticPipeline = staticPipeline.get();
     drawingPipelines.cubeMapPipeline = cubeMapPipeline.get();
+    drawingPipelines.linePipeline = linePipeline.get();
     drawingPipelines.terrainPipeline = terrainPipeline.get();
     drawingPipelines.screenPipeline = screenPipeline.get();
     return drawingPipelines;

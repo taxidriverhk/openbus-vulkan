@@ -43,6 +43,7 @@ void VulkanBufferManager::Create()
     CreateMemoryAllocator();
     CreateUniformBuffers();
     CreateScreenBuffers();
+    CreateLineBuffer();
 }
 
 void VulkanBufferManager::Destroy()
@@ -50,6 +51,7 @@ void VulkanBufferManager::Destroy()
     DestroyScreenBuffers();
     DestroyUniformBuffers();
     DestroyCubeMapBuffer();
+    DestroyLineBuffer();
 
     // Destroying the descriptor pool will automatically free the descriptor sets
     // created using the pool, so no need to explicitly free each descriptor set
@@ -64,6 +66,7 @@ VulkanDrawingBuffer VulkanBufferManager::GetDrawingBuffer(uint32_t imageIndex)
     VulkanDrawingBuffer drawingBuffer{};
     drawingBuffer.cubeMapBuffer = cubeMapBufferCache;
     drawingBuffer.uniformBuffer = uniformBuffers[imageIndex].get();
+    drawingBuffer.lineBuffer.vertexBuffer = lineVertexBuffer.get();
     drawingBuffer.screenBuffer = screenBuffers[imageIndex].get();
     for (auto &entry : entityBufferCache)
     {
@@ -226,6 +229,25 @@ void VulkanBufferManager::LoadIntoBuffer(
     entityBufferCache[instanceId] = entityBuffer;
 }
 
+void VulkanBufferManager::LoadLineBuffer(std::vector<LineSegmentVertex> &lines)
+{
+    if (!lineVertexBuffer->IsLoaded())
+    {
+        lineVertexBuffer->Load(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            lines.data(),
+            static_cast<uint32_t>(sizeof(LineSegmentVertex) * lines.size()),
+            MAX_VERTEX_BUFFER_CAPACITY);
+    }
+    else
+    {
+        lineVertexBuffer->UpdateFast(
+            lines.data(),
+            static_cast<uint32_t>(sizeof(LineSegmentVertex) * lines.size()));
+    }
+}
+
 void VulkanBufferManager::LoadScreenObjectBuffer(
     uint32_t screenObjectId,
     std::vector<ScreenObjectVertex> &vertices,
@@ -237,9 +259,10 @@ void VulkanBufferManager::LoadScreenObjectBuffer(
             context, commandPool, vmaAllocator);
         vertexBuffer->Load(
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             vertices.data(),
-            static_cast<uint32_t>(sizeof(ScreenObjectVertex) * vertices.size()));
+            static_cast<uint32_t>(sizeof(ScreenObjectVertex) * vertices.size()),
+            MAX_VERTEX_BUFFER_CAPACITY);
         screenObjectBuffers[screenObjectId] = std::move(vertexBuffer);
 
         std::shared_ptr<VulkanImage> screenImage = std::make_shared<VulkanImage>(
@@ -262,7 +285,7 @@ void VulkanBufferManager::LoadScreenObjectBuffer(
     else
     {
         std::shared_ptr<VulkanBuffer> vertexBuffer = screenObjectBuffers[screenObjectId];
-        vertexBuffer->Update(
+        vertexBuffer->UpdateFast(
             vertices.data(),
             static_cast<uint32_t>(sizeof(ScreenObjectVertex) * vertices.size()));
     }
@@ -458,6 +481,12 @@ void VulkanBufferManager::CreateMemoryAllocator()
         "Failed to create image VMA allocator");
 }
 
+void VulkanBufferManager::CreateLineBuffer()
+{
+    lineVertexBuffer = std::make_unique<VulkanBuffer>(
+        context, commandPool, vmaAllocator);
+}
+
 void VulkanBufferManager::CreateScreenBuffers()
 {
     VulkanScreenBufferInput dummyScreenBufferInput{};
@@ -511,6 +540,11 @@ void VulkanBufferManager::DestroyCubeMapBuffer()
     cubeMapImage->Unload();
     cubeMapIndexBuffer->Unload();
     cubeMapVertexBuffer->Unload();
+}
+
+void VulkanBufferManager::DestroyLineBuffer()
+{
+    lineVertexBuffer->Unload();
 }
 
 void VulkanBufferManager::DestroyScreenBuffers()

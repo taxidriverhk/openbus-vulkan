@@ -78,6 +78,11 @@ void Renderer::PutText(const Text &text)
     drawEngine->LoadScreenObject(screenMesh);
 }
 
+void Renderer::DrawDebugLines(std::vector<LineSegmentVertex> &lines)
+{
+    drawEngine->LoadLineSegments(lines);
+}
+
 void Renderer::LoadBackground(const std::string &skyBoxImageFilePath, bool enableFog)
 {
     // Load any resources that need to be loaded regardless of the game state

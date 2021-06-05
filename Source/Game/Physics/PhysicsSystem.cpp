@@ -22,6 +22,10 @@ PhysicsSystem::PhysicsSystem()
         collisionConfig.get());
 
     world->setGravity(btVector3(0.0f, 0.0f, GRAVITY));
+
+    enableDebugDrawing = false;
+    debugDrawer = std::make_unique<DebugDrawer>();
+    world->setDebugDrawer(debugDrawer.get());
 }
 
 PhysicsSystem::~PhysicsSystem()
@@ -91,6 +95,26 @@ void PhysicsSystem::AddSurface(uint32_t blockId, const std::vector<CollisionMesh
             return true;
         }
     );
+
+    RedrawDebuggingWorld();
+}
+
+DebugSegments PhysicsSystem::GetDebugDrawing() const
+{
+    return GetChildDebugDrawer()->GetDrawingSegments();
+};
+
+void PhysicsSystem::RedrawDebuggingWorld()
+{
+    if (!enableDebugDrawing)
+    {
+        return;
+    }
+
+    GetChildDebugDrawer()->SetIsDrawingStatic(true);
+    GetChildDebugDrawer()->Clear();
+    world->debugDrawWorld();
+    GetChildDebugDrawer()->SetIsDrawingStatic(false);
 }
 
 void PhysicsSystem::RemoveSurface(uint32_t blockId)
@@ -107,7 +131,17 @@ void PhysicsSystem::RemoveSurface(uint32_t blockId)
         world->removeCollisionObject(collisionMesh->body.get());
     }
 
+    RedrawDebuggingWorld();
+
     groundCollisionSurfaces.erase(blockId);
+}
+
+void PhysicsSystem::ResetDebugDrawing()
+{
+    if (enableDebugDrawing)
+    {
+        GetChildDebugDrawer()->Clear();
+    }
 }
 
 void PhysicsSystem::StepSimulation(float deltaTime)

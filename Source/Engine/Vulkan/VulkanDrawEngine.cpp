@@ -361,6 +361,26 @@ void VulkanDrawEngine::LoadEntity(const Entity &entity)
     MarkDataAsUpdated();
 }
 
+void VulkanDrawEngine::LoadLineSegments(std::vector<LineSegmentVertex> &lines)
+{
+    std::vector<LineSegmentVertex> transformedVertices(lines.size());
+    std::transform(
+        std::execution::par,
+        lines.begin(),
+        lines.end(),
+        transformedVertices.begin(),
+        [&](LineSegmentVertex &vertex)
+        {
+            return LineSegmentVertex
+            {
+                vertex.color,
+                ConvertToVulkanCoordinates(vertex.position)
+            };
+        });
+
+    bufferManager->LoadLineBuffer(transformedVertices);
+}
+
 void VulkanDrawEngine::LoadScreenObject(ScreenMesh &screenMesh)
 {
     uint32_t screenObjectId = screenMesh.id;
