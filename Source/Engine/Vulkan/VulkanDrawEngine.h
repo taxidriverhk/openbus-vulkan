@@ -67,6 +67,22 @@ private:
         return { input.x, input.z, -input.y };
     }
 
+    // Only used by the wheels of the raycast vehicles in Bullet Physics
+    // where the rotation is only correct from the matrix generated for OpenGL
+    inline static glm::mat4 ConvertToVulkanTransformationMatrix(const glm::mat4 &input)
+    {
+        glm::mat4 originalWithoutTranslation = input;
+        glm::vec3 translation = ConvertToVulkanCoordinates({ input[3][0], input[3][1], input[3][2] });
+        glm::mat4 orientation = glm::rotate(glm::identity<glm::mat4>(), -glm::pi<float>() / 2, glm::vec3(1, 0, 0));
+
+        glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
+        glm::mat4 translationMatrix = glm::translate(identitiyMatrix, translation);
+
+        // Make the orientation change happen about the origin (i.e. before translation)
+        originalWithoutTranslation[3][0] = originalWithoutTranslation[3][1] = originalWithoutTranslation[3][2] = 0;
+        return translationMatrix * orientation * originalWithoutTranslation;
+    }
+
     inline static glm::mat4 ComputeTransformationMatrix(
         const glm::vec3 &translation,
         const glm::vec3 &scale,
@@ -74,11 +90,12 @@ private:
     )
     {
         glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
-        glm::mat4 transformationMatrix = glm::translate(identitiyMatrix, translation);
-        glm::mat4 rotationMatrixX = glm::eulerAngleX(glm::radians<float>(rotationAngles.x));
-        glm::mat4 rotationMatrixY = glm::eulerAngleY(glm::radians<float>(rotationAngles.y));
-        glm::mat4 rotationMatrixZ = glm::eulerAngleX(glm::radians<float>(rotationAngles.z));
-        transformationMatrix = transformationMatrix * rotationMatrixZ * rotationMatrixY * rotationMatrixX;
+        glm::mat4 translationMatrix = glm::translate(identitiyMatrix, translation);
+        glm::mat4 rotationMatrixX = glm::rotate(identitiyMatrix, glm::radians<float>(rotationAngles.x), glm::vec3(1, 0, 0));
+        glm::mat4 rotationMatrixY = glm::rotate(identitiyMatrix, glm::radians<float>(rotationAngles.y), glm::vec3(0, 1, 0));
+        glm::mat4 rotationMatrixZ = glm::rotate(identitiyMatrix, glm::radians<float>(rotationAngles.z), glm::vec3(0, 0, 1));
+        
+        glm::mat4 transformationMatrix = translationMatrix * rotationMatrixZ * rotationMatrixY * rotationMatrixX;
         return glm::scale(transformationMatrix, scale);
     }
 

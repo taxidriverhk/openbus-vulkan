@@ -530,20 +530,14 @@ void VulkanDrawEngine::UpdateEntityTransformation(uint32_t entityId, EntityTrans
     }
     else if (mode == EntityTransformationMode::Matrix)
     {
-        input.transformation = transformation.matrix;
-        // Conversions required to flip the z-axis and y-axis
-        std::swap(input.transformation[1][1], input.transformation[2][2]);
-        std::swap(input.transformation[3][1], input.transformation[3][2]);
-        input.transformation[3][2] *= -1;
-        // TODO: Rotation is more complicated
+        input.transformation = ConvertToVulkanTransformationMatrix(transformation.matrix);
     }
     else if (mode == EntityTransformationMode::Quaternion)
     {
-        glm::vec3 rotationAxis = glm::normalize(ConvertToVulkanCoordinates(transformation.rotationAxis));
         input.transformation = ComputeTransformationMatrix(
             ConvertToVulkanCoordinates(transformation.translation),
             ConvertToVulkanCoordinates(transformation.scale),
-            rotationAxis,
+            glm::normalize(ConvertToVulkanCoordinates(transformation.rotationAxis)),
             transformation.angle);
     }
 

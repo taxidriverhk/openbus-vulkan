@@ -76,6 +76,8 @@ bool FontManager::LoadFont(const std::string &fontFilePath)
     font->image = std::make_shared<Image>(FONT_IMAGE_TEMP_FILE);
     fontCache[name] = std::move(font);
 
+    std::filesystem::remove(FONT_IMAGE_TEMP_FILE);
+
     return true;
 }
 

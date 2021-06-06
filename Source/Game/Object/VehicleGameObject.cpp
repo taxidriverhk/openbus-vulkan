@@ -104,6 +104,12 @@ void VehicleGameObject::Initialize()
         btVector3 wheelDirectionCS0(wheelInfo.direction.x, wheelInfo.direction.y, wheelInfo.direction.z);
         btVector3 wheelAxleCS(wheelInfo.axle.x, wheelInfo.axle.y, wheelInfo.axle.z);
 
+        // Define the wheel shape for debugging purpose only, assuming all wheels have the same dimension
+        if (wheelShape == nullptr)
+        {
+            wheelShape = std::make_unique<btCylinderShapeX>(btVector3(0.15f, wheelInfo.radius, wheelInfo.radius));
+;        }
+
         btWheelInfo &wheel = vehicle->addWheel(
             connectionPointCS0,
             wheelDirectionCS0,
@@ -176,7 +182,6 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
     entities[bodyEntityIndex].transform.mode = EntityTransformationMode::Quaternion;
     
     entities[bodyEntityIndex].transform.translation = { chassisOrigin.x(), chassisOrigin.y(), chassisOrigin.z() };
-    entities[bodyEntityIndex].transform.translation += centerOfMass;
     
     entities[bodyEntityIndex].transform.rotationAxis = { chassisRotationAxis.x(), chassisRotationAxis.y(), chassisRotationAxis.z() };
     entities[bodyEntityIndex].transform.angle = chassisRotation.getAngle() * SIMD_DEGS_PER_RAD;
@@ -186,14 +191,17 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
         vehicle->updateWheelTransform(i, false);
 
         const btTransform &wheelTransform = vehicle->getWheelTransformWS(i);
-        const btVector3 &wheelOrigin = wheelTransform.getOrigin();
-        const btQuaternion &wheelRotation = wheelTransform.getRotation();
-        const btVector3 &wheelRotationAxis = wheelRotation.getAxis();
+        
+        std::vector<btScalar> wheelMatrix(16);
+        wheelTransform.getOpenGLMatrix(wheelMatrix.data());
 
-        entities[wheelIndices[i]].transform.mode = EntityTransformationMode::Quaternion;
-        entities[wheelIndices[i]].transform.translation = { wheelOrigin.x(), wheelOrigin.y(), wheelOrigin.z() };
-        entities[wheelIndices[i]].transform.rotationAxis = { wheelRotationAxis.x(), wheelRotationAxis.y(), wheelRotationAxis.z() };
-        entities[wheelIndices[i]].transform.angle = wheelRotation.getAngle() * SIMD_DEGS_PER_RAD;
+        entities[wheelIndices[i]].transform.mode = EntityTransformationMode::Matrix;
+        entities[wheelIndices[i]].transform.matrix = glm::make_mat4(wheelMatrix.data());
+
+        if (physics->IsDebugDrawingEnabled())
+        {
+            physics->GetDynamicsWorld()->debugDrawObject(wheelTransform, wheelShape.get(), btVector3(0, 1, 1));
+        }
     }
 
     if (physics->IsDebugDrawingEnabled())

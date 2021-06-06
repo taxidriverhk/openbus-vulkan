@@ -132,7 +132,7 @@ void VulkanPipelineManager::Create()
     linePipelineConfig.polygonMode = VK_POLYGON_MODE_LINE;
     linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     linePipelineConfig.depthTestEnable = true;
-    linePipelineConfig.enableColorBlending = true;
+    linePipelineConfig.enableColorBlending = false;
 
     linePipelineConfig.descriptorLayoutConfigs.resize(1);
     linePipelineConfig.descriptorLayoutConfigs[0].type = VulkanDescriptorLayoutType::Uniform;
