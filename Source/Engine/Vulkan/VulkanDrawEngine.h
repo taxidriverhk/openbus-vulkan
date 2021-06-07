@@ -73,14 +73,18 @@ private:
     {
         glm::mat4 originalWithoutTranslation = input;
         glm::vec3 translation = ConvertToVulkanCoordinates({ input[3][0], input[3][1], input[3][2] });
-        glm::mat4 orientation = glm::rotate(glm::identity<glm::mat4>(), -glm::pi<float>() / 2, glm::vec3(1, 0, 0));
-
-        glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
-        glm::mat4 translationMatrix = glm::translate(identitiyMatrix, translation);
-
         // Make the orientation change happen about the origin (i.e. before translation)
+        // to swap the rotation about y-axis and that about z-axis
+        // (rotate the object 90 degrees about x-axis, then rotate 180 degrees about y-axis, then rotate 180 degrees about z-axis)
         originalWithoutTranslation[3][0] = originalWithoutTranslation[3][1] = originalWithoutTranslation[3][2] = 0;
-        return translationMatrix * orientation * originalWithoutTranslation;
+        glm::mat4 orientationChange
+        {
+            { 1, 0, 0, 0 },
+            { 0, 0, -1, 0 },
+            { 0, 1, 0, 0 },
+            { translation.x, translation.y, translation.z, 1 }
+        };
+        return orientationChange * originalWithoutTranslation;
     }
 
     inline static glm::mat4 ComputeTransformationMatrix(
@@ -89,14 +93,41 @@ private:
         const glm::vec3 &rotationAngles
     )
     {
-        glm::mat4 identitiyMatrix = glm::identity<glm::mat4>();
-        glm::mat4 translationMatrix = glm::translate(identitiyMatrix, translation);
-        glm::mat4 rotationMatrixX = glm::rotate(identitiyMatrix, glm::radians<float>(rotationAngles.x), glm::vec3(1, 0, 0));
-        glm::mat4 rotationMatrixY = glm::rotate(identitiyMatrix, glm::radians<float>(rotationAngles.y), glm::vec3(0, 1, 0));
-        glm::mat4 rotationMatrixZ = glm::rotate(identitiyMatrix, glm::radians<float>(rotationAngles.z), glm::vec3(0, 0, 1));
-        
-        glm::mat4 transformationMatrix = translationMatrix * rotationMatrixZ * rotationMatrixY * rotationMatrixX;
-        return glm::scale(transformationMatrix, scale);
+        // Transformation order (from right to left, extrinsic rotations)
+        // scale * translation * rotateZ * rotateY * rotateX
+        const float c1 = glm::cos(glm::radians<float>(rotationAngles.x));
+        const float c2 = glm::cos(glm::radians<float>(-rotationAngles.y));
+        const float c3 = glm::cos(glm::radians<float>(-rotationAngles.z));
+        const float s1 = glm::sin(glm::radians<float>(rotationAngles.x));
+        const float s2 = glm::sin(glm::radians<float>(-rotationAngles.y));
+        const float s3 = glm::sin(glm::radians<float>(-rotationAngles.z));
+        return glm::mat4
+        {
+            {
+                scale.x * (c1 * c2),
+                scale.x * (c2 * s1),
+                scale.x * -(s2),
+                0.0f
+            },
+            {
+                scale.y * (c1 * s2 * s3 - c3 * s1),
+                scale.y * (c1 * c3 + s1 * s2 * s3),
+                scale.y * (c2 * s3),
+                0.0f
+            },
+            {
+                scale.z * (s1 * s3 + c1 * c3 * s2),
+                scale.z * (c3 * s1 * s2 - c1 * s3),
+                scale.z * (c2 * c3),
+                0.0f
+            },
+            {
+                translation.x,
+                translation.y,
+                translation.z,
+                1.0f
+            }
+        };
     }
 
     inline static glm::mat4 ComputeTransformationMatrix(

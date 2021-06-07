@@ -111,6 +111,8 @@ void PhysicsSystem::RedrawDebuggingWorld()
         return;
     }
 
+    // Clear the static world lines and draw the lines again
+    // Should only be called whenever a block loads/unloads
     GetChildDebugDrawer()->SetIsDrawingStatic(true);
     GetChildDebugDrawer()->Clear();
     world->debugDrawWorld();
@@ -138,6 +140,8 @@ void PhysicsSystem::RemoveSurface(uint32_t blockId)
 
 void PhysicsSystem::ResetDebugDrawing()
 {
+    // Clears the dynamic object lines every draw
+    // Could be called every frame for debugging purpose
     if (enableDebugDrawing)
     {
         GetChildDebugDrawer()->Clear();
