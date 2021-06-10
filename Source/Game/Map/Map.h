@@ -5,10 +5,35 @@
 #include <vector>
 #include <unordered_map>
 
+#include "Game/Path/Road.h"
 #include "Config/MapConfig.h"
 
 // Dimension of a map block in meters, this should never be changed
 static constexpr int MAP_BLOCK_SIZE = 1000;
+
+// Stores the transformation and the entity ID of a road
+// without having to store the vertex and image data that are already loaded into the graphics
+struct StaticObjectMapItem
+{
+    uint32_t id;
+    glm::vec3 position;
+    glm::vec3 rotations;
+};
+
+// Stores the transformation and other metadata of a road without
+// having to store the vertex and image data that are already loaded into the graphics
+struct RoadMapItem
+{
+    uint32_t id;
+    RoadInfo info;
+    std::vector<uint32_t> entityIds;
+};
+
+struct TerrainMapItem
+{
+    uint32_t id;
+    // TODO: may store the layer information for multi-texturing
+};
 
 struct MapBlockPosition
 {
@@ -29,17 +54,18 @@ struct MapBlockPosition
 struct MapBlock
 {
     // TODO: need to figure out what a map block has
-    // may need to keep the collision/surface meshes for physics
     uint32_t id;
     MapBlockPosition position;
-    std::vector<std::string> meshFiles;
+
+    TerrainMapItem terrainMapItem;
+    std::vector<StaticObjectMapItem> staticMapItems;
+    std::vector<RoadMapItem> roadMapItems;
 
     MapBlock operator =(const MapBlock &other)
     {
         MapBlock result{};
         result.id = other.id;
         result.position = other.position;
-        result.meshFiles = std::vector<std::string>(other.meshFiles);
         return result;
     }
 

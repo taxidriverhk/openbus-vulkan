@@ -221,7 +221,7 @@ void MapLoader::StartLoadBlocksThread()
                                 continue;
                             }
 
-                            std::string textureFilePath = FileSystem::GetTextureFile(objectBaseDirectory, staticObjectConfig.diffuseMaterial);
+                            std::string textureFilePath = FileSystem::GetTextureFile(objectBaseDirectory, staticObjectConfig.material.diffuse);
                             uint32_t materialId = Identifier::GenerateIdentifier(textureFilePath);
                             if (materialIdImageMap.count(materialId) == 0)
                             {
@@ -261,9 +261,9 @@ void MapLoader::StartLoadBlocksThread()
                         entities.push_back(entity);
                     }
 
-                    MapBlock loadedMapBlock{};
-                    loadedMapBlock.id = blockId;
-                    loadedMapBlock.position = mapBlockPositionValue;
+                    // TODO: Load the roads, where each road maps to one or more entities
+
+
                     loadedResources.push_back(mapBlockResource);
 
                     // TODO: copy the collision mesh into the surface as well
@@ -282,6 +282,12 @@ void MapLoader::StartLoadBlocksThread()
                     std::copy(terrain.indices.begin(), terrain.indices.end(), terrainCollisionMesh.indices.begin());
                     mapBlockSurface.collisionMeshes.push_back(terrainCollisionMesh);
                     loadedSurfaces.push_back(mapBlockSurface);
+
+                    MapBlock loadedMapBlock{};
+                    loadedMapBlock.id = blockId;
+                    loadedMapBlock.position = mapBlockPositionValue;
+                    loadedMapBlock.terrainMapItem.id = terrain.id;
+                    // TODO: add object configs into the map memory for editor use cases
 
                     map->AddLoadedBlock(loadedMapBlock);
                     readyToBuffer = true;

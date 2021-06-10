@@ -15,6 +15,7 @@ public:
     static constexpr char *MAP_DIRECTORY_NAME = "maps";
     static constexpr char *MODEL_DIRECTORY_NAME = "models";
     static constexpr char *OBJECT_DIRECTORY_NAME = "objects";
+    static constexpr char *ROADS_DIRECTORY_NAME = "roads";
     static constexpr char *TEXTURE_DIRECTORY_NAME = "textures";
     static constexpr char *VEHICLE_DIRECTORY_NAME = "vehicles";
 
@@ -27,6 +28,7 @@ public:
     static std::string GetHeightMapFile(const std::string &mapBaseDirectory, const std::string &heightMapFileName);
     static std::string GetMapBlockFile(const std::string &mapBaseDirectory, const std::string &mapBlockFileName);
     static std::string GetGameObjectFile(const std::string &gameObjectBaseDirectory, const std::string &objectFileName);
+    static std::string GetRoadObjectFile(const std::string &objectFileName);
     static std::string GetStaticObjectFile(const std::string &objectFileName);
     static std::string GetModelFile(const std::string &baseDirectory, const std::string &modelFileName);
     static std::string GetSettingsFile();

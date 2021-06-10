@@ -19,9 +19,22 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&Vector3DConfig::y, "y");
     JsonParser::RegisterMapper(&Vector3DConfig::z, "z");
 
+    JsonParser::RegisterMapper(&MaterialConfig::diffuse, "diffuse");
+    JsonParser::RegisterMapper(&MaterialConfig::specular, "specular");
+    JsonParser::RegisterMapper(&MaterialConfig::alpha, "alpha");
+
     JsonParser::RegisterMapper(&StaticObjectConfig::name, "name");
     JsonParser::RegisterMapper(&StaticObjectConfig::mesh, "mesh");
-    JsonParser::RegisterMapper(&StaticObjectConfig::diffuseMaterial, "diffuseMaterial");
+    JsonParser::RegisterMapper(&StaticObjectConfig::material, "material");
+
+    JsonParser::RegisterMapper(&RoadMeshInfo::startPosition, "startPosition");
+    JsonParser::RegisterMapper(&RoadMeshInfo::startTextureCoord, "startTextureCoord");
+    JsonParser::RegisterMapper(&RoadMeshInfo::endPosition, "endPosition");
+    JsonParser::RegisterMapper(&RoadMeshInfo::endTextureCoord, "endTextureCoord");
+    JsonParser::RegisterMapper(&RoadMeshInfo::material, "material");
+
+    JsonParser::RegisterMapper(&RoadObjectConfig::name, "name");
+    JsonParser::RegisterMapper(&RoadObjectConfig::meshes, "meshes");
 
     JsonParser::RegisterMapper(&EntityConfig::id, "id");
     JsonParser::RegisterMapper(&EntityConfig::position, "position");

@@ -94,9 +94,9 @@ bool GameObjectLoader::LoadVehicleConfig(
 
     // Load the chassis and wheel meshes for rendering
     std::string chassisMeshFilePath = FileSystem::GetModelFile(vehicleConfigDirectory, chassisObjectConfig.mesh);
-    std::string chassisTextureFilePath = FileSystem::GetTextureFile(vehicleConfigDirectory, chassisObjectConfig.diffuseMaterial);
+    std::string chassisTextureFilePath = FileSystem::GetTextureFile(vehicleConfigDirectory, chassisObjectConfig.material.diffuse);
     std::string wheelMeshFilePath = FileSystem::GetModelFile(vehicleConfigDirectory, wheelObjectConfig.mesh);
-    std::string wheelTextureFilePath = FileSystem::GetTextureFile(vehicleConfigDirectory, wheelObjectConfig.diffuseMaterial);
+    std::string wheelTextureFilePath = FileSystem::GetTextureFile(vehicleConfigDirectory, wheelObjectConfig.material.diffuse);
 
     uint32_t meshId = Identifier::GenerateIdentifier(chassisMeshFilePath);
     uint32_t materialId = Identifier::GenerateIdentifier(chassisTextureFilePath);

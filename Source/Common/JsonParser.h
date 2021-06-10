@@ -5,6 +5,8 @@
 
 #include "struct_mapping/struct_mapping.h"
 
+#include "Common/Logger.h"
+
 class JsonParser
 {
 public:
@@ -15,8 +17,9 @@ public:
         {
             struct_mapping::map_json_to_struct(parsedObject, jsonStringStream);
         }
-        catch (const std::exception)
+        catch (const std::exception &ex)
         {
+            Logger::Log(LogLevel::Error, "Failed to read JSON config: {}", ex.what());
             return false;
         }
         return true;
@@ -30,8 +33,9 @@ public:
         {
             struct_mapping::map_struct_to_json(jsonObject, jsonStringStream);
         }
-        catch (const std::exception)
+        catch (const std::exception &ex)
         {
+            Logger::Log(LogLevel::Error, "Failed to write config into JSON: {}", ex.what());
             return false;
         }
         serializedString = jsonStringStream.str();

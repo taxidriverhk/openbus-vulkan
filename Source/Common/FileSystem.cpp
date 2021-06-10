@@ -49,6 +49,11 @@ std::string FileSystem::GetGameObjectFile(const std::string &gameObjectBaseDirec
     return (std::filesystem::path(gameObjectBaseDirectory) / objectFileName).string();
 }
 
+std::string FileSystem::GetRoadObjectFile(const std::string &objectFileName)
+{
+    return (baseDirectory / ROADS_DIRECTORY_NAME / objectFileName).string();
+}
+
 std::string FileSystem::GetStaticObjectFile(const std::string &objectFileName)
 {
     return (baseDirectory / OBJECT_DIRECTORY_NAME / objectFileName).string();
