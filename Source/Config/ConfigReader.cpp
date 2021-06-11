@@ -41,6 +41,13 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&EntityConfig::rotation, "rotation");
     JsonParser::RegisterMapper(&EntityConfig::object, "object");
 
+    
+    JsonParser::RegisterMapper(&RoadInfoConfig::position, "position");
+    JsonParser::RegisterMapper(&RoadInfoConfig::rotationZ, "rotationZ");
+    JsonParser::RegisterMapper(&RoadInfoConfig::radius, "radius");
+    JsonParser::RegisterMapper(&RoadInfoConfig::length, "length");
+    JsonParser::RegisterMapper(&RoadInfoConfig::road, "road");
+
     JsonParser::RegisterMapper(&TerrainConfig::heightMap, "heightMap");
     JsonParser::RegisterMapper(&TerrainConfig::baseTexture, "baseTexture");
     JsonParser::RegisterMapper(&TerrainConfig::textureSize, "textureSize");
@@ -48,6 +55,7 @@ void ConfigReader::RegisterConfigMapping()
     JsonParser::RegisterMapper(&MapBlockInfoConfig::offset, "offset");
     JsonParser::RegisterMapper(&MapBlockInfoConfig::terrain, "terrain");
     JsonParser::RegisterMapper(&MapBlockInfoConfig::entities, "entities");
+    JsonParser::RegisterMapper(&MapBlockInfoConfig::roads, "roads");
 
     JsonParser::RegisterMapper(&MapBlockFileConfig::position, "position");
     JsonParser::RegisterMapper(&MapBlockFileConfig::file, "file");

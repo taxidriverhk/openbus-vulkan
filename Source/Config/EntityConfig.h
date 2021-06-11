@@ -22,3 +22,12 @@ struct EntityConfig
     Vector3DConfig rotation;
     std::string object;
 };
+
+struct RoadInfoConfig
+{
+    Vector3DConfig position;
+    float rotationZ;
+    float radius;
+    float length;
+    std::string road;
+};

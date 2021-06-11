@@ -11,6 +11,7 @@
 #include "Engine/Mesh.h"
 #include "Engine/Terrain.h"
 #include "Game/Physics/Collision.h"
+#include "Game/Path/Road.h"
 #include "Map.h"
 
 class HandledThread;
@@ -67,13 +68,14 @@ private:
     void AddBlockToLoad(const MapBlockPosition &mapBlockPosition);
     std::unordered_set<MapBlockPosition> GetAdjacentBlocks(const MapBlockPosition &mapBlockPosition);
 
-    uint32_t staticEntityIdCount;
+    std::atomic<uint32_t> staticEntityIdCount;
 
     bool firstBlockLoaded;
     Map *map;
     MapLoadSettings mapLoadSettings;
 
     MeshLoader meshLoader;
+    RoadLoader roadLoader;
     TerrainLoader terrainLoader;
 
     int loadProgress;

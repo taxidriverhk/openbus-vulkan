@@ -1,5 +1,9 @@
 #include <algorithm>
+#include <execution>
 #include <optional>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
 
 #include "Common/FileSystem.h"
 #include "Common/HandledThread.h"
@@ -187,6 +191,21 @@ void MapLoader::StartLoadBlocksThread()
                         continue;
                     }
 
+                    CollisionMesh terrainCollisionMesh;
+                    terrainCollisionMesh.vertices.resize(terrain.vertices.size());
+                    terrainCollisionMesh.indices.resize(terrain.indices.size());
+                    std::transform(
+                        std::execution::par,
+                        terrain.vertices.begin(),
+                        terrain.vertices.end(),
+                        terrainCollisionMesh.vertices.begin(),
+                        [&](Vertex &vertex)
+                        {
+                            return glm::vec3{ vertex.position.x, -vertex.position.y, vertex.position.z };
+                        });
+                    std::copy(terrain.indices.begin(), terrain.indices.end(), terrainCollisionMesh.indices.begin());
+                    mapBlockSurface.collisionMeshes.push_back(terrainCollisionMesh);
+
                     // Load the entities grouped by object file to avoid loading the same object more than once
                     std::vector<Entity> &entities = mapBlockResource.entities;
                     std::vector<EntityConfig> &entityConfigs = mapBlockInfoConfig.entities;
@@ -261,26 +280,67 @@ void MapLoader::StartLoadBlocksThread()
                         entities.push_back(entity);
                     }
 
-                    // TODO: Load the roads, where each road maps to one or more entities
+                    // Load the roads, where each road maps to one or more entities
+                    // since each road allows multiple materials
+                    std::vector<RoadInfoConfig> &roadConfigs = mapBlockInfoConfig.roads;
+                    for (const RoadInfoConfig &roadConfig : roadConfigs)
+                    {
+                        Road road;
 
+                        std::string roadFilePath = FileSystem::GetRoadObjectFile(roadConfig.road);
+                        RoadInfo roadInfo{};
+                        roadInfo.position = { roadConfig.position.x, roadConfig.position.y, roadConfig.position.z };
+                        roadInfo.rotationZ = roadConfig.rotationZ;
+                        roadInfo.radius = roadConfig.radius;
+                        roadInfo.length = roadConfig.length;
+
+                        if (!roadLoader.LoadFromFile(roadFilePath, roadInfo, road))
+                        {
+                            Logger::Log(LogLevel::Warning, "Failed to load road from file {}", roadFilePath);
+                            continue;
+                        }
+
+                        for (Mesh &roadMesh : road.meshes)
+                        {
+                            Entity roadEntity;
+
+                            roadEntity.id = Identifier::GenerateIdentifier(IdentifierType::Entity, ++staticEntityIdCount);
+                            // Transformations are not applied within the road loader
+                            roadEntity.translation = roadInfo.position;
+                            roadEntity.rotation = { 0.0f, 0.0f, roadInfo.rotationZ };
+                            roadEntity.scale = { 1.0f, 1.0f, 1.0f };
+                            roadEntity.mesh = std::make_shared<Mesh>(roadMesh);
+
+                            entities.push_back(roadEntity);
+
+                            // For collision mesh, we would need to apply the transformation for loading into the physics world
+                            float rotationRadians = glm::radians<float>(roadInfo.rotationZ);
+                            CollisionMesh roadCollisionMesh;
+                            roadCollisionMesh.vertices.resize(roadMesh.vertices.size());
+                            roadCollisionMesh.indices.resize(roadMesh.indices.size());
+                            std::transform(
+                                std::execution::par,
+                                roadMesh.vertices.begin(),
+                                roadMesh.vertices.end(),
+                                roadCollisionMesh.vertices.begin(),
+                                [&](Vertex &vertex)
+                                {
+                                    // Apply rotation and translations to the collision mesh of the road
+                                    float cosRotation = glm::cos(-rotationRadians),
+                                          sinRotation = glm::sin(-rotationRadians);
+                                    float originX = vertex.position.x,
+                                          originY = vertex.position.y;
+                                    float rotatedX = originX * cosRotation - originY * sinRotation,
+                                          rotatedY = originX * sinRotation + originY * cosRotation;
+                                    glm::vec3 rotatedPosition = { rotatedX, rotatedY, vertex.position.z };
+                                    return rotatedPosition + roadInfo.position;
+                                });
+                            std::copy(roadMesh.indices.begin(), roadMesh.indices.end(), roadCollisionMesh.indices.begin());
+                            mapBlockSurface.collisionMeshes.push_back(roadCollisionMesh);
+                        }
+                    }
 
                     loadedResources.push_back(mapBlockResource);
-
-                    // TODO: copy the collision mesh into the surface as well
-                    // only the terrain vertices are copied into the surface for now
-                    CollisionMesh terrainCollisionMesh;
-                    terrainCollisionMesh.vertices.resize(terrain.vertices.size());
-                    terrainCollisionMesh.indices.resize(terrain.indices.size());
-                    std::transform(
-                        terrain.vertices.begin(),
-                        terrain.vertices.end(),
-                        terrainCollisionMesh.vertices.begin(),
-                        [&](Vertex &vertex)
-                        {
-                            return glm::vec3{ vertex.position.x, -vertex.position.y, vertex.position.z };
-                        });
-                    std::copy(terrain.indices.begin(), terrain.indices.end(), terrainCollisionMesh.indices.begin());
-                    mapBlockSurface.collisionMeshes.push_back(terrainCollisionMesh);
                     loadedSurfaces.push_back(mapBlockSurface);
 
                     MapBlock loadedMapBlock{};
@@ -288,8 +348,8 @@ void MapLoader::StartLoadBlocksThread()
                     loadedMapBlock.position = mapBlockPositionValue;
                     loadedMapBlock.terrainMapItem.id = terrain.id;
                     // TODO: add object configs into the map memory for editor use cases
-
                     map->AddLoadedBlock(loadedMapBlock);
+
                     readyToBuffer = true;
                     readyToAdd = true;
                 }

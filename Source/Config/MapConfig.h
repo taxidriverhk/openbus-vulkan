@@ -24,4 +24,5 @@ struct MapBlockInfoConfig
     Vector2DConfig offset;
     TerrainConfig terrain;
     std::vector<EntityConfig> entities;
+    std::vector<RoadInfoConfig> roads;
 };

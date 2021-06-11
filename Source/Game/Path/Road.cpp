@@ -58,25 +58,32 @@ bool RoadLoader::LoadFromFile(
     }
 
     std::string roadBaseDirectory = FileSystem::GetParentDirectory(filename);
+    
+    uint32_t roadFileIdentifier = Identifier::GenerateIdentifier(filename);
+    uint32_t roadPositionIdentifier = Identifier::GenerateIdentifier(
+        IdentifierType::RoadObject,
+        static_cast<int>(info.position.x),
+        static_cast<int>(info.position.y),
+        static_cast<int>(info.position.z));
 
     road.meshes.resize(roadObjectConfig.meshes.size());
     for (uint32_t i = 0; i < roadObjectConfig.meshes.size(); i++)
     {
         const RoadMeshInfo &meshInfo = roadObjectConfig.meshes[i];
 
-        // Map loader will be responsible for populating the ID for each mesh
         Mesh &roadMesh = road.meshes[i];
         
+        roadMesh.id = roadFileIdentifier ^ roadPositionIdentifier ^ (i << 16);
         const std::string &diffuseImagePath = FileSystem::GetTextureFile(roadBaseDirectory, meshInfo.material.diffuse);
-        Image diffuseImage;
-        if (!diffuseImage.Load(diffuseImagePath, ImageColor::ColorWithAlpha))
+        std::shared_ptr<Image> diffuseImage = std::make_shared<Image>();
+        if (!diffuseImage->Load(diffuseImagePath, ImageColor::ColorWithAlpha))
         {
             Logger::Log(LogLevel::Error, "Failed to load image from {}", diffuseImagePath);
             return false;
         }
         roadMesh.material = std::make_shared<Material>();
         roadMesh.material->id = Identifier::GenerateIdentifier(diffuseImagePath);
-        roadMesh.material->diffuseImage = std::make_shared<Image>(diffuseImage);
+        roadMesh.material->diffuseImage = diffuseImage;
 
         std::vector<Vertex> &vertices = roadMesh.vertices;
         std::vector<uint32_t> &indices = roadMesh.indices;
@@ -99,10 +106,14 @@ bool RoadLoader::LoadFromFile(
             float cosNextAngle = glm::cos(nextAngle),
                   sinNextAngle = glm::sin(nextAngle);
 
-            float currStartTextureCoordV = i * startV * TEXTURE_VERTICAL_INCREMENT_PER_METER,
-                  currEndTextureCoordV = i * endV * TEXTURE_VERTICAL_INCREMENT_PER_METER;
-            float nextStartTextureCoordV = (i + 1) * startV * TEXTURE_VERTICAL_INCREMENT_PER_METER,
-                  nextEndTextureCoordV = (i + 1) * endV * TEXTURE_VERTICAL_INCREMENT_PER_METER;
+            float startTextureCoordV = i * startV * TEXTURE_VERTICAL_INCREMENT_PER_METER;
+            float endTextureCoordV = (i + 1) * endV * TEXTURE_VERTICAL_INCREMENT_PER_METER;
+
+            // If the road is straight, then just use the length, since this loop will only be iterated once
+            if (radius == 0.0f)
+            {
+                endTextureCoordV = endV * length * TEXTURE_VERTICAL_INCREMENT_PER_METER;
+            }
 
             // Use the height for the normals for now
             glm::vec3 currNormal = glm::normalize(glm::vec3{ startZ, startZ, 2.0f });
@@ -116,7 +127,7 @@ bool RoadLoader::LoadFromFile(
                 startZ
             };
             currStartVertex.normal = currNormal;
-            currStartVertex.uv = { startU, currStartTextureCoordV };
+            currStartVertex.uv = { startU, startTextureCoordV };
 
             Vertex currEndVertex{};
             currEndVertex.position =
@@ -126,7 +137,7 @@ bool RoadLoader::LoadFromFile(
                 startZ
             };
             currEndVertex.normal = currNormal;
-            currEndVertex.uv = { endU, currEndTextureCoordV };
+            currEndVertex.uv = { endU, startTextureCoordV };
 
             Vertex nextStartVertex{};
             nextStartVertex.position =
@@ -136,7 +147,7 @@ bool RoadLoader::LoadFromFile(
                 endZ
             };
             nextStartVertex.normal = nextNormal;
-            nextStartVertex.uv = { startU, nextStartTextureCoordV };
+            nextStartVertex.uv = { startU, endTextureCoordV };
 
             Vertex nextEndVertex{};
             nextEndVertex.position =
@@ -146,7 +157,13 @@ bool RoadLoader::LoadFromFile(
                 endZ
             };
             nextEndVertex.normal = nextNormal;
-            nextStartVertex.uv = { endU, nextEndTextureCoordV };
+            nextEndVertex.uv = { endU, endTextureCoordV };
+
+            if (radius == 0.0f)
+            {
+                nextEndVertex.position.y = length;
+                nextStartVertex.position.y = length;
+            }
 
             uint32_t startIndex = static_cast<uint32_t>(vertices.size());
             vertices.push_back(currStartVertex);
