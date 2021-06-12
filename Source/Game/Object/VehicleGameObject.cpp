@@ -130,6 +130,7 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
 {
     // Do not call stepSimulation as the game object system will make the call
     // This function should simply need to apply whatever input (ex. throttle) the user gives
+    float speed = vehicle->getCurrentSpeedKmHour();
     for (const ControlCommand &command : commands)
     {
         switch (command.operation)
@@ -139,8 +140,8 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
             currentBrakeForce = 0;
             break;
         case ControlCommandOperation::VehicleBrake:
-            currentEngineForce = 0;
-            currentBrakeForce = brakeForce;
+            currentEngineForce = -brakeForce;
+            currentBrakeForce = 0;
             break;
         case ControlCommandOperation::VehicleSteerLeft:
             currentSteeringAngle += steeringForce;
@@ -150,8 +151,6 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
             break;
         }
     }
-
-    float speed = vehicle->getCurrentSpeedKmHour();
 
     currentSteeringAngle = std::clamp(currentSteeringAngle, -steeringAngle, steeringAngle);
     for (uint32_t i = 0; i < wheels.size(); i++)
@@ -185,6 +184,10 @@ void VehicleGameObject::Update(float deltaTime, const std::list<ControlCommand> 
     
     entities[bodyEntityIndex].transform.rotationAxis = { chassisRotationAxis.x(), chassisRotationAxis.y(), chassisRotationAxis.z() };
     entities[bodyEntityIndex].transform.angle = chassisRotation.getAngle() * SIMD_DEGS_PER_RAD;
+    
+    float chassisYaw, chassisPitch, chassisRoll;
+    chassisRotation.getEulerZYX(chassisYaw, chassisPitch, chassisRoll);
+    entities[bodyEntityIndex].transform.rotation.z = chassisYaw * SIMD_DEGS_PER_RAD;
 
     for (uint32_t i = 0; i < wheelIndices.size(); i++)
     {

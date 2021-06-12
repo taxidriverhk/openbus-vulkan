@@ -53,14 +53,14 @@ bool RoadLoader::LoadFromFile(
     else
     {
         float centralAngle = length / radius;
-        segments = (int) std::ceilf(length / SEGMENTS_PER_METER);
+        segments = (int) std::ceilf(length * SEGMENTS_PER_METER);
         radiansPerSegment = centralAngle / segments;
     }
 
     std::string roadBaseDirectory = FileSystem::GetParentDirectory(filename);
     
-    uint32_t roadFileIdentifier = Identifier::GenerateIdentifier(filename);
-    uint32_t roadPositionIdentifier = Identifier::GenerateIdentifier(
+    uint32_t roadFileHash = Identifier::GenerateIdentifier(filename);
+    uint32_t roadPositionHash = Identifier::GenerateIdentifier(
         IdentifierType::RoadObject,
         static_cast<int>(info.position.x),
         static_cast<int>(info.position.y),
@@ -73,7 +73,7 @@ bool RoadLoader::LoadFromFile(
 
         Mesh &roadMesh = road.meshes[i];
         
-        roadMesh.id = roadFileIdentifier ^ roadPositionIdentifier ^ (i << 16);
+        roadMesh.id = roadFileHash ^ (roadPositionHash << 8) ^ (i << 16);
         const std::string &diffuseImagePath = FileSystem::GetTextureFile(roadBaseDirectory, meshInfo.material.diffuse);
         std::shared_ptr<Image> diffuseImage = std::make_shared<Image>();
         if (!diffuseImage->Load(diffuseImagePath, ImageColor::ColorWithAlpha))
@@ -119,11 +119,15 @@ bool RoadLoader::LoadFromFile(
             glm::vec3 currNormal = glm::normalize(glm::vec3{ startZ, startZ, 2.0f });
             glm::vec3 nextNormal = glm::normalize(glm::vec3{ endZ, endZ, 2.0f });
 
+            // Calculate the radius, and clamp to zero
+            float startRadius = std::max(0.0f, radius - startX);
+            float endRadius = std::max(0.0f, radius - endX);
+
             Vertex currStartVertex{};
             currStartVertex.position =
             {
-                radius - (radius - startX) * cosCurrAngle,
-                (radius + startX) * sinCurrAngle,
+                radius - startRadius * cosCurrAngle,
+                startRadius * sinCurrAngle,
                 startZ
             };
             currStartVertex.normal = currNormal;
@@ -132,8 +136,8 @@ bool RoadLoader::LoadFromFile(
             Vertex currEndVertex{};
             currEndVertex.position =
             {
-                radius - (radius - endX) * cosCurrAngle,
-                (radius + endX) * sinCurrAngle,
+                radius - endRadius * cosCurrAngle,
+                endRadius * sinCurrAngle,
                 startZ
             };
             currEndVertex.normal = currNormal;
@@ -142,8 +146,8 @@ bool RoadLoader::LoadFromFile(
             Vertex nextStartVertex{};
             nextStartVertex.position =
             {
-                radius - (radius - startX) * cosNextAngle,
-                (radius + startX) * sinNextAngle,
+                radius - startRadius * cosNextAngle,
+                startRadius * sinNextAngle,
                 endZ
             };
             nextStartVertex.normal = nextNormal;
@@ -152,8 +156,8 @@ bool RoadLoader::LoadFromFile(
             Vertex nextEndVertex{};
             nextEndVertex.position =
             {
-                radius - (radius - endX) * cosNextAngle,
-                (radius + endX) * sinNextAngle,
+                radius - endRadius * cosNextAngle,
+                endRadius * sinNextAngle,
                 endZ
             };
             nextEndVertex.normal = nextNormal;
