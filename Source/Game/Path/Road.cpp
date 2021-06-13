@@ -66,6 +66,7 @@ bool RoadLoader::LoadFromFile(
         static_cast<int>(info.position.y),
         static_cast<int>(info.position.z));
 
+    road.id = roadFileHash ^ (roadPositionHash << 8);
     road.meshes.resize(roadObjectConfig.meshes.size());
     for (uint32_t i = 0; i < roadObjectConfig.meshes.size(); i++)
     {
@@ -165,7 +166,13 @@ bool RoadLoader::LoadFromFile(
 
             if (radius == 0.0f)
             {
+                currStartVertex.position.x = startX;
+                currEndVertex.position.x = endX;
+
+                nextEndVertex.position.x = endX;
                 nextEndVertex.position.y = length;
+
+                nextStartVertex.position.x = startX;
                 nextStartVertex.position.y = length;
             }
 

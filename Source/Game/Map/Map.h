@@ -11,8 +11,9 @@
 // Dimension of a map block in meters, this should never be changed
 static constexpr int MAP_BLOCK_SIZE = 1000;
 
-// Stores the transformation and the entity ID of a road
+// Stores the transformation and the entity ID of a static object
 // without having to store the vertex and image data that are already loaded into the graphics
+// Here, id is the same as the entity ID put into the graphic buffers
 struct StaticObjectMapItem
 {
     uint32_t id;

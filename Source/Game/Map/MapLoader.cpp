@@ -167,6 +167,10 @@ void MapLoader::StartLoadBlocksThread()
                         mapBlockOffsetY = static_cast<float>(mapBlockPositionValue.y) * MAP_BLOCK_SIZE;
                     uint32_t blockId = Identifier::GenerateIdentifier(IdentifierType::MapBlock, mapBlockPositionValue.x, mapBlockPositionValue.y);
 
+                    MapBlock loadedMapBlock{};
+                    loadedMapBlock.id = blockId;
+                    loadedMapBlock.position = mapBlockPositionValue;
+
                     MapBlockResources mapBlockResource;
                     mapBlockResource.blockId = blockId;
 
@@ -205,6 +209,8 @@ void MapLoader::StartLoadBlocksThread()
                         });
                     std::copy(terrain.indices.begin(), terrain.indices.end(), terrainCollisionMesh.indices.begin());
                     mapBlockSurface.collisionMeshes.push_back(terrainCollisionMesh);
+
+                    loadedMapBlock.terrainMapItem.id = terrain.id;
 
                     // Load the entities grouped by object file to avoid loading the same object more than once
                     std::vector<Entity> &entities = mapBlockResource.entities;
@@ -262,13 +268,17 @@ void MapLoader::StartLoadBlocksThread()
                             objectIdMeshMap[objectId] = std::make_shared<Mesh>(mesh);
                         }
 
-                        entity.id = Identifier::GenerateIdentifier(IdentifierType::Entity, ++staticEntityIdCount);
-                        entity.translation =
+                        glm::vec3 entityOrigin =
                         {
-                            mapBlockOffsetX + entityConfig.position.x,
-                            mapBlockOffsetY + entityConfig.position.y,
+                            entityConfig.position.x,
+                            entityConfig.position.y,
                             entityConfig.position.z
                         };
+
+                        entity.id = Identifier::GenerateIdentifier(IdentifierType::Entity, ++staticEntityIdCount);
+                        entity.translation = entityOrigin;
+                        entity.translation.x += mapBlockOffsetX;
+                        entity.translation.y += mapBlockOffsetY;
                         entity.rotation =
                         {
                             entityConfig.rotation.x,
@@ -278,6 +288,12 @@ void MapLoader::StartLoadBlocksThread()
                         entity.scale = { 1.0f, 1.0f, 1.0f };
                         entity.mesh = objectIdMeshMap[objectId];
                         entities.push_back(entity);
+
+                        StaticObjectMapItem objectMapItem{};
+                        objectMapItem.id = entity.id;
+                        objectMapItem.position = entityOrigin;
+                        objectMapItem.rotations = entity.rotation;
+                        loadedMapBlock.staticMapItems.push_back(objectMapItem);
                     }
 
                     // Load the roads, where each road maps to one or more entities
@@ -300,6 +316,10 @@ void MapLoader::StartLoadBlocksThread()
                             continue;
                         }
 
+                        RoadMapItem roadMapItem{};
+                        roadMapItem.id = road.id;
+                        roadMapItem.info = roadInfo;
+
                         for (Mesh &roadMesh : road.meshes)
                         {
                             Entity roadEntity;
@@ -312,6 +332,7 @@ void MapLoader::StartLoadBlocksThread()
                             roadEntity.mesh = std::make_shared<Mesh>(roadMesh);
 
                             entities.push_back(roadEntity);
+                            roadMapItem.entityIds.push_back(roadEntity.id);
 
                             // For collision mesh, we would need to apply the transformation for loading into the physics world
                             float rotationRadians = glm::radians<float>(roadInfo.rotationZ);
@@ -338,16 +359,12 @@ void MapLoader::StartLoadBlocksThread()
                             std::copy(roadMesh.indices.begin(), roadMesh.indices.end(), roadCollisionMesh.indices.begin());
                             mapBlockSurface.collisionMeshes.push_back(roadCollisionMesh);
                         }
+
+                        loadedMapBlock.roadMapItems.push_back(roadMapItem);
                     }
 
                     loadedResources.push_back(mapBlockResource);
                     loadedSurfaces.push_back(mapBlockSurface);
-
-                    MapBlock loadedMapBlock{};
-                    loadedMapBlock.id = blockId;
-                    loadedMapBlock.position = mapBlockPositionValue;
-                    loadedMapBlock.terrainMapItem.id = terrain.id;
-                    // TODO: add object configs into the map memory for editor use cases
                     map->AddLoadedBlock(loadedMapBlock);
 
                     readyToBuffer = true;
