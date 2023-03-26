@@ -57,3 +57,6 @@ out/
 # Binaries that need to be included
 !Library/sfml/bin/
 !Library/assimp/bin/
+
+# Build artifacts
+build
