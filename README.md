@@ -1,5 +1,7 @@
 # Open Bus Driving Simulator #
 
+![Build](https://github.com/taxidriverhk/openbus-vulkan/actions/workflows/cmake.yml/badge.svg)
+
 This is a project for building a bus driving game from scratch. This game is written in `C++17` and uses `Vulkan` (and potentially other libraries such as `Direct3D 12`) for graphics and `Bullet Physics` for physics. This game is intended to allow content creators to develop maps and vehicles that are highly configurable for game play.
 
 Although a good progress has been made to have the most critical graphics and game components working, there is still a long way to go and the game still lacks of validation and has many bugs. Many features and functions such as advanced vehicle physics, editor and reflections are yet to implement.
@@ -54,8 +56,4 @@ Once the steps above are taken, then open `cmake-gui`, and select this source di
 
 ## Download
 
-To download the game, please click the link below, and then choose `Artifacts`, and an archive in `.zip` format should show up for you to download the binary.
-
-| Platform | Status |
-| -------- | ------ |
-| **Windows x64** | [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/bitbucket/taxidriverhk/open-bus-driving-simulator-vulkan?branch=master&svg=true)](https://ci.appveyor.com/project/taxidriverhk/open-bus-driving-simulator-vulkan) |
+To download the game, please download the binaries from the [Release](https://github.com/taxidriverhk/openbus-vulkan/releases) section.
