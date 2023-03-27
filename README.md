@@ -33,14 +33,6 @@ This project is configured with `CMake`, although the build only generates Windo
 
 * CMake - https://cmake.org - choose `Installer` under `Binary distributions`
 
-In addition to that, clone the following Git repositories and then put them under `<source-code-directory>/Library/shaderc/third_party`
-
-* https://github.com/KhronosGroup/glslang
-
-* https://github.com/KhronosGroup/SPIRV-Headers
-
-* https://github.com/KhronosGroup/SPIRV-Tools
-
 Open `Advanced System Settings` from Windows Control Panel, verify that the following system variables are set.
 * `CMAKE_PREFIX_PATH`: `C:\Qt\5.15.2\msvc2019_64`
 

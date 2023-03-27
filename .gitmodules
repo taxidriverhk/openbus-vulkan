@@ -1,0 +1,9 @@
+[submodule "Library/shaderc/third_party/glslang"]
+	path = Library/shaderc/third_party/glslang
+	url = https://github.com/KhronosGroup/glslang
+[submodule "Library/shaderc/third_party/SPIRV-Headers"]
+	path = Library/shaderc/third_party/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers
+[submodule "Library/shaderc/third_party/SPIRV-Tools"]
+	path = Library/shaderc/third_party/SPIRV-Tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools
