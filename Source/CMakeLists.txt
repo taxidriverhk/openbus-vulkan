@@ -3,6 +3,10 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
+set (CMAKE_AUTOMOC ON)
+set (CMAKE_AUTOUIC ON)
+set (CMAKE_AUTORCC ON)
+
 find_package (Vulkan REQUIRED FATAL_ERROR)
 find_package (Qt5Core REQUIRED)
 find_package (Qt5Gui REQUIRED)
@@ -11,7 +15,7 @@ find_package (SFML 2.5 COMPONENTS window graphics REQUIRED)
 
 file (GLOB_RECURSE HEADER_FILES *.h)
 file (GLOB_RECURSE SOURCE_FILES *.cpp)
-add_executable (OpenBus WIN32 ${HEADER_FILES} ${SOURCE_FILES})
+add_executable (OpenBus WIN32 ${HEADER_FILES} ${SOURCE_FILES} app.rc)
 
 target_compile_definitions(OpenBus PUBLIC "APP_VERSION=\"v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${GIT_SHA1}\"")
 
