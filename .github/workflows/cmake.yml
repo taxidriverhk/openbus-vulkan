@@ -9,7 +9,6 @@ on:
 
 env:
   BUILD_TYPE: Release
-  TARGET_VERSION: v0.1
 
 jobs:
   build:
@@ -52,11 +51,11 @@ jobs:
       uses: thedoctor0/zip-release@0.7.1
       with:
         type: 'zip'
-        filename: 'OpenBus-Release-${{ env.TARGET_VERSION }}.zip'
+        filename: 'OpenBus-Release-${{github.ref_name}}.zip'
         path: '${{ github.workspace }}/bin/${{env.BUILD_TYPE}}/*'
 
     - name: Upload Release
       uses: ncipollo/release-action@v1.12.0
       with:
-        artifacts: 'OpenBus-Release-${{ env.TARGET_VERSION }}.zip'
-        tag: '${{ env.TARGET_VERSION }}'
+        artifacts: 'OpenBus-Release-${{github.ref_name}}.zip'
+        tag: '${{github.ref_name}}'
