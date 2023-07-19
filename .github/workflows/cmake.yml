@@ -6,6 +6,7 @@ on:
     tags: [ "v0.1" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
